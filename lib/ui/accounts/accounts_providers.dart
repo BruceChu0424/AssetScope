@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
-import '../../services/insight_service.dart';
+import '../../services/portfolio_service.dart';
 import '../../services/stats_service.dart';
 
 /// 账户页/详情弹层共用的聚合 provider。
@@ -20,5 +20,5 @@ final holdingsProvider =
     FutureProvider.autoDispose<List<HoldingSnapshot>>((ref) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) return const [];
-  return s.insightService.holdings();
+  return s.portfolioService.holdings();
 });

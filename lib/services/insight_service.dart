@@ -8,11 +8,9 @@ import '../domain/analytics/recurring_detector.dart';
 import '../domain/analytics/spending_pace.dart';
 import '../domain/debt/debt_contract.dart';
 import '../domain/import/category_rules.dart';
-import '../domain/invest/returns.dart';
 import '../domain/ledger/account.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/money/fx_rate.dart';
-import '../domain/valuation/valuation.dart';
 import 'stats_service.dart';
 
 /// 单条智慧洞察（首页"体检"卡与洞察列表用）。
@@ -31,35 +29,6 @@ class Insight {
 }
 
 enum InsightSeverity { info, good, warn }
-
-/// 持仓快照：数量、成本、市值与浮盈。
-class HoldingSnapshot {
-  const HoldingSnapshot({
-    required this.account,
-    required this.quantity,
-    required this.costMinor,
-    required this.unitPrice,
-    required this.marketValueMinor,
-    required this.priceMissing,
-  });
-
-  final Account account;
-  final Rational quantity;
-  final BigInt costMinor;
-
-  /// 最新单价；缺失为 null。
-  final Rational? unitPrice;
-
-  /// 数量 × 单价；缺价为 null。
-  final BigInt? marketValueMinor;
-  final bool priceMissing;
-
-  /// 浮盈 = 市值 − 成本（缺价为 null）。
-  Rational? get unrealizedPnl {
-    if (marketValueMinor == null) return null;
-    return Rational.fromInt(marketValueMinor!) - Rational.fromInt(costMinor);
-  }
-}
 
 /// 首页聚合的智慧视图模型。
 class InsightBundle {
@@ -124,6 +93,35 @@ class InsightService {
           counterparty: cp, categoryId: cat, count: n)));
     });
     return CategoryRulesEngine(rules: rules, history: history);
+  }
+
+  /// 周期建议（近 18 个月对手方流水 → RecurringDetector）。
+  Future<List<RecurringSuggestion>> recurringSuggestions() async {
+    final now = DateTime.now();
+    final txs = await _ledger.list(
+        from: DateTime(now.year, now.month - 18, now.day),
+        to: now.add(const Duration(days: 1)));
+    final candidates = <RecurringTx>[];
+    for (final tx in txs) {
+      if (tx.status == TxStatus.voided) continue;
+      if (tx.kind != TxKind.expense && tx.kind != TxKind.income) continue;
+      final label = tx.counterparty?.trim().isNotEmpty == true
+          ? tx.counterparty!.trim()
+          : tx.note?.trim() ?? '';
+      if (label.isEmpty) continue;
+      for (final p in tx.postings) {
+        if (p.accountId == tx.categoryId && p.amountMinor != null) {
+          candidates.add(RecurringTx(
+            date: tx.date,
+            amountMinor: p.amountMinor!.abs(),
+            label: label,
+            direction: tx.kind == TxKind.income,
+          ));
+          break;
+        }
+      }
+    }
+    return RecurringDetector.detect(candidates, now: now);
   }
 
   /// 首页智慧包：健康指标 + 配速 + 异常 + 周期建议 + 里程碑。
@@ -212,31 +210,8 @@ class InsightService {
       currentByCategory: report.expenseByCategory,
     );
 
-    // --- 周期建议（近 18 个月对手方流水） ---
-    final txs = await _ledger.list(
-        from: DateTime(now.year, now.month - 18, now.day),
-        to: now.add(const Duration(days: 1)));
-    final candidates = <RecurringTx>[];
-    for (final tx in txs) {
-      if (tx.status == TxStatus.voided) continue;
-      if (tx.kind != TxKind.expense && tx.kind != TxKind.income) continue;
-      final label = tx.counterparty?.trim().isNotEmpty == true
-          ? tx.counterparty!.trim()
-          : tx.note?.trim() ?? '';
-      if (label.isEmpty) continue;
-      for (final p in tx.postings) {
-        if (p.accountId == tx.categoryId && p.amountMinor != null) {
-          candidates.add(RecurringTx(
-            date: tx.date,
-            amountMinor: p.amountMinor!.abs(),
-            label: label,
-            direction: tx.kind == TxKind.income,
-          ));
-          break;
-        }
-      }
-    }
-    final recurring = RecurringDetector.detect(candidates, now: now);
+    // --- 周期建议（复用独立方法，计划页同口径） ---
+    final recurring = await recurringSuggestions();
 
     // --- 里程碑：下一个整数关口 ---
     final series = await stats.netWorthSeries(12, now: now);
@@ -348,130 +323,6 @@ class InsightService {
     return '$yuan 元';
   }
 
-  /// 持仓快照（数量 / 成本 / 市值 / 浮盈）。
-  Future<List<HoldingSnapshot>> holdings() async {
-    final accounts = await _accounts.all();
-    final end = DateTime.now();
-    final qtys = await _ledger.quantityBalancesAt(end);
-    final money = await _ledger.moneyBalancesAt(end);
-    final valuations = await _meta.valuations();
-    final byAccount = <String, List<ValuationRecord>>{};
-    for (final v in valuations) {
-      byAccount.putIfAbsent(v.accountId, () => []).add(v);
-    }
-    final out = <HoldingSnapshot>[];
-    for (final a in accounts) {
-      if (!a.isHolding) continue;
-      final qty = qtys[a.id] ?? Rational.zero();
-      if (qty.isZero) continue;
-      final cost = a.costBasisAccountId == null
-          ? BigInt.zero
-          : (money[a.costBasisAccountId!] ?? BigInt.zero);
-      final r = ValuationResolver.resolve(byAccount[a.id] ?? const [], end);
-      final price = r.record?.unitPrice;
-      if (price == null) {
-        out.add(HoldingSnapshot(
-          account: a, quantity: qty, costMinor: cost,
-          unitPrice: null, marketValueMinor: null, priceMissing: true));
-      } else {
-        out.add(HoldingSnapshot(
-          account: a, quantity: qty, costMinor: cost,
-          unitPrice: price, marketValueMinor: (qty * price).rounded(),
-          priceMissing: false));
-      }
-    }
-    out.sort((x, y) =>
-        (y.marketValueMinor ?? BigInt.zero).compareTo(x.marketValueMinor ?? BigInt.zero));
-    return out;
-  }
-
-  /// 投资组合 XIRR（年化，资金加权）。
-  ///
-  /// 组合边界 = 券商现金 + 全部持仓账户。买卖/分红为组合内部事件，
-  /// 只有跨边界转账与外部收支是现金流；期末以当前市值作为回收。
-  /// 外币折算按交易日前最近汇率，缺失的流水跳过并计入 [skippedFlows]。
-  Future<PortfolioReturn> portfolioXirr() async {
-    final now = DateTime.now();
-    final accounts = await _accounts.all();
-    final portfolioIds = accounts
-        .where((a) =>
-            a.assetSubtype == AssetSubtype.brokerCash || a.isHolding)
-        .map((a) => a.id)
-        .toSet();
-    if (portfolioIds.isEmpty) {
-      return PortfolioReturn(
-          xirr: null,
-          currentValueMinor: BigInt.zero,
-          investedMinor: BigInt.zero,
-          skippedFlows: 0);
-    }
-    final base = await stats.baseCurrency();
-    final byId = {for (final a in accounts) a.id: a};
-
-    Future<BigInt?> toBase(BigInt minor, String ccy, DateTime at) async {
-      if (ccy == base) return minor;
-      final rate = await _meta.toBaseRate(ccy: ccy, base: base, onOrBefore: at);
-      if (rate == null) return null;
-      return (Rational.fromInt(minor) * rate.rate).rounded();
-    }
-
-    // 期末组合市值（含券商现金）。
-    final nw = await stats.netWorthAt(now);
-    var value = BigInt.zero;
-    for (final i in nw.items) {
-      if (portfolioIds.contains(i.account.id) && !i.valuationMissing) {
-        value += i.valueBaseMinor;
-      }
-    }
-
-    final txs = await _ledger.list(
-        from: DateTime(2000), to: now.add(const Duration(days: 1)));
-    final byDate = <DateTime, BigInt>{};
-    var skipped = 0;
-    for (final tx in txs) {
-      if (tx.status == TxStatus.voided) continue;
-      if (tx.kind == TxKind.buy ||
-          tx.kind == TxKind.sell ||
-          tx.kind == TxKind.dividend) {
-        continue; // 组合内部事件
-      }
-      var netInto = BigInt.zero; // 流入组合为正
-      var hasForeignGap = false;
-      for (final p in tx.postings) {
-        if (!portfolioIds.contains(p.accountId)) continue;
-        if (p.amountMinor == null || p.currencyCode == null) continue;
-        final acc = byId[p.accountId];
-        if (acc == null) continue;
-        final b = await toBase(p.amountMinor!, p.currencyCode!, tx.date);
-        if (b == null) {
-          hasForeignGap = true;
-          continue;
-        }
-        netInto += b;
-      }
-      if (netInto == BigInt.zero && !hasForeignGap) continue;
-      if (hasForeignGap) {
-        skipped++;
-        continue;
-      }
-      final day = DateTime(tx.date.year, tx.date.month, tx.date.day);
-      byDate[day] = (byDate[day] ?? BigInt.zero) - netInto; // 投入为负
-    }
-    final flows = <XirrFlow>[
-      for (final e in byDate.entries) XirrFlow(e.key, e.value),
-      XirrFlow(now, value),
-    ];
-    final invested = byDate.values
-        .where((v) => v.isNegative)
-        .fold(BigInt.zero, (a, b) => a + b.abs());
-    return PortfolioReturn(
-      xirr: xirr(flows),
-      currentValueMinor: value,
-      investedMinor: invested,
-      skippedFlows: skipped,
-    );
-  }
-
   /// 雪崩 vs 雪球对比：返回两套计划与共同假设。
   Future<DebtStrategyCompare> debtStrategies({
     required BigInt extraMonthlyMinor,
@@ -512,22 +363,6 @@ class InsightService {
           extraMonthlyMinor: extraMonthlyMinor),
     );
   }
-}
-
-/// 投资组合收益结果。
-class PortfolioReturn {
-  const PortfolioReturn({
-    required this.xirr,
-    required this.currentValueMinor,
-    required this.investedMinor,
-    required this.skippedFlows,
-  });
-
-  /// 年化 XIRR；现金流不足或无解时为 null。
-  final double? xirr;
-  final BigInt currentValueMinor;
-  final BigInt investedMinor;
-  final int skippedFlows;
 }
 
 /// 策略对比结果。

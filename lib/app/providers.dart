@@ -13,11 +13,14 @@ import '../data/repositories/planning_repo.dart';
 import '../security/crypto_suite.dart';
 import '../security/dart_crypto_suite.dart';
 import '../security/key_manager.dart';
+import '../services/export_service.dart';
 import '../services/import_service.dart';
 import '../services/insight_service.dart';
 import '../services/ledger_service.dart';
+import '../services/portfolio_service.dart';
 import '../services/projection_service.dart';
 import '../services/stats_service.dart';
+import '../services/year_report_service.dart';
 
 /// 会话状态：未初始化 / 已锁定 / 已解锁（含数据库与全部服务）。
 sealed class VaultState {
@@ -46,6 +49,9 @@ class VaultUnlocked extends VaultState {
     required this.projectionService,
     required this.importService,
     required this.insightService,
+    required this.exportService,
+    required this.portfolioService,
+    required this.yearReportService,
   });
 
   final AppDatabase db;
@@ -59,6 +65,9 @@ class VaultUnlocked extends VaultState {
   final ProjectionService projectionService;
   final ImportService importService;
   final InsightService insightService;
+  final ExportService exportService;
+  final PortfolioService portfolioService;
+  final YearReportService yearReportService;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -176,6 +185,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final ledger = LedgerRepo(db);
     final planning = PlanningRepo(db);
     final meta = MetaRepo(db);
+    final stats = StatsService(accounts, ledger, meta);
     state = VaultUnlocked(
       db: db,
       keyManager: km,
@@ -184,10 +194,13 @@ class VaultNotifier extends Notifier<VaultState> {
       planning: planning,
       meta: meta,
       ledgerService: LedgerService(accounts, ledger),
-      statsService: StatsService(accounts, ledger, meta),
+      statsService: stats,
       projectionService: ProjectionService(accounts, ledger, planning, meta),
       importService: ImportService(accounts, ledger, meta),
       insightService: InsightService(accounts, ledger, planning, meta),
+      exportService: ExportService(accounts, ledger),
+      portfolioService: PortfolioService(accounts, ledger, meta, stats),
+      yearReportService: YearReportService(accounts, ledger, stats),
     );
     await _loadTunables();
     _armAutoLock();

@@ -7,7 +7,7 @@ import '../../domain/ledger/transaction.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
-import '../../services/insight_service.dart';
+import '../../services/portfolio_service.dart';
 import '../widgets/common.dart';
 import 'accounts_providers.dart';
 
@@ -40,7 +40,7 @@ Future<void> showTradeDialog(
 
   final holdings = isDividend
       ? const <HoldingSnapshot>[]
-      : await s.insightService.holdings();
+      : await s.portfolioService.holdings();
   final snapshot =
       holdings.where((h) => h.account.id == account.id).firstOrNull;
   if (!context.mounted) return;

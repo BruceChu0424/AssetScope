@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../planning/recurrence.dart';
+
 /// 周期识别输入：同一对手方/名称的一笔历史交易。
 class RecurringTx {
   const RecurringTx({
@@ -62,6 +64,23 @@ class RecurringSuggestion {
       d = _advance(d);
     }
     return d;
+  }
+
+  /// 适配计划：间隔桶 → (Cadence, 自定义间隔天数)。锚点日取 [nextExpected]。
+  (Cadence, int) planCadence(DateTime now) {
+    if (intervalDays >= 350 && intervalDays <= 380) {
+      return (Cadence.yearly, 1);
+    }
+    if (intervalDays >= 28 && intervalDays <= 32) {
+      return (Cadence.monthly, 1);
+    }
+    if (intervalDays >= 13 && intervalDays <= 15) {
+      return (Cadence.biweekly, 1);
+    }
+    if (intervalDays >= 6 && intervalDays <= 8) {
+      return (Cadence.weekly, 1);
+    }
+    return (Cadence.customInterval, intervalDays);
   }
 
   DateTime _advance(DateTime d) {

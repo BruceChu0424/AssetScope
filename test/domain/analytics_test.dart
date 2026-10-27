@@ -5,6 +5,7 @@ import 'package:assetscope/domain/analytics/health.dart';
 import 'package:assetscope/domain/analytics/recurring_detector.dart';
 import 'package:assetscope/domain/analytics/spending_pace.dart';
 import 'package:assetscope/domain/import/category_rules.dart';
+import 'package:assetscope/domain/planning/recurrence.dart';
 
 void main() {
   group('SpendingPace 消费配速', () {
@@ -112,6 +113,27 @@ void main() {
             direction: false),
       ];
       expect(RecurringDetector.detect(stale, now: now), isEmpty);
+    });
+
+    test('planCadence：间隔桶映射到计划周期', () {
+      RecurringSuggestion s(int intervalDays) => RecurringSuggestion(
+          label: '测试',
+          intervalDays: intervalDays,
+          direction: false,
+          medianAmountMinor: BigInt.from(1000),
+          lastDate: DateTime(2026, 10, 1),
+          occurrences: 4,
+          amountStable: true,
+          confidence: 0.9);
+      expect(s(365).planCadence(DateTime(2026, 11, 1)),
+          (Cadence.yearly, 1));
+      expect(s(30).planCadence(DateTime(2026, 11, 1)),
+          (Cadence.monthly, 1));
+      expect(s(14).planCadence(DateTime(2026, 11, 1)),
+          (Cadence.biweekly, 1));
+      expect(s(7).planCadence(DateTime(2026, 11, 1)), (Cadence.weekly, 1));
+      expect(s(10).planCadence(DateTime(2026, 11, 1)),
+          (Cadence.customInterval, 10));
     });
   });
 

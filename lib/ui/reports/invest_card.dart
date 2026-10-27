@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../services/insight_service.dart';
+import '../../services/portfolio_service.dart';
 import '../accounts/accounts_providers.dart' show holdingsProvider;
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -10,10 +10,10 @@ import '../widgets/common.dart';
 final portfolioProvider = FutureProvider.autoDispose<PortfolioReturn>((ref) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
-  return s.insightService.portfolioXirr();
+  return s.portfolioService.portfolioReturns();
 });
 
-/// 投资组合卡：年化 XIRR（资金加权）+ 持仓浮盈明细。
+/// 投资组合卡：年化 XIRR（资金加权）+ TWR（时间加权）+ 持仓浮盈明细。
 class InvestCard extends ConsumerWidget {
   const InvestCard({super.key});
 
@@ -25,18 +25,7 @@ class InvestCard extends ConsumerWidget {
     return SectionCard(
       title: '投资组合',
       trailing: portfolio.maybeWhen(
-        data: (p) => p.xirr == null
-            ? null
-            : Text(
-                '年化 XIRR ${(p.xirr! * 100).toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: p.xirr! >= 0
-                      ? AppColors.positiveOf(theme.brightness)
-                      : AppColors.negativeOf(theme.brightness),
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
+        data: (p) => _ratesText(context, p),
         orElse: () => null,
       ),
       child: holdings.maybeWhen(
@@ -90,6 +79,35 @@ class InvestCard extends ConsumerWidget {
             height: 60, child: Center(child: CircularProgressIndicator())),
       ),
     );
+  }
+
+  /// XIRR / TWR 摘要（有哪个显示哪个；TWR 需要历史估值点）。
+  Widget? _ratesText(BuildContext context, PortfolioReturn p) {
+    final theme = Theme.of(context);
+    final color = (p.xirr ?? p.twr ?? 0) >= 0
+        ? AppColors.positiveOf(theme.brightness)
+        : AppColors.negativeOf(theme.brightness);
+    final style = TextStyle(
+      color: color,
+      fontWeight: FontWeight.w700,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    if (p.xirr != null && p.twr != null) {
+      return Tooltip(
+        message: 'XIRR 资金加权（含你的加减仓时点影响）；TWR 时间加权（剔除资金进出，衡量标的表现）',
+        child: Text(
+          'XIRR ${(p.xirr! * 100).toStringAsFixed(1)}% · TWR ${(p.twr! * 100).toStringAsFixed(1)}%',
+          style: style.copyWith(fontSize: 12),
+        ),
+      );
+    }
+    if (p.xirr != null) {
+      return Text('年化 XIRR ${(p.xirr! * 100).toStringAsFixed(1)}%', style: style);
+    }
+    if (p.twr != null) {
+      return Text('年化 TWR ${(p.twr! * 100).toStringAsFixed(1)}%', style: style);
+    }
+    return null;
   }
 
   Widget _pnlText(BuildContext context, HoldingSnapshot h) {

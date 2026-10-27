@@ -6,17 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../domain/import/dedup.dart';
+import '../../domain/import/bill_parsers.dart';
 import '../../domain/ledger/account.dart';
 import '../../services/import_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'transactions_page.dart' show txAccountsProvider;
 
-/// CSV 账单导入向导：选文件 → 选账户 → 预览（去重+分类建议）→ 入账。
+/// 账单导入向导：选文件 → 自动识别格式 → 选账户 → 预览（去重+分类建议）→ 入账。
 ///
-/// 表头要求：date, type(或 direction), amount；可选 time, counterparty,
-/// note, txid。中文列名可先在导出软件里改列头，或用 wechat/alipay 模板。
+/// 微信/支付宝原生账单自动识别（含 GBK 编码）；其他 CSV 需表头含
+/// date、type(或 direction)、amount 三列。
 Future<void> showImportWizard(BuildContext context, WidgetRef ref) async {
   await showDialog<void>(
     context: context,
@@ -37,7 +37,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
   int _step = 0;
   String? _fileName;
   String? _lastPath;
-  List<NormalizedRow> _parsed = const [];
+  AutoParsed? _auto;
   String _parseError = '';
   ImportPreview _preview = const ImportPreview(
       rows: [], skipped: [], suggestions: []);
@@ -60,11 +60,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
       final text = s.importService.decode(bytes);
       _fileName = picked.name;
       _lastPath = picked.path;
-      _parsed = s.importService.parseGenericCsv(
-        text,
-        parserId: picked.name,
-        accountId: _accountId ?? 'pending',
-      );
+      _auto = s.importService.parseAuto(text, genericParserId: picked.name);
       setState(() => _parseError = '');
     } on FormatException catch (e) {
       setState(() => _parseError = e.message);
@@ -75,15 +71,10 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
 
   Future<void> _analyze() async {
     final s = sessionOf(ref.read(vaultProvider));
-    if (s == null || _accountId == null || _fileName == null) return;
-    _parsed = s.importService.parseGenericCsv(
-      s.importService.decode(await File(_lastPath!).readAsBytes()),
-      parserId: _fileName!,
-      accountId: _accountId!,
-    );
+    if (s == null || _accountId == null || _auto == null) return;
     _preview = await s.importService.preview(
-      rows: _parsed,
-      parserId: _fileName!,
+      rows: _auto!.rows,
+      parserId: _auto!.parserId,
       accountId: _accountId!,
     );
     // 分类建议统计（规则 + 历史学习）。
@@ -102,20 +93,25 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null ||
         _accountId == null ||
-        _fileName == null ||
+        _auto == null ||
         _expenseCatId == null ||
         _incomeCatId == null) {
       return;
     }
     setState(() => _importing = true);
     final engine = await s.insightService.buildRulesEngine();
+    final sourceName = switch (_auto!.format) {
+      BillFormat.wechat => 'importWechat',
+      BillFormat.alipay => 'importAlipay',
+      BillFormat.generic => 'importCsv',
+    };
     final count = await s.importService.commit(
       rows: _preview.rows,
-      parserId: _fileName!,
+      parserId: _auto!.parserId,
       accountId: _accountId!,
       expenseCategoryId: _expenseCatId!,
       incomeCategoryId: _incomeCatId!,
-      sourceName: 'importCsv',
+      sourceName: sourceName,
       resolveCategory: (row) => engine.match(row.counterparty)?.categoryId,
     );
     setState(() {
@@ -189,7 +185,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
 
   List<Widget> _stepPickFile(ThemeData theme) => [
         Text(
-          '支持 UTF-8 / GBK 自动识别的通用 CSV（微信、支付宝、银行导出请先保证表头含 date、type、amount 三列，或改列名）。',
+          '微信 / 支付宝导出的原生账单（CSV，GBK 或 UTF-8）自动识别列名与交易单号，无需改表头；其他 CSV 需表头含 date、type、amount 三列。',
           style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
         ),
         const SizedBox(height: 12),
@@ -229,9 +225,22 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
         orElse: () => const CircularProgressIndicator(),
       ),
       const SizedBox(height: 8),
-      Text('文件：$_fileName · 已识别 ${_parsed.length} 行',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.hintColor)),
+      Row(
+        children: [
+          Text('文件：$_fileName',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.hintColor)),
+          const SizedBox(width: 8),
+          Chip(
+            label: Text(_auto?.format.label ?? '—'),
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 6),
+          Text('已识别 ${_auto?.rows.length ?? 0} 行',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.hintColor)),
+        ],
+      ),
     ];
   }
 
@@ -281,6 +290,8 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
           emphasized: true),
       _previewLine(theme, '精确重复跳过', '${_preview.skipped.length} 行'),
       _previewLine(theme, '智慧分类命中', '$_suggestCount 行（规则+历史学习）'),
+      for (final line in _auto?.skippedLines ?? const <String>[])
+        _previewLine(theme, '原生解析跳过', line),
       if (_preview.suggestions.isNotEmpty)
         _previewLine(theme, '转账配对建议', '${_preview.suggestions.length} 条（导入后可在流水页人工合并）'),
       const SizedBox(height: 8),

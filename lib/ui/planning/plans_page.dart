@@ -7,6 +7,7 @@ import '../../domain/money/money.dart';
 import '../../domain/planning/recurrence.dart';
 import '../../domain/utils/dates.dart';
 import '../widgets/common.dart';
+import 'recurring_sheet.dart';
 
 /// 固定开销与预定支出计划。
 class PlansPage extends ConsumerWidget {
@@ -16,11 +17,23 @@ class PlansPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_plansProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('固定开销 / 计划')),
+      appBar: AppBar(
+        title: const Text('固定开销 / 计划'),
+        actions: [
+          IconButton(
+            tooltip: '从流水识别固定收支',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () async {
+              await showRecurringSheet(context, ref);
+              ref.invalidate(_plansProvider);
+            },
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final ok = await showDialog<bool>(
-              context: context, builder: (_) => const _PlanEditDialog());
+              context: context, builder: (_) => const PlanEditDialog());
           if (ok == true) ref.invalidate(_plansProvider);
         },
         icon: const Icon(Icons.add),
@@ -94,19 +107,31 @@ final _plansProvider =
   return (events, occ);
 });
 
-class _PlanEditDialog extends ConsumerStatefulWidget {
-  const _PlanEditDialog();
+/// 计划编辑对话框（initial 非空时为编辑/预填模式）。
+class PlanEditDialog extends ConsumerStatefulWidget {
+  const PlanEditDialog({super.key, this.initial});
+
+  final ScheduledEvent? initial;
 
   @override
-  ConsumerState<_PlanEditDialog> createState() => _PlanEditDialogState();
+  ConsumerState<PlanEditDialog> createState() => _PlanEditDialogState();
 }
 
-class _PlanEditDialogState extends ConsumerState<_PlanEditDialog> {
-  final _name = TextEditingController();
-  final _amount = TextEditingController();
-  final _anchor = TextEditingController(text: dateToday());
-  EventDirection _direction = EventDirection.outflow;
-  Cadence _cadence = Cadence.monthly;
+class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
+  late final TextEditingController _name =
+      TextEditingController(text: widget.initial?.name ?? '');
+  late final TextEditingController _amount = TextEditingController(
+      text: widget.initial?.amountMinor == null
+          ? ''
+          : Money.fromMinor(widget.initial!.amountMinor!, CurrencyInfo.cny)
+              .format());
+  late final TextEditingController _anchor = TextEditingController(
+      text: widget.initial == null
+          ? dateToday()
+          : dateKey(widget.initial!.anchorDate));
+  late EventDirection _direction =
+      widget.initial?.direction ?? EventDirection.outflow;
+  late Cadence _cadence = widget.initial?.cadence ?? Cadence.monthly;
 
   @override
   void dispose() {
@@ -120,11 +145,13 @@ class _PlanEditDialogState extends ConsumerState<_PlanEditDialog> {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _name.text.isEmpty || _amount.text.isEmpty) return;
     await s.planning.saveScheduledEvent(ScheduledEvent(
-      id: 'evt:${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
+      id: widget.initial?.id ??
+          'evt:${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
       name: _name.text.trim(),
       direction: _direction,
       currencyCode: 'CNY',
       cadence: _cadence,
+      intervalValue: widget.initial?.intervalValue ?? 1,
       anchorDate: DateTime.tryParse(_anchor.text) ?? DateTime.now(),
       amountMinor: Money.parse(_amount.text, CurrencyInfo.cny).amountMinor,
     ));

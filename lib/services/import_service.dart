@@ -6,6 +6,8 @@ import 'package:fast_gbk/fast_gbk.dart';
 import '../data/repositories/accounts_repo.dart';
 import '../data/repositories/ledger_repo.dart';
 import '../data/repositories/meta_repo.dart';
+import '../domain/import/bill_parsers.dart';
+import '../domain/import/csv_table.dart';
 import '../domain/import/dedup.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/money/currency.dart';
@@ -15,7 +17,7 @@ import '../domain/money/money.dart';
 ///
 /// 流程：识别文件 → 解析 → 规范化 → 去重 → 预览 → 确认 → 入账。
 /// 原始行以 JSON 快照保留；同一文件重复导入幂等（稳定外部 ID）。
-/// 微信/支付宝导出为 GBK 编码，自动探测。
+/// 微信/支付宝原生账单自动识别；导出为 GBK 编码时自动探测。
 class ImportService {
   ImportService(this._accounts, this._ledger, this._meta);
 
@@ -32,49 +34,50 @@ class ImportService {
     }
   }
 
-  List<List<String>> parseCsv(String text) {
-    final rows = <List<String>>[];
-    var field = StringBuffer();
-    var row = <String>[];
-    var inQuotes = false;
-    for (var i = 0; i < text.length; i++) {
-      final ch = text[i];
-      if (inQuotes) {
-        if (ch == '"') {
-          if (i + 1 < text.length && text[i + 1] == '"') {
-            field.write('"');
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          field.write(ch);
-        }
-      } else {
-        if (ch == '"') {
-          inQuotes = true;
-        } else if (ch == ',' || ch == '\t') {
-          row.add(field.toString().trim());
-          field = StringBuffer();
-        } else if (ch == '\n' || ch == '\r') {
-          if (field.isNotEmpty || row.isNotEmpty) {
-            row.add(field.toString().trim());
-            rows.add(row);
-            row = <String>[];
-            field = StringBuffer();
-          }
-          // 跳过 \r\n
-          if (ch == '\r' && i + 1 < text.length && text[i + 1] == '\n') i++;
-        } else {
-          field.write(ch);
-        }
+  List<List<String>> parseCsv(String text) => CsvTable.parse(text).rows;
+
+  /// 自动探测解析：微信/支付宝原生账单优先，否则回退通用 CSV。
+  ///
+  /// 原生账单的 [AutoParsed.parserId] 用格式名（交易单号作稳定来源 ID，
+  /// 跨文件、跨时间段重复导入同样幂等）；通用 CSV 沿用文件名。
+  AutoParsed parseAuto(
+    String text, {
+    required String genericParserId,
+    String currencyCode = 'CNY',
+  }) {
+    final format = BillParsers.detect(text);
+    if (format == BillFormat.wechat) {
+      final r = BillParsers.parseWeChat(text, currencyCode: currencyCode);
+      if (r != null) {
+        return AutoParsed(
+          format: BillFormat.wechat,
+          parserId: 'wechat',
+          rows: r.rows,
+          skippedLines: r.skippedSummary,
+        );
+      }
+    } else if (format == BillFormat.alipay) {
+      final r = BillParsers.parseAlipay(text, currencyCode: currencyCode);
+      if (r != null) {
+        return AutoParsed(
+          format: BillFormat.alipay,
+          parserId: 'alipay',
+          rows: r.rows,
+          skippedLines: r.skippedSummary,
+        );
       }
     }
-    if (field.isNotEmpty || row.isNotEmpty) {
-      row.add(field.toString().trim());
-      rows.add(row);
-    }
-    return rows;
+    return AutoParsed(
+      format: BillFormat.generic,
+      parserId: genericParserId,
+      rows: parseGenericCsv(
+        text,
+        parserId: genericParserId,
+        accountId: 'generic',
+        currencyCode: currencyCode,
+      ),
+      skippedLines: const [],
+    );
   }
 
   /// 通用 CSV 解析（表头映射）。
@@ -258,4 +261,23 @@ class ImportPreview {
   final List<NormalizedRow> rows;
   final List<String> skipped;
   final List<DedupMatch> suggestions;
+}
+
+/// 自动探测解析结果。
+class AutoParsed {
+  const AutoParsed({
+    required this.format,
+    required this.parserId,
+    required this.rows,
+    required this.skippedLines,
+  });
+
+  final BillFormat format;
+
+  /// 外部 ID 的 parser 维度（原生账单用格式名保证跨文件幂等）。
+  final String parserId;
+  final List<NormalizedRow> rows;
+
+  /// 原生解析阶段按原因跳过的行（如退款、不计收支）。
+  final List<String> skippedLines;
 }

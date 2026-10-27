@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -69,6 +72,11 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       appBar: AppBar(
         title: const Text('流水'),
         actions: [
+          IconButton(
+            tooltip: '导出 CSV（明文，自选位置）',
+            icon: const Icon(Icons.save_alt),
+            onPressed: () => _exportCsv(context),
+          ),
           IconButton(
             tooltip: '导入账单 CSV',
             icon: const Icon(Icons.file_upload_outlined),
@@ -167,6 +175,25 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         TxFilter.invest => '投资',
         TxFilter.debt => '借贷还款',
       };
+
+  /// 导出全部流水为明文 CSV（用户自选保存位置，与加密备份互补）。
+  Future<void> _exportCsv(BuildContext context) async {
+    final s = sessionOf(ref.read(vaultProvider));
+    if (s == null) return;
+    final csv = await s.exportService.transactionsCsv();
+    final loc = await getSaveLocation(
+      suggestedName: 'assetscope-ledger-${dateToday()}.csv',
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'CSV', extensions: ['csv']),
+      ],
+    );
+    if (loc == null) return;
+    await File(loc.path).writeAsString(csv, flush: true);
+    if (!mounted) return;
+    ScaffoldMessenger.of(this.context).showSnackBar(
+      const SnackBar(content: Text('已导出流水 CSV（含 BOM，Excel 可直接打开）')),
+    );
+  }
 }
 
 class _TxTile extends StatelessWidget {

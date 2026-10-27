@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../domain/reports/year_report.dart';
 import '../../services/stats_service.dart';
 import '../widgets/common.dart';
 import 'invest_card.dart';
+import 'year_view.dart';
 
-/// 月报：净资产归因（互斥分解 + 待核对差额）、分类收支、资产构成。
+/// 报表：月报（归因/分类/构成）与年度报告切换。
 class ReportPage extends ConsumerStatefulWidget {
   const ReportPage({super.key});
 
@@ -17,47 +19,95 @@ class ReportPage extends ConsumerStatefulWidget {
 
 class _ReportPageState extends ConsumerState<ReportPage> {
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  int _year = DateTime.now().year;
+  bool _yearMode = false;
 
-  late final _provider =
+  late final _monthProvider =
       FutureProvider.autoDispose<MonthReport>((ref) async {
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) throw StateError('locked');
     return s.statsService.monthReport(_month.year, _month.month);
   });
 
+  late final _yearProvider =
+      FutureProvider.autoDispose<YearReport>((ref) async {
+    final s = sessionOf(ref.watch(vaultProvider));
+    if (s == null) throw StateError('locked');
+    return s.yearReportService.yearReport(_year);
+  });
+
+  void _shift(int delta) {
+    setState(() {
+      if (_yearMode) {
+        _year += delta;
+        ref.invalidate(_yearProvider);
+      } else {
+        _month = DateTime(_month.year, _month.month + delta);
+        ref.invalidate(_monthProvider);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(_provider);
+    final Widget body;
+    if (_yearMode) {
+      body = ref.watch(_yearProvider).when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+            data: (r) => ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [_modeToggle(), YearView(report: r)],
+            ),
+          );
+    } else {
+      body = ref.watch(_monthProvider).when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+            data: (r) => ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                _modeToggle(),
+                _attributionCard(context, r),
+                _categoryCard(context, r, income: true),
+                _categoryCard(context, r, income: false),
+                const InvestCard(),
+                _compositionCard(context, r),
+              ],
+            ),
+          );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text('月报 · ${_month.year} 年 ${_month.month} 月'),
+        title: Text(_yearMode ? '年度 · $_year 年' : '月报 · ${_month.year} 年 ${_month.month} 月'),
         actions: [
           IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: () => setState(() =>
-                  _month = DateTime(_month.year, _month.month - 1))),
+              icon: const Icon(Icons.chevron_left), onPressed: () => _shift(-1)),
           IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: () => setState(() =>
-                  _month = DateTime(_month.year, _month.month + 1))),
+              icon: const Icon(Icons.chevron_right), onPressed: () => _shift(1)),
         ],
       ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
-        data: (r) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            _attributionCard(context, r),
-            _categoryCard(context, r, income: true),
-            _categoryCard(context, r, income: false),
-            const InvestCard(),
-            _compositionCard(context, r),
-          ],
-        ),
-      ),
+      body: body,
     );
   }
+
+  Widget _modeToggle() => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('月报')),
+            ButtonSegment(value: true, label: Text('年度')),
+          ],
+          selected: {_yearMode},
+          onSelectionChanged: (v) => setState(() {
+            _yearMode = v.first;
+            if (_yearMode) {
+              _year = _month.year;
+              ref.invalidate(_yearProvider);
+            }
+          }),
+        ),
+      );
 
   Widget _attributionCard(BuildContext context, MonthReport r) {
     final a = r.attribution;
