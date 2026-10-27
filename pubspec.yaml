@@ -1,0 +1,59 @@
+name: assetscope
+description: "资观 AssetScope —— 本地优先、端到端加密的个人资产、负债与财务规划系统。"
+publish_to: 'none'
+
+version: 0.2.0+2
+
+environment:
+  sdk: ^3.12.2
+
+# SQLite3MultipleCiphers 构建配置：让 sqlite3 3.x 的 build hook 产出支持
+# SQLCipher 兼容加密的数据库引擎（PRAGMA key）。详见 docs/06-安全设计.md。
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # 状态管理 / 路由
+  flutter_riverpod: ^3.4.3
+  go_router: ^17.5.0
+
+  # 本地账本（加密 SQLite）
+  drift: ^2.35.2
+  drift_flutter: ^0.3.1
+
+  # 平台
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  flutter_secure_storage: ^11.2.0
+
+  # 密码学（sodium 为运行时实现；cryptography 为纯 Dart 后备/测试实现）
+  sodium: ^4.0.4
+  cryptography: ^2.9.0
+
+  # 展示与工具
+  intl: ^0.20.2
+  fl_chart: ^1.2.0
+  uuid: ^4.6.0
+  collection: ^1.19.1
+  cupertino_icons: ^1.0.8
+  fast_gbk: ^1.0.0
+  file_selector: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.35.1
+  build_runner: ^2.15.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/globe/land_dots.json
