@@ -20,6 +20,8 @@ void main() {
           incomeByCategory: {'cat:i:salary': BigInt.from(2000000)},
           debtPrincipalRepaidMinor: BigInt.from(300000),
           debtInterestPaidMinor: BigInt.from(50000),
+          realizedPnlMinor: BigInt.from(120000),
+          dividendMinor: BigInt.from(30000),
         ),
         MonthLite(
           month: 2,
@@ -29,6 +31,8 @@ void main() {
           incomeByCategory: {'cat:i:salary': BigInt.from(2000000)},
           debtPrincipalRepaidMinor: BigInt.from(300000),
           debtInterestPaidMinor: BigInt.from(48000),
+          realizedPnlMinor: BigInt.from(-20000),
+          dividendMinor: BigInt.from(60000),
         ),
       ],
       categoryNames: const {
@@ -55,6 +59,8 @@ void main() {
     expect(report.expenseByCategory['cat:e:food'], BigInt.from(2000000));
     expect(report.debtPrincipalRepaidMinor, BigInt.from(600000));
     expect(report.debtInterestPaidMinor, BigInt.from(98000));
+    expect(report.realizedPnlMinor, BigInt.from(100000));
+    expect(report.dividendMinor, BigInt.from(90000));
     expect(report.biggestExpense!.amountMinor, BigInt.from(900000));
     // 分类排行按金额降序
     expect(report.topExpenseCategories.first.categoryId, 'cat:e:food');

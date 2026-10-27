@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'accounts_providers.dart';
 import 'location_dialog.dart';
+import 'lot_section.dart';
 import 'trade_dialogs.dart';
 
 /// 账户详情弹层：估值 / 期初 / 调整 / 持仓买卖 / 分红 / 位置 / 历史 / 归档。
@@ -111,6 +112,7 @@ class AccountDetailSheet extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
+            if (account.isHolding) LotSection(account: account),
             _RecentTransactions(accountId: account.id),
           ],
         ),

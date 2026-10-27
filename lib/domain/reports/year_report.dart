@@ -11,6 +11,8 @@ class MonthLite {
     required this.incomeByCategory,
     required this.debtPrincipalRepaidMinor,
     required this.debtInterestPaidMinor,
+    required this.realizedPnlMinor,
+    required this.dividendMinor,
   });
 
   final int month;
@@ -20,6 +22,12 @@ class MonthLite {
   final Map<String, BigInt> incomeByCategory;
   final BigInt debtPrincipalRepaidMinor;
   final BigInt debtInterestPaidMinor;
+
+  /// 投资已实现损益（账面口径，来自月报归因）。
+  final BigInt realizedPnlMinor;
+
+  /// 分红派息。
+  final BigInt dividendMinor;
 }
 
 /// 年度月格（1–12 全量，无数据的月份 [hasData] 为 false）。
@@ -74,6 +82,8 @@ class YearReport {
     required this.biggestExpense,
     required this.debtPrincipalRepaidMinor,
     required this.debtInterestPaidMinor,
+    required this.realizedPnlMinor,
+    required this.dividendMinor,
   });
 
   final int year;
@@ -91,6 +101,12 @@ class YearReport {
   final BiggestExpense? biggestExpense;
   final BigInt debtPrincipalRepaidMinor;
   final BigInt debtInterestPaidMinor;
+
+  /// 全年投资已实现损益（账面口径，与净资产归因一致）。
+  final BigInt realizedPnlMinor;
+
+  /// 全年分红派息。
+  final BigInt dividendMinor;
 
   BigInt get totalIncomeMinor =>
       months.fold(BigInt.zero, (s, m) => s + m.incomeMinor);
@@ -151,6 +167,8 @@ class YearReportBuilder {
     final incomeByCategory = <String, BigInt>{};
     var principal = BigInt.zero;
     var interest = BigInt.zero;
+    var realizedPnl = BigInt.zero;
+    var dividend = BigInt.zero;
     for (final m in monthLites) {
       m.expenseByCategory.forEach((k, v) =>
           expenseByCategory[k] = (expenseByCategory[k] ?? BigInt.zero) + v);
@@ -158,6 +176,8 @@ class YearReportBuilder {
           incomeByCategory[k] = (incomeByCategory[k] ?? BigInt.zero) + v);
       principal += m.debtPrincipalRepaidMinor;
       interest += m.debtInterestPaidMinor;
+      realizedPnl += m.realizedPnlMinor;
+      dividend += m.dividendMinor;
     }
     return YearReport(
       year: year,
@@ -169,6 +189,8 @@ class YearReportBuilder {
       biggestExpense: biggestExpense,
       debtPrincipalRepaidMinor: principal,
       debtInterestPaidMinor: interest,
+      realizedPnlMinor: realizedPnl,
+      dividendMinor: dividend,
     );
   }
 }

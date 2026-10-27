@@ -32,6 +32,8 @@ class YearReportService {
         incomeByCategory: r.incomeByCategory,
         debtPrincipalRepaidMinor: r.debtPrincipalRepaidMinor,
         debtInterestPaidMinor: r.debtInterestPaidMinor,
+        realizedPnlMinor: r.attribution.investRealized,
+        dividendMinor: r.attribution.investDividend,
       ));
     }
 

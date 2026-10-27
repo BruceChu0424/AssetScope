@@ -69,6 +69,30 @@ class YearView extends StatelessWidget {
                       hint: '全年债务成本')),
             ],
           ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Expanded(
+                  child: AmountTile(
+                      label: '已实现投资损益',
+                      amount: fmtMinor(report.realizedPnlMinor, base),
+                      color: report.realizedPnlMinor.isNegative
+                          ? AppColors.negativeOf(Theme.of(context).brightness)
+                          : AppColors.positiveOf(Theme.of(context).brightness),
+                      hint: '卖出落袋（账面口径）')),
+              Expanded(
+                  child: AmountTile(
+                      label: '分红派息',
+                      amount: fmtMinor(report.dividendMinor, base))),
+              Expanded(
+                  child: AmountTile(
+                      label: '投资净收益',
+                      amount: fmtMinor(
+                          report.realizedPnlMinor + report.dividendMinor,
+                          base),
+                      hint: '已实现 + 分红')),
+            ],
+          ),
         ],
       ),
     );

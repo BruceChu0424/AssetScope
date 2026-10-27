@@ -6,7 +6,9 @@ import '../../app/providers.dart';
 import '../../domain/reports/year_report.dart';
 import '../../services/stats_service.dart';
 import '../widgets/common.dart';
+import 'allocation_card.dart';
 import 'invest_card.dart';
+import 'risk_card.dart';
 import 'year_view.dart';
 
 /// 报表：月报（归因/分类/构成）与年度报告切换。
@@ -72,6 +74,8 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                 _categoryCard(context, r, income: true),
                 _categoryCard(context, r, income: false),
                 const InvestCard(),
+                const RiskCard(),
+                const AllocationCard(),
                 _compositionCard(context, r),
               ],
             ),

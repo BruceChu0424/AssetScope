@@ -41,6 +41,14 @@ class Rational {
 
   factory Rational.fromInt(BigInt v) => Rational._(v, BigInt.one);
 
+  /// 分数构造（自动规范化、分母转正）。
+  factory Rational.fromFrac(BigInt n, BigInt d) {
+    if (d == BigInt.zero) throw ArgumentError('分母为零');
+    return d.isNegative
+        ? Rational._(-n, -d)._norm()
+        : Rational._(n, d)._norm();
+  }
+
   Rational operator +(Rational o) => Rational._(n * o.d + o.n * d, d * o.d)._norm();
   Rational operator -(Rational o) => Rational._(n * o.d - o.n * d, d * o.d)._norm();
   Rational operator *(Rational o) => Rational._(n * o.n, d * o.d)._norm();
@@ -57,6 +65,8 @@ class Rational {
 
   bool get isNegative => n.isNegative;
   bool get isZero => n == BigInt.zero;
+
+  Rational abs() => isNegative ? -this : this;
 
   /// 转为 double 仅用于展示（进度、图表、图表坐标）。
   double asDouble() => n.toDouble() / d.toDouble();

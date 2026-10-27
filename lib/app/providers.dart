@@ -19,6 +19,7 @@ import '../services/export_service.dart';
 import '../services/import_service.dart';
 import '../services/insight_service.dart';
 import '../services/ledger_service.dart';
+import '../services/portfolio_analytics_service.dart';
 import '../services/portfolio_service.dart';
 import '../services/projection_service.dart';
 import '../services/stats_service.dart';
@@ -53,6 +54,7 @@ class VaultUnlocked extends VaultState {
     required this.insightService,
     required this.exportService,
     required this.portfolioService,
+    required this.portfolioAnalytics,
     required this.yearReportService,
     required this.quoteFetch,
   });
@@ -70,6 +72,7 @@ class VaultUnlocked extends VaultState {
   final InsightService insightService;
   final ExportService exportService;
   final PortfolioService portfolioService;
+  final PortfolioAnalyticsService portfolioAnalytics;
   final YearReportService yearReportService;
   final QuoteFetchService quoteFetch;
 
@@ -190,6 +193,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final planning = PlanningRepo(db);
     final meta = MetaRepo(db);
     final stats = StatsService(accounts, ledger, meta);
+    final portfolio = PortfolioService(accounts, ledger, meta, stats);
     state = VaultUnlocked(
       db: db,
       keyManager: km,
@@ -203,7 +207,9 @@ class VaultNotifier extends Notifier<VaultState> {
       importService: ImportService(accounts, ledger, meta),
       insightService: InsightService(accounts, ledger, planning, meta),
       exportService: ExportService(accounts, ledger),
-      portfolioService: PortfolioService(accounts, ledger, meta, stats),
+      portfolioService: portfolio,
+      portfolioAnalytics:
+          PortfolioAnalyticsService(ledger, meta, stats, portfolio),
       yearReportService: YearReportService(accounts, ledger, stats),
       quoteFetch:
           QuoteFetchService(accounts, ledger, meta, const AiChat()),

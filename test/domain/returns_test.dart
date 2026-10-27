@@ -68,4 +68,43 @@ void main() {
     ]);
     expect(r!, closeTo(0.2, 1e-4));
   });
+
+  test('子期间收益序列：现金流计于期末、日期携带', () {
+    final subs = TwrCalculator.subPeriodReturns(
+      valuations: [
+        TwrValuation(DateTime(2026, 1, 1), BigInt.from(1000000)),
+        TwrValuation(DateTime(2026, 3, 31), BigInt.from(900000)),
+        TwrValuation(DateTime(2026, 6, 30), BigInt.from(1250000)),
+      ],
+      flows: [TwrFlow(DateTime(2026, 4, 1), BigInt.from(200000))],
+    )!;
+    expect(subs, hasLength(2));
+    expect(subs[0].start, DateTime(2026, 1, 1));
+    expect(subs[0].end, DateTime(2026, 3, 31));
+    expect(subs[0].r, closeTo(-0.10, 1e-9));
+    expect(subs[1].start, DateTime(2026, 3, 31));
+    expect(subs[1].end, DateTime(2026, 6, 30));
+    expect(subs[1].r, closeTo(1050000 / 900000 - 1, 1e-9));
+    // 复利应与整体 TWR 一致。
+    final total = subs.fold(1.0, (a, p) => a * (1 + p.r)) - 1;
+    expect(total, closeTo(0.9 * (1050000 / 900000) - 1, 1e-9));
+  });
+
+  test('子期间收益：点数不足或期初估值为 0 → null', () {
+    expect(
+        TwrCalculator.subPeriodReturns(
+            valuations: [
+              TwrValuation(DateTime(2026, 1, 1), BigInt.from(100)),
+            ],
+            flows: const []),
+        isNull);
+    expect(
+        TwrCalculator.subPeriodReturns(
+            valuations: [
+              TwrValuation(DateTime(2026, 1, 1), BigInt.zero),
+              TwrValuation(DateTime(2026, 2, 1), BigInt.from(100)),
+            ],
+            flows: const []),
+        isNull);
+  });
 }

@@ -76,3 +76,11 @@ int monthsBetween(DateTime from, DateTime to) {
   if (to.day < from.day) m -= 1;
   return m;
 }
+
+/// 两个日期间的**日历日**差（[to] − [from]，非负场景为主）。
+/// 用 UTC 日界计算，避免带夏令时时区里即时差少 1 小时 → inDays 少 1 天。
+int calendarDaysBetween(DateTime from, DateTime to) {
+  final f = DateTime.utc(from.year, from.month, from.day);
+  final t = DateTime.utc(to.year, to.month, to.day);
+  return t.difference(f).inDays;
+}

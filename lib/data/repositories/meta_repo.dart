@@ -195,6 +195,14 @@ class MetaRepo {
     return v is int ? v : (v is num ? v.toInt() : null);
   }
 
+  Future<double?> settingDouble(String key) async {
+    final r = await (_db.select(_db.settings)..where((s) => s.key.equals(key)))
+        .getSingleOrNull();
+    if (r == null) return null;
+    final v = jsonDecode(r.valueJson);
+    return v is num ? v.toDouble() : null;
+  }
+
   Future<void> setSetting(String key, Object value) =>
       _db.into(_db.settings).insertOnConflictUpdate(SettingsCompanion.insert(
               key: key, valueJson: jsonEncode(value)));
