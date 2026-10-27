@@ -34,7 +34,8 @@ dependencies:
   flutter_secure_storage: ^11.2.0
 
   # 密码学（sodium 为运行时实现；cryptography 为纯 Dart 后备/测试实现）
-  sodium: ^4.0.4
+  # 精确锁定：4.1 起 pwhash.call 弃用（callStr/callRaw），升级时需同步改 sodium_crypto_suite
+  sodium: 4.0.4
   cryptography: ^2.9.0
 
   # 展示与工具
