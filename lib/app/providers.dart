@@ -13,6 +13,8 @@ import '../data/repositories/planning_repo.dart';
 import '../security/crypto_suite.dart';
 import '../security/dart_crypto_suite.dart';
 import '../security/key_manager.dart';
+import '../services/ai/ai_chat.dart';
+import '../services/ai/quote_fetch_service.dart';
 import '../services/export_service.dart';
 import '../services/import_service.dart';
 import '../services/insight_service.dart';
@@ -52,6 +54,7 @@ class VaultUnlocked extends VaultState {
     required this.exportService,
     required this.portfolioService,
     required this.yearReportService,
+    required this.quoteFetch,
   });
 
   final AppDatabase db;
@@ -68,6 +71,7 @@ class VaultUnlocked extends VaultState {
   final ExportService exportService;
   final PortfolioService portfolioService;
   final YearReportService yearReportService;
+  final QuoteFetchService quoteFetch;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -201,6 +205,8 @@ class VaultNotifier extends Notifier<VaultState> {
       exportService: ExportService(accounts, ledger),
       portfolioService: PortfolioService(accounts, ledger, meta, stats),
       yearReportService: YearReportService(accounts, ledger, stats),
+      quoteFetch:
+          QuoteFetchService(accounts, ledger, meta, const AiChat()),
     );
     await _loadTunables();
     _armAutoLock();

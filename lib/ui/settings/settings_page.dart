@@ -11,8 +11,10 @@ import '../../security/dart_crypto_suite.dart';
 import '../../services/backup_service.dart';
 import '../transactions/import_wizard.dart';
 import '../widgets/common.dart';
+import 'ai_config_sheet.dart';
 import 'category_manager_sheet.dart';
 import 'fx_manager_sheet.dart';
+import 'quote_fetch_sheet.dart';
 
 /// 设置：安全、备份与恢复、偏好（本位币/锁定/预测/底线）、数据管理。
 class SettingsPage extends ConsumerWidget {
@@ -88,10 +90,23 @@ class SettingsPage extends ConsumerWidget {
             subtitle: const Text('管理收支分类、商户→分类关键词规则'),
             onTap: () => showCategoryManagerSheet(context, ref, s),
           ),
+          const _SectionHeader('AI 与行情'),
+          ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: const Text('AI 服务配置'),
+            subtitle: const Text('智谱/Kimi/千问/OpenAI/Claude/自定义；Key 加密存本地'),
+            onTap: () => showAiConfigSheet(context, s),
+          ),
+          ListTile(
+            leading: const Icon(Icons.travel_explore),
+            title: const Text('行情 / 汇率抓取'),
+            subtitle: const Text('AI 联网搜索最新价格与汇率，预览确认后入账'),
+            onTap: () => showQuoteFetchSheet(context, ref),
+          ),
           const AboutListTile(
             icon: Icon(Icons.info_outline),
             applicationName: '资观 AssetScope',
-            applicationVersion: '0.2.0',
+            applicationVersion: '0.4.0',
             aboutBoxChildren: [
               Padding(
                 padding: EdgeInsets.all(12),

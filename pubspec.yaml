@@ -2,7 +2,7 @@ name: assetscope
 description: "资观 AssetScope —— 本地优先、端到端加密的个人资产、负债与财务规划系统。"
 publish_to: 'none'
 
-version: 0.3.0+3
+version: 0.4.0+4
 
 environment:
   sdk: ^3.12.2

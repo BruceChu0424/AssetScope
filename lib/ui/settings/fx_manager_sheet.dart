@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../widgets/common.dart';
+import 'quote_fetch_sheet.dart';
 
 /// 汇率管理：查看各币种对最新汇率 + 手工新增/更新。
 Future<void> showFxManagerSheet(
@@ -37,6 +38,12 @@ Future<void> showFxManagerSheet(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('新增汇率'),
                 onPressed: () => _editRate(bctx, s),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.travel_explore, size: 18),
+                label: const Text('AI 抓取'),
+                onPressed: () => showQuoteFetchSheet(bctx, ref),
               ),
               const SizedBox(height: 8),
               if (rates.isEmpty && snap.hasData)

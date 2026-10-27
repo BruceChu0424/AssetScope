@@ -3,6 +3,29 @@
 本项目的显著变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.4.0] - 2026-10-27
+
+### 新增 · AI 行情/汇率抓取
+- **AI 服务配置**（设置 → AI 与行情）：预设智谱 GLM（glm-4-flash 免费）、
+  月之暗面 Kimi、通义千问、DeepSeek、OpenAI、Anthropic Claude 与自定义
+  OpenAI 兼容端点；API Key 加密存储于本地账本库；支持一键测试连接。
+- **行情/汇率抓取**：手动触发 → AI 联网搜索最新持仓价格与外币汇率 →
+  逐条预览（价格、数据日期、来源网址、币种一致性核对）→ 用户确认后写入；
+  source 标记 `ai:预设/模型`、note 保留来源网址，与手工录入可区分可审计。
+- 各厂商联网搜索差异在客户端内封装：GLM web_search 工具 / Kimi builtin
+  $web_search / 千问 enable_search / OpenAI web_search / Claude 服务端工具；
+  DeepSeek 明确标注"API 无联网"并给出警示。
+- **出网守卫**（`services/net/guarded_http.dart`）：仅 http/https，拒绝
+  localhost/环回/私有/链路本地/保留/组播地址（IPv4+IPv6，含 mapped），
+  自定义端点每次请求强制校验；隐私边界：只发送查询名与币种对，
+  绝不发送余额、金额、流水。
+- 解析层防御：JSON 围栏/裸文提取、逐条正数校验、无效条目跳过并披露，
+  查不到数据不写库（宁可没有不编造）。
+
+### 内部
+- 测试 91 → 115（出网守卫 7、AI 请求构造/响应提取 12、行情解析 5），
+  analyze 零 issue。
+
 ## [0.3.0] - 2026-10-27
 
 ### 新增 · 原生账单导入
