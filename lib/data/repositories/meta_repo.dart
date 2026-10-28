@@ -173,8 +173,7 @@ class MetaRepo {
 
   // ---------- 设置 ----------
 
-  Future<Map<String, Object?>> allSettings() async {
-    final rows = await _db.select(_db.settings).get();
+  Future<Map<String, Object?>> allSettings() async {    final rows = await _db.select(_db.settings).get();
     return {
       for (final r in rows) r.key: jsonDecode(r.valueJson),
     };
@@ -206,4 +205,46 @@ class MetaRepo {
   Future<void> setSetting(String key, Object value) =>
       _db.into(_db.settings).insertOnConflictUpdate(SettingsCompanion.insert(
               key: key, valueJson: jsonEncode(value)));
+
+  // ---------- 数据指纹（统计缓存失效判断） ----------
+
+  /// 关键表内容摘要：任一影响统计口径的数据变化（过账/作废/删除、
+  /// 估值、汇率、账户口径、设置）都会改变指纹。
+  /// 大表用 COUNT+MAX 聚合（O(1) 结果行）；accounts/settings 行数少，
+  /// 全量拼接关键列。查询代价 ~6 条小 SQL，适合高频比对。
+  Future<String> dataFingerprint() async {
+    final parts = <String>[];
+
+    Future<void> agg(String tag, String sql) async {
+      final r = await _db.customSelect(sql).getSingle();
+      parts.add('$tag:${r.data.values.join('|')}');
+    }
+
+    // transactions：行数 + 最近更新 + 作废数（作废只改 status，
+    // 同毫秒内 updated_at 可能不变，需显式计入）。
+    await agg('tx',
+        "SELECT COUNT(*) AS c, IFNULL(MAX(updated_at),'') AS m, "
+        "IFNULL(SUM(CASE WHEN status='voided' THEN 1 ELSE 0 END),0) AS v FROM transactions");
+    await agg('po', 'SELECT COUNT(*) AS c, IFNULL(MAX(id),0) AS m FROM postings');
+    await agg('va', 'SELECT COUNT(*) AS c, IFNULL(MAX(id),0) AS m FROM valuations');
+    await agg('fx', 'SELECT COUNT(*) AS c, IFNULL(MAX(id),0) AS m FROM fx_rates');
+
+    // accounts：行数少但更新不改行号（如 archive），全量拼接统计相关列。
+    final accRows = await _db.customSelect(
+      'SELECT id, type, asset_subtype, liability_subtype, currency_code, '
+      'include_in_net_worth, archived, cost_basis_account_id, security_id, is_system '
+      'FROM accounts ORDER BY id',
+    ).get();
+    final accountsPart = accRows
+        .map((r) => r.data.values.map((v) => v ?? '').join('~'))
+        .join(';');
+    parts.add('ac:$accountsPart');
+
+    final setRows = await (_db.select(_db.settings)
+          ..orderBy([(s) => OrderingTerm.asc(s.key)]))
+        .get();
+    parts.add('st:${setRows.map((r) => '${r.key}=${r.valueJson}').join(';')}');
+
+    return parts.join('/');
+  }
 }

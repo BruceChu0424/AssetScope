@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 /// BigInt 以 TEXT 存储（避免 64 位溢出；加密资产 8 位小数场景安全）。
+/// 统计聚合的 SQL 快路径用 CAST(AS INTEGER) 求和，仅当全部金额
+/// ≤ 18 位数字时启用（见 LedgerRepo.moneyBalancesAt），否则回退 Dart 折叠。
 class BigIntText extends TypeConverter<BigInt, String> {
   const BigIntText();
 
@@ -85,6 +87,7 @@ class Securities extends Table {
 }
 
 @DataClassName('TransactionRow')
+@TableIndex(name: 'idx_transactions_date', columns: {#date})
 class Transactions extends Table {
   TextColumn get id => text()();
   DateTimeColumn get date => dateTime()();
@@ -110,6 +113,8 @@ class Transactions extends Table {
 }
 
 @DataClassName('PostingRow')
+@TableIndex(name: 'idx_postings_tx', columns: {#txId})
+@TableIndex(name: 'idx_postings_account', columns: {#accountId})
 class Postings extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get txId => text()();

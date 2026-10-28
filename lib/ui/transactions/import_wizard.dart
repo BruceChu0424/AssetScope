@@ -57,10 +57,11 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     if (s == null) return;
     try {
       final bytes = await File(picked.path).readAsBytes();
-      final text = s.importService.decode(bytes);
       _fileName = picked.name;
       _lastPath = picked.path;
-      _auto = s.importService.parseAuto(text, genericParserId: picked.name);
+      // 解码（GBK/UTF-8）+ 解析在独立 isolate 执行，大账单不卡 UI。
+      _auto = await s.importService.decodeAndParseAutoIsolated(bytes,
+          genericParserId: picked.name);
       setState(() => _parseError = '');
     } on FormatException catch (e) {
       setState(() => _parseError = e.message);

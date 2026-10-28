@@ -3,6 +3,30 @@
 本项目的显著变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.8.0] - 2026-10-27
+
+### 新增 · 万级流水性能
+- **统计记忆化（快照缓存）**：`StatsService` 的净资产/月报/序列按**数据指纹**
+  缓存——指纹覆盖过账/作废/删除、估值、汇率、账户口径、设置，任一变化整体
+  失效（比对代价仅数条聚合小查询）。首页洞察一次刷新重叠请求的 ~9 个月报 +
+  12 个净资产点在同一数据版本内直接命中。10k 交易冒烟：**冷算 ~2.3s →
+  暖调用 ~40ms**。
+- **SQL 聚合下推**：余额与月度分录合计在 SQLite 端 GROUP BY 求和，不再把
+  全部分录行拉进内存。金额 TEXT 列仅当全部可安全转 int64 时走 CAST 快路径，
+  任一分录超 19 位即整体回退 Dart 精确折叠（用 unsafe 标志列探测，杜绝
+  SUM 忽略 NULL 导致的部分和）。
+- **热路径索引（schema v2 → v3）**：`transactions(date)`、`postings(tx_id)`、
+  `postings(account_id)`；迁移用 `CREATE INDEX IF NOT EXISTS` 幂等升级。
+- **isolate 导入**：账单解码（UTF-8/GBK）+ 自动探测解析重构为顶层纯函数，
+  `Isolate.run` 执行（闭包不捕获仓储/数据库句柄），万行级账单不再阻塞 UI。
+
+### 内部
+- `LedgerRepo.moneyBalancesAt/postingSumsBetween` SQL 快路径 + Dart 兜底
+  双实现；`MetaRepo.dataFingerprint()` 数据指纹；`ImportService` 实例方法
+  委托顶层纯函数（`decodeBillBytes`/`parseBillAuto`/`parseGenericCsvPure`）。
+- 测试 182 → 191（指纹 2、记忆化 1、SQL 聚合与大额兜底 2、索引 1、
+  isolate 解析 2、10k 性能冒烟 1），analyze 零 issue。
+
 ## [0.7.0] - 2026-10-27
 
 ### 新增 · 情景模拟与 FIRE 规划

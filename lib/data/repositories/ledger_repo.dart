@@ -180,8 +180,56 @@ class LedgerRepo {
 
   /// 账户在 [date]（含当日）的货币余额（带符号：借方为正）。
   /// 只统计 posted 交易。
+  ///
+  /// 快路径：SQLite 端 GROUP BY 求和（金额存 TEXT，仅当全部可安全
+  /// 转 int64 时 CAST；任一账户含超大金额即整体回退 Dart 精确折叠）。
   Future<Map<String, BigInt>> moneyBalancesAt(DateTime date,
       {Set<String>? accountIds}) async {
+    try {
+      return await _moneyBalancesSql(date, accountIds);
+    } catch (_) {
+      return _moneyBalancesDart(date, accountIds);
+    }
+  }
+
+  Future<Map<String, BigInt>> _moneyBalancesSql(
+      DateTime date, Set<String>? accountIds) async {
+    // 安全条件：纯数字（可带负号）且 ≤ 19 位（|n| < 2^63）。
+    // 任一分录不满足 → unsafe > 0 → 整体回退 Dart 精确折叠
+    //（SUM 忽略 NULL，不能靠 NULL 探测部分和）。
+    const safe = "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
+        'AND LENGTH(amount_minor) <= 19';
+    final accountFilter = accountIds == null
+        ? ''
+        : ' AND p.account_id IN (${List.filled(accountIds.length, '?').join(',')})';
+    final vars = <Variable>[
+      Variable.withDateTime(date),
+      ...?accountIds?.map((a) => Variable(a)),
+    ];
+    final rows = await _db.customSelect(
+      'SELECT p.account_id AS accountId, '
+      'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
+      'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
+      'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
+      "WHERE t.date <= ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL"
+      '$accountFilter '
+      'GROUP BY p.account_id',
+      variables: vars,
+      readsFrom: {_db.transactions, _db.postings},
+    ).get();
+    final sums = <String, BigInt>{};
+    for (final r in rows) {
+      if ((r.data['unsafe'] as num? ?? 0) > 0) {
+        throw StateError('金额超出 int64，回退精确折叠');
+      }
+      sums[r.read<String>('accountId')] =
+          BigInt.from((r.data['total'] as num?) ?? 0);
+    }
+    return sums;
+  }
+
+  Future<Map<String, BigInt>> _moneyBalancesDart(
+      DateTime date, Set<String>? accountIds) async {
     final query = _db.select(_db.postings).join([
       innerJoin(_db.transactions, _db.transactions.id.equalsExp(_db.postings.txId))
     ]);
@@ -222,8 +270,41 @@ class LedgerRepo {
   }
 
   /// 某月触达账户/分类的货币分录合计（用于统计）。
-  /// 返回 accountId → signed sum。
+  /// 返回 accountId → signed sum。SQL 快路径同 [moneyBalancesAt]。
   Future<Map<String, BigInt>> postingSumsBetween(
+      DateTime from, DateTime to) async {
+    try {
+      return await _postingSumsSql(from, to);
+    } catch (_) {
+      return _postingSumsDart(from, to);
+    }
+  }
+
+  Future<Map<String, BigInt>> _postingSumsSql(DateTime from, DateTime to) async {
+    const safe = "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
+        'AND LENGTH(amount_minor) <= 19';
+    final rows = await _db.customSelect(
+      'SELECT p.account_id AS accountId, '
+      'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
+      'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
+      'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
+      "WHERE t.date BETWEEN ? AND ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL "
+      'GROUP BY p.account_id',
+      variables: [Variable.withDateTime(from), Variable.withDateTime(to)],
+      readsFrom: {_db.transactions, _db.postings},
+    ).get();
+    final sums = <String, BigInt>{};
+    for (final r in rows) {
+      if ((r.data['unsafe'] as num? ?? 0) > 0) {
+        throw StateError('金额超出 int64，回退精确折叠');
+      }
+      sums[r.read<String>('accountId')] =
+          BigInt.from((r.data['total'] as num?) ?? 0);
+    }
+    return sums;
+  }
+
+  Future<Map<String, BigInt>> _postingSumsDart(
       DateTime from, DateTime to) async {
     final query = _db.select(_db.postings).join([
       innerJoin(_db.transactions, _db.transactions.id.equalsExp(_db.postings.txId))

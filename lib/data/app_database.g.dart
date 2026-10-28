@@ -8215,6 +8215,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SnapshotsTable snapshots = $SnapshotsTable(this);
   late final $ImportBatchesTable importBatches = $ImportBatchesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
+  late final Index idxTransactionsDate = Index(
+    'idx_transactions_date',
+    'CREATE INDEX idx_transactions_date ON transactions (date)',
+  );
+  late final Index idxPostingsTx = Index(
+    'idx_postings_tx',
+    'CREATE INDEX idx_postings_tx ON postings (tx_id)',
+  );
+  late final Index idxPostingsAccount = Index(
+    'idx_postings_account',
+    'CREATE INDEX idx_postings_account ON postings (account_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8233,6 +8245,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     snapshots,
     importBatches,
     settings,
+    idxTransactionsDate,
+    idxPostingsTx,
+    idxPostingsAccount,
   ];
 }
 

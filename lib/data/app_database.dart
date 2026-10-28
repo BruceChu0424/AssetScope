@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -54,6 +54,15 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(accounts, accounts.locationLat);
             await m.addColumn(accounts, accounts.locationLon);
             await m.addColumn(accounts, accounts.locationName);
+          }
+          if (from < 3) {
+            // v3：统计聚合热路径索引（万级流水）。
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions (date)');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_postings_tx ON postings (tx_id)');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_postings_account ON postings (account_id)');
           }
         },
       );

@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../data/repositories/accounts_repo.dart';
 import '../data/repositories/ledger_repo.dart';
 import '../data/repositories/meta_repo.dart';
@@ -59,6 +61,12 @@ class NetWorthBreakdown {
 }
 
 /// 月度统计与净资产归因服务。
+///
+/// 记忆化（v0.8）：净资产/月报/序列按数据指纹缓存，指纹来自
+/// [MetaRepo.dataFingerprint]（过账、估值、汇率、账户、设置任一变化
+/// 都会改变指纹并整体失效）。同一数据版本内多次调用（如首页洞察
+/// 一次刷新会重叠请求 ~9 个月报 + 12 个净资产点）直接命中缓存。
+/// **返回对象为缓存共享实例，调用方不得修改**。
 class StatsService {
   StatsService(this._accounts, this._ledger, this._meta);
 
@@ -66,11 +74,59 @@ class StatsService {
   final LedgerRepo _ledger;
   final MetaRepo _meta;
 
-  Future<String> baseCurrency() async =>
-      await _meta.settingString('baseCurrency') ?? 'CNY';
+  String? _fp;
+  String? _baseCache;
+  final _nwAtCache = <String, NetWorthBreakdown>{};
+  final _monthCache = <String, MonthReport>{};
+  final _seriesCache = <String, List<(String, BigInt)>>{};
 
-  /// 某日的净资产构成（含估值新鲜度）。
+  /// 指纹过期则整体清空（一次比对 = 数条聚合小查询）。
+  Future<void> _invalidateIfStale() async {
+    final fp = await _meta.dataFingerprint();
+    if (fp != _fp) {
+      _fp = fp;
+      _baseCache = null;
+      _nwAtCache.clear();
+      _monthCache.clear();
+      _seriesCache.clear();
+    }
+  }
+
+  /// 强制清空记忆化（测试与调试）。
+  @visibleForTesting
+  void clearCaches() {
+    _fp = null;
+    _baseCache = null;
+    _nwAtCache.clear();
+    _monthCache.clear();
+    _seriesCache.clear();
+  }
+
+  /// 当前缓存命中情况（测试断言用）。
+  @visibleForTesting
+  int get cachedNetWorthCount => _nwAtCache.length;
+
+  @visibleForTesting
+  int get cachedMonthReportCount => _monthCache.length;
+
+  Future<String> baseCurrency() async {
+    await _invalidateIfStale();
+    return _baseCache ??=
+        await _meta.settingString('baseCurrency') ?? 'CNY';
+  }
+
+  /// 某日的净资产构成（含估值新鲜度）。同日命中缓存。
   Future<NetWorthBreakdown> netWorthAt(DateTime date) async {
+    await _invalidateIfStale();
+    final key = dateKey(date);
+    final hit = _nwAtCache[key];
+    if (hit != null) return hit;
+    final r = await _netWorthAtUncached(date);
+    _nwAtCache[key] = r;
+    return r;
+  }
+
+  Future<NetWorthBreakdown> _netWorthAtUncached(DateTime date) async {
     final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
     final base = await baseCurrency();
     final accounts = await _accounts.all();
@@ -137,9 +193,14 @@ class StatsService {
   }
 
   /// 最近 [months] 个月的月末净资产序列（含本月至今）。
+  /// 按 (months, 当日) 记忆化；内部逐点走 netWorthAt 缓存。
   Future<List<(String, BigInt)>> netWorthSeries(int months,
       {DateTime? now}) async {
     final n = now ?? DateTime.now();
+    await _invalidateIfStale();
+    final key = '$months:${dateKey(n)}';
+    final hit = _seriesCache[key];
+    if (hit != null) return hit;
     final out = <(String, BigInt)>[];
     for (var k = months - 1; k >= 0; k--) {
       var d = DateTime(n.year, n.month - k + 1, 0); // 上月末
@@ -147,11 +208,22 @@ class StatsService {
       final nw = await netWorthAt(d);
       out.add((monthKey(DateTime(n.year, n.month - k)), nw.netWorth));
     }
+    _seriesCache[key] = out;
     return out;
   }
 
-  /// 月报：归因 + 收支分类 + 债务还款 + 待核对。
+  /// 月报：归因 + 收支分类 + 债务还款 + 待核对。同月命中缓存。
   Future<MonthReport> monthReport(int year, int month) async {
+    await _invalidateIfStale();
+    final key = '$year-$month';
+    final hit = _monthCache[key];
+    if (hit != null) return hit;
+    final r = await _monthReportUncached(year, month);
+    _monthCache[key] = r;
+    return r;
+  }
+
+  Future<MonthReport> _monthReportUncached(int year, int month) async {
     final base = await baseCurrency();
     final monthStart = DateTime(year, month, 1);
     final monthEnd = DateTime(year, month + 1, 0, 23, 59, 59);
