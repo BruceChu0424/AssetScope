@@ -87,6 +87,10 @@ class AccountDetailSheet extends ConsumerWidget {
                     onPressed: () => showTradeDialog(context, ref, s,
                         account: account, action: TradeAction.sell),
                   ),
+                  ActionChip(
+                    label: const Text('行情代码'),
+                    onPressed: () => _editQuoteCode(context, ref, s),
+                  ),
                 ],
                 ActionChip(
                   label: const Text('分红/利息'),
@@ -200,6 +204,56 @@ class AccountDetailSheet extends ConsumerWidget {
         ref.invalidate(accountsViewProvider);
       },
     );
+  }
+
+  /// 修改行情代码：只更新 securities.code 元数据（直连行情源用），
+  /// 不动 securityId 与历史分录——账本结构零影响。
+  Future<void> _editQuoteCode(
+      BuildContext context, WidgetRef ref, VaultUnlocked s) async {
+    if (account.securityId == null) return;
+    final codes = await s.accounts.securityCodes();
+    if (!context.mounted) return;
+    final ctrl = TextEditingController(text: codes[account.securityId] ?? '');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: const Text('行情代码（直连行情源用）'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: ctrl,
+              decoration: const InputDecoration(
+                  hintText: 'A股 600519 / 港股 00700 / 美股 AAPL'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'A股 6 位数字自动判交易所；港股填数字；美股填字母代码。'
+              '修改只影响行情查询，不影响任何账目。',
+              style: Theme.of(dctx)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(dctx).hintColor, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dctx, false),
+              child: const Text('取消')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dctx, true),
+              child: const Text('保存')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final code = ctrl.text.trim();
+    if (code.isEmpty) return;
+    await s.accounts.updateSecurityCode(account.securityId!, code);
+    ref.invalidate(accountsViewProvider);
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
   }
 
   Future<void> _simpleAmountDialog(

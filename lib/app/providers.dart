@@ -22,6 +22,7 @@ import '../services/ledger_service.dart';
 import '../services/portfolio_analytics_service.dart';
 import '../services/portfolio_service.dart';
 import '../services/projection_service.dart';
+import '../services/quotes/direct_quote_service.dart';
 import '../services/stats_service.dart';
 import '../services/year_report_service.dart';
 
@@ -57,6 +58,7 @@ class VaultUnlocked extends VaultState {
     required this.portfolioAnalytics,
     required this.yearReportService,
     required this.quoteFetch,
+    required this.directQuotes,
   });
 
   final AppDatabase db;
@@ -75,6 +77,7 @@ class VaultUnlocked extends VaultState {
   final PortfolioAnalyticsService portfolioAnalytics;
   final YearReportService yearReportService;
   final QuoteFetchService quoteFetch;
+  final DirectQuoteService directQuotes;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -194,6 +197,8 @@ class VaultNotifier extends Notifier<VaultState> {
     final meta = MetaRepo(db);
     final stats = StatsService(accounts, ledger, meta);
     final portfolio = PortfolioService(accounts, ledger, meta, stats);
+    final quoteFetch =
+        QuoteFetchService(accounts, ledger, meta, const AiChat());
     state = VaultUnlocked(
       db: db,
       keyManager: km,
@@ -211,8 +216,8 @@ class VaultNotifier extends Notifier<VaultState> {
       portfolioAnalytics:
           PortfolioAnalyticsService(ledger, meta, stats, portfolio),
       yearReportService: YearReportService(accounts, ledger, stats),
-      quoteFetch:
-          QuoteFetchService(accounts, ledger, meta, const AiChat()),
+      quoteFetch: quoteFetch,
+      directQuotes: DirectQuoteService(accounts, quoteFetch),
     );
     await _loadTunables();
     _armAutoLock();

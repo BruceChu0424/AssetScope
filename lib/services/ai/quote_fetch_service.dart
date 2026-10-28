@@ -124,13 +124,16 @@ class QuoteFetchService {
   }
 
   /// 用户确认后写入：价格 → 估值记录（unitPrice）；汇率 → ccy→本位币。
-  /// 返回写入条数。
+  /// 返回写入条数。[sourcePrefix] 为写入的 source 标记前缀
+  /// （默认 `ai:<preset>/<model>`；直连行情源传 `direct`）。
   Future<int> apply({
     required Iterable<FetchedPrice> prices,
     required Iterable<FetchedRate> rates,
+    String? sourcePrefix,
   }) async {
     final cfg = await config();
-    final source = 'ai:${cfg?.presetId ?? "custom"}/${cfg?.model ?? "?"}';
+    final source = sourcePrefix ??
+        'ai:${cfg?.presetId ?? "custom"}/${cfg?.model ?? "?"}';
     final base = await _meta.settingString('baseCurrency') ?? 'CNY';
     final today = DateTime.now();
     var count = 0;

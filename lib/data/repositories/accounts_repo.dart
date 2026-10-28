@@ -92,6 +92,18 @@ class AccountsRepo {
       (_db.update(_db.accounts)..where((a) => a.id.equals(id)))
           .write(AccountsCompanion(archived: Value(archived)));
 
+  /// 全部证券的 行情代码（securityId → code，直连行情源用）。
+  Future<Map<String, String>> securityCodes() async {
+    final rows = await _db.select(_db.securities).get();
+    return {for (final r in rows) r.id: r.code};
+  }
+
+  /// 修改行情代码（只改 securities.code 元数据；
+  /// 不动 securityId/分录，历史数量账不受影响）。
+  Future<void> updateSecurityCode(String securityId, String code) =>
+      (_db.update(_db.securities)..where((s) => s.id.equals(securityId)))
+          .write(SecuritiesCompanion(code: Value(code)));
+
   /// 创建持仓账户：自动建立证券、持仓账户与成本镜像账户（同一事务）。
   Future<Account> createHolding({
     required String name,
@@ -119,6 +131,7 @@ class AccountsRepo {
               assetSubtype: Value(subtype.name),
               institution: Value(institution),
               currencyCode: currencyCode,
+              securityId: Value(securityId),
               isSystem: const Value(false)));
       await _db.into(_db.accounts).insertOnConflictUpdate(
           AccountsCompanion.insert(

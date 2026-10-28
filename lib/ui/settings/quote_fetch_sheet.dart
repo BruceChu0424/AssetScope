@@ -40,6 +40,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   List<String> _holdingNames = const [];
   List<String> _fxPairs = const [];
   String _base = 'CNY';
+  bool _directMode = true; // 当前预览结果的来源模式
   QuoteFetchResult? _result;
   final Set<int> _selectedPrices = {};
   final Set<int> _selectedRates = {};
@@ -71,12 +72,16 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
     }
   }
 
-  Future<void> _fetch() async {
+  Future<void> _fetch({required bool direct}) async {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
-    setState(() => _phase = _Phase.fetching);
+    setState(() {
+      _phase = _Phase.fetching;
+      _directMode = direct;
+    });
     try {
-      final result = await s.quoteFetch.fetch();
+      final result =
+          direct ? await s.directQuotes.fetch() : await s.quoteFetch.fetch();
       _selectedPrices
         ..clear()
         ..addAll({
@@ -114,6 +119,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         rates: [
           for (final i in _selectedRates) _result!.rates[i],
         ],
+        sourcePrefix: _directMode ? 'direct' : null,
       );
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -138,15 +144,15 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text('AI 行情 / 汇率抓取',
+            child: Text('行情 / 汇率抓取',
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w600)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Text(
-              'AI 联网搜索最新数据，预览确认后才写入；来源标记 ai:<模型> 可审计。'
-              'AI 行情是二手数据，重大决策请到官方渠道核对。',
+              '直连官方行情源（免费无 key、秒回）；查不到的再试 AI 联网搜索。'
+              '预览确认后才写入，来源可审计。无论哪种方式，都只发送证券代码与币种对。',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.hintColor, height: 1.5),
             ),
@@ -162,37 +168,15 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
     if (_phase == _Phase.loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_cfg == null || _cfg!.apiKey.isEmpty) {
+    if (_phase == _Phase.ready) return _readyView(theme);
+    if (_phase == _Phase.fetching) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.key_off_outlined, size: 36),
-            const SizedBox(height: 10),
-            const Text('尚未配置 AI 服务'),
+            const CircularProgressIndicator(),
             const SizedBox(height: 12),
-            FilledButton.tonal(
-              onPressed: () async {
-                final s = sessionOf(ref.read(vaultProvider));
-                if (s == null || !mounted) return;
-                await showAiConfigSheet(context, s);
-                await _load();
-              },
-              child: const Text('去配置（支持智谱/Kimi/千问/OpenAI/Claude…）'),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_phase == _Phase.ready) return _readyView(theme);
-    if (_phase == _Phase.fetching) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 12),
-            Text('AI 正在联网搜索行情，约需 10–60 秒…'),
+            Text(_directMode ? '正在向官方行情源查询…' : 'AI 正在联网搜索行情，约需 10–60 秒…'),
           ],
         ),
       );
@@ -201,7 +185,9 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   }
 
   Widget _readyView(ThemeData theme) {
-    final noWeb = !_cfg!.enableWebSearch;
+    final hasTargets = _holdingNames.isNotEmpty || _fxPairs.isNotEmpty;
+    final aiReady = _cfg != null && _cfg!.apiKey.isNotEmpty;
+    final noWeb = aiReady && !_cfg!.enableWebSearch;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       children: [
@@ -215,7 +201,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '当前配置未开启联网搜索，模型可能返回记忆中的过时价格，请谨慎确认。',
+                '当前 AI 配置未开启联网搜索，模型可能返回记忆中的过时价格，请谨慎确认。',
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: AppColors.brass, height: 1.5),
               ),
@@ -225,7 +211,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
             style: theme.textTheme.bodyMedium
                 ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
-        if (_holdingNames.isEmpty && _fxPairs.isEmpty)
+        if (!hasTargets)
           Text('没有在持的证券持仓，也没有需要折算的外币账户。',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.hintColor))
@@ -236,6 +222,13 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           if (_fxPairs.isNotEmpty)
             Text('· 汇率（${_fxPairs.length}）：${_fxPairs.join('、')} → $_base',
                 style: theme.textTheme.bodySmall?.copyWith(height: 1.6)),
+          const SizedBox(height: 4),
+          Text(
+            '直连路由：A股/场内基金 → 腾讯行情；港股/美股 → stooq；汇率 → 欧央行。'
+            '行情代码可在持仓账户详情设置（如 600519 / 00700 / AAPL）。',
+            style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor, fontSize: 11, height: 1.5),
+          ),
         ],
         if (_error != null) ...[
           const SizedBox(height: 8),
@@ -243,10 +236,28 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         ],
         const SizedBox(height: 16),
         FilledButton.icon(
-          onPressed:
-              _holdingNames.isEmpty && _fxPairs.isEmpty ? null : _fetch,
+          onPressed: hasTargets ? () => _fetch(direct: true) : null,
+          icon: const Icon(Icons.bolt),
+          label: const Text('直连官方行情源（推荐 · 免费 · 秒回）'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: hasTargets
+              ? () async {
+                  if (!aiReady) {
+                    final s = sessionOf(ref.read(vaultProvider));
+                    if (s == null || !mounted) return;
+                    await showAiConfigSheet(context, s);
+                    await _load();
+                    return;
+                  }
+                  await _fetch(direct: false);
+                }
+              : null,
           icon: const Icon(Icons.travel_explore),
-          label: const Text('开始抓取'),
+          label: Text(aiReady
+              ? 'AI 联网搜索（查不到时兜底）'
+              : 'AI 联网搜索（需先配置 AI 服务）'),
         ),
       ],
     );

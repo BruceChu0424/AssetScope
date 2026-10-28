@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data' show BytesBuilder;
 
 /// 出网请求守卫与共用 JSON POST 客户端。
 ///
@@ -72,6 +73,27 @@ class GuardedHttp {
     if ((v & 0xffc0) == 0xfe80) return true; // fe80::/10 链路本地
     if ((v & 0xff00) == 0xff00) return true; // ff00::/8 组播
     return false;
+  }
+
+  /// GET 并返回原始响应字节（行情源 GBK/CSV/JSON 多编码，由调用方解码）。
+  /// 非 2xx 抛 [HttpException]。
+  static Future<List<int>> getBytes(
+    String url, {
+    Map<String, String> headers = const {},
+    Duration timeout = const Duration(seconds: 20),
+  }) async {
+    final uri = validate(url);
+    final req = await _client.getUrl(uri)..followRedirects = true;
+    headers.forEach(req.headers.set);
+    final res = await req.close().timeout(timeout);
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in res) {
+      builder.add(chunk);
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw HttpException('HTTP ${res.statusCode}');
+    }
+    return builder.takeBytes();
   }
 
   /// POST JSON 并解码响应。非 2xx 抛 [HttpException]（附状态码与响应摘录，
