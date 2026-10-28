@@ -3,6 +3,29 @@
 本项目的显著变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.9.0] - 2026-10-27
+
+### 新增 · Widget 测试覆盖关键页面
+- 内存 SQLite + 真实全服务栈（伪造已解锁会话注入 riverpod）驱动的
+  widget 测试：仪表盘/流水/计划/报表/账户/预算/负债/地球八页冒烟、
+  **记一笔对话框全流程**（输入金额→保存→断言入账 88.50 元）、
+  **情景模拟弹层端到端**（打开→运行→结果卡断言）、报表年度切换与
+  视口外卡片滚动断言。含动画页的干净卸载与光标闪烁/drift 流关闭
+  Timer 的泵帧消化等测试工艺。
+
+### 修复（widget 测试挖出的三个真实 bug）
+- **交易 ID 碰撞**：`_newId()` 仅用微秒时间戳 + `DateTime.hashCode`
+  （只依赖值）——Windows 时钟粒度可达 ~1ms，快速连续过账（导入大账单）
+  必然生成重复 ID → UNIQUE 约束崩溃。改为微秒 + 进程内单调序号 + 随机数。
+- **地球页早退崩溃**：`_pulse` 控制器用 late final 字段惰性初始化，
+  页面在首次使用前被销毁时，dispose 触发惰性构造 AnimationController，
+  在已失活 element 上查询 TickerMode 断言失败。改为 initState 显式初始化。
+- **情景弹层窄屏溢出**：固定宽 92px 的下拉框在窄视口 RenderFlex 溢出
+  31–47px，改为弹性布局（flex 5:2）。
+
+### 内部
+- 测试 191 → 197（widget 6），analyze 零 issue。
+
 ## [0.8.0] - 2026-10-27
 
 ### 新增 · 万级流水性能

@@ -38,7 +38,7 @@
 ## 核心特性
 
 **正确的账本**
-- 复式记账 + 借贷守恒校验；转账不算消费、信用卡还款不重复记账、贷款本息拆分、浮盈卖出不重复计收益——191 个单元测试锁定这些硬规则。
+- 复式记账 + 借贷守恒校验；转账不算消费、信用卡还款不重复记账、贷款本息拆分、浮盈卖出不重复计收益——197 个单元测试锁定这些硬规则。
 - 金额全链路 `BigInt`（分）+ `Rational` 有理数，禁止 double；halfEven 舍入经有理数整体舍入。
 
 **全资产负债视图**
@@ -104,7 +104,7 @@
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs   # 生成 drift 代码
 flutter analyze                                            # 零 issue（CI 门禁）
-flutter test                                               # 191 个测试
+flutter test                                               # 197 个测试
 flutter run -d windows                                     # 或 android/ios
 ```
 

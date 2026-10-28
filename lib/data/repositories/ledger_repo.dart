@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:drift/drift.dart';
 
 import '../../domain/ledger/ledger_math.dart';
@@ -337,9 +339,17 @@ class LedgerRepo {
     return r != null;
   }
 
+  /// 交易 ID：微秒时间戳 + 进程内单调序号 + 随机数。
+  /// Windows 时钟粒度可达 ~1ms，微秒会重复；DateTime 的 hashCode
+  /// 只依赖值——仅靠时间戳在快速连续过账（如导入）时必然碰撞
+  ///（UNIQUE 冲突）。序号保证同 isolate 内唯一，随机数兜底。
+  int _idSeq = 0;
+  final math.Random _idRnd = math.Random();
+
   String _newId() {
     final now = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-    final rnd = DateTime.now().hashCode.toRadixString(36);
-    return '$now-$rnd'.replaceAll('-', '');
+    final seq = (_idSeq++).toRadixString(36);
+    final rnd = _idRnd.nextInt(1 << 31).toRadixString(36);
+    return '$now$seq$rnd';
   }
 }

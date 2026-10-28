@@ -31,9 +31,11 @@ class _GlobePageState extends ConsumerState<GlobePage>
   Map<String, AccountValuationItem> _values = const {};
   String _baseCurrency = 'CNY';
 
-  late final AnimationController _pulse =
-      AnimationController(vsync: this, duration: const Duration(seconds: 3))
-        ..repeat();
+  // 注意：必须在 initState 显式初始化，不能用 late final 字段惰性初始化——
+  // 若页面在首次访问 _pulse 前就被销毁（数据未加载即退出），dispose 里的
+  // _pulse.dispose() 会触发惰性构造 AnimationController，在已失活的
+  // element 上查询 TickerMode 而崩溃。
+  late final AnimationController _pulse;
 
   GlobeView _view = GlobeView();
   double _velocity = 0; // 经度方向惯性速度（度/帧）
@@ -44,6 +46,8 @@ class _GlobePageState extends ConsumerState<GlobePage>
   @override
   void initState() {
     super.initState();
+    _pulse = AnimationController(vsync: this, duration: const Duration(seconds: 3))
+      ..repeat();
     _loadLand();
     _loadMarkers();
     _startIdle();

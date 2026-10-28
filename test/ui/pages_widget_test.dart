@@ -1,0 +1,296 @@
+import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:assetscope/app/providers.dart';
+import 'package:assetscope/data/app_database.dart';
+import 'package:assetscope/data/repositories/accounts_repo.dart';
+import 'package:assetscope/data/repositories/ledger_repo.dart';
+import 'package:assetscope/data/repositories/meta_repo.dart';
+import 'package:assetscope/data/repositories/planning_repo.dart';
+import 'package:assetscope/domain/ledger/account.dart';
+import 'package:assetscope/domain/ledger/transaction.dart';
+import 'package:assetscope/domain/planning/recurrence.dart';
+import 'package:assetscope/security/dart_crypto_suite.dart';
+import 'package:assetscope/security/key_manager.dart';
+import 'package:assetscope/services/ai/ai_chat.dart';
+import 'package:assetscope/services/ai/quote_fetch_service.dart';
+import 'package:assetscope/services/export_service.dart';
+import 'package:assetscope/services/import_service.dart';
+import 'package:assetscope/services/insight_service.dart';
+import 'package:assetscope/services/ledger_service.dart';
+import 'package:assetscope/services/portfolio_analytics_service.dart';
+import 'package:assetscope/services/portfolio_service.dart';
+import 'package:assetscope/services/projection_service.dart';
+import 'package:assetscope/services/quotes/direct_quote_service.dart';
+import 'package:assetscope/services/scenario_service.dart';
+import 'package:assetscope/services/stats_service.dart';
+import 'package:assetscope/services/year_report_service.dart';
+import 'package:assetscope/ui/accounts/accounts_page.dart';
+import 'package:assetscope/ui/budget/budgets_page.dart';
+import 'package:assetscope/ui/dashboard/dashboard_page.dart';
+import 'package:assetscope/ui/debts/debts_page.dart';
+import 'package:assetscope/ui/globe/globe_page.dart';
+import 'package:assetscope/ui/planning/plans_page.dart';
+import 'package:assetscope/ui/reports/report_page.dart';
+import 'package:assetscope/ui/theme/app_theme.dart';
+import 'package:assetscope/ui/transactions/transactions_page.dart';
+import 'package:assetscope/ui/widgets/section_card.dart';
+
+/// 关键页面 widget 测试：内存库 + 真实全服务栈，页面渲染与核心交互冒烟。
+/// 运行需要宿主可加载 sqlite3；不可用时跳过。
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late AppDatabase db;
+  late VaultUnlocked session;
+  bool dbAvailable = true;
+
+  setUp(() async {
+    try {
+      db = AppDatabase(NativeDatabase.memory());
+      await db.customSelect('SELECT 1').getSingle();
+    } catch (_) {
+      dbAvailable = false;
+      return;
+    }
+    session = await _buildSession(db);
+    await _seed(session);
+  });
+
+  tearDown(() async {
+    if (dbAvailable) await db.close();
+  });
+
+  Widget host(Widget child) => ProviderScope(
+        overrides: [vaultProvider.overrideWith(() => _FixedVault(session))],
+        child: MaterialApp(
+            theme: buildAppTheme(Brightness.light), home: child),
+      );
+
+  testWidgets('仪表盘：净资产 hero 与洞察卡渲染', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const DashboardPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('净资产'), findsOneWidget);
+    expect(find.byType(SectionCard), findsWidgets);
+  });
+
+  testWidgets('流水页：渲染种子交易 + 记一笔对话框全流程', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const TransactionsPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('超市'), findsWidgets);
+
+    // 打开记一笔 → 输入金额 → 保存 → 列表出现新金额。
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    // FAB 标签与对话框标题同名，两个都在树上。
+    expect(find.text('记一笔'), findsWidgets);
+
+    // 金额输入限定在对话框内（页面自身还有搜索框）。
+    final amountField = find
+        .descendant(
+            of: find.byType(AlertDialog), matching: find.byType(TextField))
+        .first;
+    await tester.enterText(amountField, '88.50');
+    // 注意：聚焦的输入框光标闪烁会一直调度帧，此处不能用 pumpAndSettle。
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '保存'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final txs = await session.ledger.list();
+    expect(txs.any((t) => t.kind == TxKind.expense && t.note == null), isTrue);
+    expect(
+        txs.where((t) => t.kind == TxKind.expense).map((t) => t.postings
+            .where((p) => p.amountMinor == BigInt.from(8850))
+            .isNotEmpty),
+        contains(true),
+        reason: '新消费 88.50 元应已入账');
+    // 释放焦点，取消光标闪烁 Timer；再干净卸载页面
+    //（drift watch 流取消会挂零时长 Timer，需要泵帧消化，
+    // 否则测试收尾的"挂起 Timer"断言失败且 db.close() 卡死）。
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('计划页：情景模拟弹层端到端', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const PlansPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('固定开销 / 计划'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('情景模拟 · 现金压力测试'));
+    await tester.pumpAndSettle();
+    expect(find.text('情景模拟 · 现金压力测试'), findsOneWidget);
+
+    await tester.tap(find.text('运行模拟'));
+    await tester.pumpAndSettle();
+    // 结果卡出现：基线/情景最低现金与可承受结论。
+    expect(find.textContaining('最低现金 · 基线'), findsOneWidget);
+    expect(find.text('预测期内未耗尽'), findsOneWidget);
+  });
+
+  testWidgets('报表页：归因卡渲染 + 年度切换', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const ReportPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('净资产变化分解'), findsOneWidget);
+
+    // 顶部切换年度（先于滚动，避免目标滚出懒加载区）。
+    await tester.tap(find.text('年度'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('年度 ·'), findsOneWidget);
+    await tester.tap(find.text('月报'));
+    await tester.pumpAndSettle();
+
+    // 分类卡在视口之外，滚动到位后再断言。
+    await tester.scrollUntilVisible(find.text('消费构成'), 300);
+    expect(find.text('消费构成'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('账户 / 预算 / 负债页冒烟', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    for (final (page, title) in const [
+      (AccountsPage(), '账户'),
+      (BudgetsPage(), '预算'),
+      (DebtsPage(), '负债'),
+    ]) {
+      await tester.pumpWidget(host(page));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsWidgets, reason: '$page 应渲染标题 $title');
+    }
+    // 账户页应列出种子账户。
+    await tester.pumpWidget(host(const AccountsPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('招行'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('地球页渲染（空闲自转动画）', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    // 地球页空闲自转动画持续调度帧，不能用 pumpAndSettle，改定时推进。
+    await tester.pumpWidget(host(const GlobePage()));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('资产地球'), findsWidgets);
+    // 干净卸载动画页（dispose 在树活跃时执行，收尾不再补 dispose）。
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+}
+
+/// 与 providers._openDatabase 同构的会话（内存库 + 未解锁的哑 KeyManager，
+/// 页面流程不触达密钥操作）。
+Future<VaultUnlocked> _buildSession(AppDatabase db) async {
+  final accounts = AccountsRepo(db);
+  final ledger = LedgerRepo(db);
+  final planning = PlanningRepo(db);
+  final meta = MetaRepo(db);
+  final stats = StatsService(accounts, ledger, meta);
+  final portfolio = PortfolioService(accounts, ledger, meta, stats);
+  final projection = ProjectionService(accounts, ledger, planning, meta);
+  final quoteFetch =
+      QuoteFetchService(accounts, ledger, meta, const AiChat());
+  return VaultUnlocked(
+    db: db,
+    keyManager: KeyManager(suite: DartCryptoSuite.instance),
+    accounts: accounts,
+    ledger: ledger,
+    planning: planning,
+    meta: meta,
+    ledgerService: LedgerService(accounts, ledger),
+    statsService: stats,
+    projectionService: projection,
+    importService: ImportService(accounts, ledger, meta),
+    insightService: InsightService(accounts, ledger, planning, meta),
+    exportService: ExportService(accounts, ledger),
+    portfolioService: portfolio,
+    portfolioAnalytics:
+        PortfolioAnalyticsService(ledger, meta, stats, portfolio),
+    yearReportService: YearReportService(accounts, ledger, stats),
+    quoteFetch: quoteFetch,
+    directQuotes: DirectQuoteService(accounts, quoteFetch),
+    scenarios: ScenarioService(projection, stats),
+  );
+}
+
+Future<void> _seed(VaultUnlocked s) async {
+  final bank = Account(
+      id: 'bank',
+      name: '招行',
+      type: AccountType.asset,
+      assetSubtype: AssetSubtype.bank,
+      currencyCode: 'CNY');
+  await s.accounts.upsert(bank);
+  final dining = (await s.accounts.byId('cat:e:dining'))!;
+  final salary = (await s.accounts.byId('cat:i:salary'))!;
+  await s.ledger.post(TxBuilders.openingBalance(
+      assetAccount: bank,
+      amountMinor: BigInt.from(10000000),
+      date: DateTime(nowY, nowM, 1)));
+  // 本月交易：报表页默认展示当前月，分类卡才有内容。
+  for (var i = 1; i <= 3; i++) {
+    await s.ledger.post(TxBuilders.expense(
+        payFrom: bank,
+        expenseCategory: dining,
+        amountMinor: BigInt.from(4200 + i),
+        date: DateTime(nowY, nowM, i * 2),
+        counterparty: '超市'));
+  }
+  await s.ledger.post(TxBuilders.income(
+      destAsset: bank,
+      incomeCategory: salary,
+      amountMinor: BigInt.from(500000),
+      date: DateTime(nowY, nowM, 10),
+      counterparty: '公司'));
+  await s.planning.saveScheduledEvent(ScheduledEvent(
+      id: 'evt:rent',
+      name: '房租',
+      direction: EventDirection.outflow,
+      currencyCode: 'CNY',
+      cadence: Cadence.monthly,
+      anchorDate: DateTime(nowY, nowM, 3),
+      amountMinor: BigInt.from(150000)));
+}
+
+/// 种子用的当前年月（报表页默认月）。
+final nowDT = DateTime.now();
+final nowY = nowDT.year;
+final nowM = nowDT.month;
+
+/// 固定已解锁状态：不走真实金库初始化（文件系统/路径插件在测试里不可用）。
+class _FixedVault extends VaultNotifier {
+  _FixedVault(this.session);
+  final VaultUnlocked session;
+
+  @override
+  VaultState build() => session;
+}

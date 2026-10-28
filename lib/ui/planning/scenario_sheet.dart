@@ -211,6 +211,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
             Row(
               children: [
                 Expanded(
+                  flex: 5,
                   child: TextField(
                     controller: _extraMonthly,
                     keyboardType:
@@ -220,8 +221,8 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                SizedBox(
-                  width: 92,
+                Expanded(
+                  flex: 2,
                   child: DropdownButtonFormField<int>(
                     initialValue: _extraMonths,
                     isDense: true,
@@ -239,6 +240,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
             Row(
               children: [
                 Expanded(
+                  flex: 5,
                   child: TextField(
                     controller: _oneOffAmount,
                     keyboardType:
@@ -248,8 +250,8 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                SizedBox(
-                  width: 92,
+                Expanded(
+                  flex: 2,
                   child: DropdownButtonFormField<int>(
                     initialValue: _oneOffAfterDays,
                     isDense: true,
