@@ -23,6 +23,7 @@ import '../services/portfolio_analytics_service.dart';
 import '../services/portfolio_service.dart';
 import '../services/projection_service.dart';
 import '../services/quotes/direct_quote_service.dart';
+import '../services/scenario_service.dart';
 import '../services/stats_service.dart';
 import '../services/year_report_service.dart';
 
@@ -59,6 +60,7 @@ class VaultUnlocked extends VaultState {
     required this.yearReportService,
     required this.quoteFetch,
     required this.directQuotes,
+    required this.scenarios,
   });
 
   final AppDatabase db;
@@ -78,6 +80,7 @@ class VaultUnlocked extends VaultState {
   final YearReportService yearReportService;
   final QuoteFetchService quoteFetch;
   final DirectQuoteService directQuotes;
+  final ScenarioService scenarios;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -197,6 +200,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final meta = MetaRepo(db);
     final stats = StatsService(accounts, ledger, meta);
     final portfolio = PortfolioService(accounts, ledger, meta, stats);
+    final projection = ProjectionService(accounts, ledger, planning, meta);
     final quoteFetch =
         QuoteFetchService(accounts, ledger, meta, const AiChat());
     state = VaultUnlocked(
@@ -208,7 +212,7 @@ class VaultNotifier extends Notifier<VaultState> {
       meta: meta,
       ledgerService: LedgerService(accounts, ledger),
       statsService: stats,
-      projectionService: ProjectionService(accounts, ledger, planning, meta),
+      projectionService: projection,
       importService: ImportService(accounts, ledger, meta),
       insightService: InsightService(accounts, ledger, planning, meta),
       exportService: ExportService(accounts, ledger),
@@ -218,6 +222,7 @@ class VaultNotifier extends Notifier<VaultState> {
       yearReportService: YearReportService(accounts, ledger, stats),
       quoteFetch: quoteFetch,
       directQuotes: DirectQuoteService(accounts, quoteFetch),
+      scenarios: ScenarioService(projection, stats),
     );
     await _loadTunables();
     _armAutoLock();

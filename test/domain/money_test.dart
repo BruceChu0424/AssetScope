@@ -27,6 +27,25 @@ void main() {
           BigInt.one);
     });
 
+    test('Rational.rounded 负数对称舍入（回归：曾返回错误正号）', () {
+      BigInt r(int n, int d, {RoundingMode mode = RoundingMode.halfEven}) =>
+          Rational.fromFrac(BigInt.from(n), BigInt.from(d))
+              .rounded(mode: mode);
+      // 精确整除：符号不丢（−3000000/5 = −600000）
+      expect(r(-3000000, 5), BigInt.from(-600000));
+      // −3.5 halfEven → −4（与 +3.5 → 4 镜像，偶数量级）
+      expect(r(-7, 2), BigInt.from(-4));
+      expect(r(7, 2), BigInt.from(4));
+      // −1.5 halfEven → −2（|q|=1 奇 → 进位到偶数 2）
+      expect(r(-3, 2), BigInt.from(-2));
+      // down 向零截断
+      expect(r(-7, 2, mode: RoundingMode.down), BigInt.from(-3));
+      // up 远离零
+      expect(r(-7, 2, mode: RoundingMode.up), BigInt.from(-4));
+      // halfUp：0.5 恒进位
+      expect(r(-5, 2, mode: RoundingMode.halfUp), BigInt.from(-3));
+    });
+
     test('JPY 0 位小数', () {
       expect(Money.parse('1000', CurrencyInfo.jpy).amountMinor,
           BigInt.from(1000));

@@ -8,6 +8,7 @@ import '../../domain/planning/recurrence.dart';
 import '../../domain/utils/dates.dart';
 import '../widgets/common.dart';
 import 'recurring_sheet.dart';
+import 'scenario_sheet.dart';
 
 /// 固定开销与预定支出计划。
 class PlansPage extends ConsumerWidget {
@@ -20,6 +21,11 @@ class PlansPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('固定开销 / 计划'),
         actions: [
+          IconButton(
+            tooltip: '情景模拟 · 现金压力测试',
+            icon: const Icon(Icons.shield_outlined),
+            onPressed: () => showScenarioSheet(context, ref),
+          ),
           IconButton(
             tooltip: '从流水识别固定收支',
             icon: const Icon(Icons.auto_awesome),

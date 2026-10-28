@@ -30,6 +30,22 @@ class ProjectionService {
     bool includeBudgetBaseline = true,
     int cashLiquidityDays = 1,
   }) async {
+    final input = await buildInput(
+        now: now,
+        horizonDays: horizonDays,
+        includeBudgetBaseline: includeBudgetBaseline,
+        cashLiquidityDays: cashLiquidityDays);
+    return CashProjector.project(input);
+  }
+
+  /// 组装预测输入（事件流 + 期初余额 + 准备金）。
+  /// 独立暴露给情景模拟：基线与情景共用同一份输入，只换事件流重放。
+  Future<ProjectionInput> buildInput({
+    DateTime? now,
+    int horizonDays = 90,
+    bool includeBudgetBaseline = true,
+    int cashLiquidityDays = 1,
+  }) async {
     final n = now ?? DateTime.now();
     final from = DateTime(n.year, n.month, n.day);
     final through = from.add(Duration(days: horizonDays));
@@ -137,7 +153,7 @@ class ProjectionService {
     final baselineStr = await _meta.settingString('baselineMinCashMinor');
     final baseline = baselineStr == null ? BigInt.zero : BigInt.parse(baselineStr);
 
-    return CashProjector.project(ProjectionInput(
+    return ProjectionInput(
       baseCurrencyCode: base,
       accounts: snapshots,
       events: events,
@@ -146,7 +162,7 @@ class ProjectionService {
       baselineMinCashBaseMinor: baseline,
       fromDate: from,
       horizonDays: horizonDays,
-    ));
+    );
   }
 
   Account? byId(List<Account> list, String id) {

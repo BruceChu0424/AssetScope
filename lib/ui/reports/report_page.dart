@@ -7,6 +7,7 @@ import '../../domain/reports/year_report.dart';
 import '../../services/stats_service.dart';
 import '../widgets/common.dart';
 import 'allocation_card.dart';
+import 'fire_card.dart';
 import 'invest_card.dart';
 import 'risk_card.dart';
 import 'year_view.dart';
@@ -76,6 +77,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                 const InvestCard(),
                 const RiskCard(),
                 const AllocationCard(),
+                const FireCard(),
                 _compositionCard(context, r),
               ],
             ),

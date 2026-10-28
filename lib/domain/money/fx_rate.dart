@@ -71,10 +71,13 @@ class Rational {
   /// 转为 double 仅用于展示（进度、图表、图表坐标）。
   double asDouble() => n.toDouble() / d.toDouble();
 
-  /// num/den 的舍入整数。
+  /// num/den 的舍入整数。在绝对值上按模式舍入后回填符号
+  /// （对称舍入：−3.5 halfEven → −4，与 +3.5 → 4 镜像）。
   BigInt rounded({RoundingMode mode = RoundingMode.halfEven}) {
-    final q = n ~/ d;
-    final r = n.remainder(d).abs();
+    final neg = n.isNegative;
+    final an = n.abs();
+    final q = an ~/ d;
+    final r = an.remainder(d);
     final twice = r * BigInt.two;
     var add = BigInt.zero;
     switch (mode) {
@@ -87,7 +90,8 @@ class Rational {
       case RoundingMode.up:
         if (r > BigInt.zero) add = BigInt.one;
     }
-    return n.isNegative ? -(q + add) : (q + add);
+    final mag = q + add;
+    return neg ? -mag : mag;
   }
 
   Rational _norm() {
