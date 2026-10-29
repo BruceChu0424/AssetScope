@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../domain/budget/budget_forecast.dart';
+import '../theme/app_theme.dart';
 import '../../domain/budget/budget.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
@@ -147,8 +149,47 @@ class _EnvelopeCard extends StatelessWidget {
                         amount: fmtMinor(e.plannedMinor, base))),
               ],
             ),
+            _forecastTile(context, e),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 月中配速预警：外推到月末 + 建议日均可花（月末/无数据时隐藏）。
+  Widget _forecastTile(BuildContext context, BudgetEnvelope e) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final forecast = BudgetForecast.of(
+      spentMinor: e.spentMinor,
+      limitMinor: e.limitMinor,
+      daysElapsed: now.day,
+      daysInMonth: DateTime(now.year, now.month + 1, 0).day,
+    );
+    if (forecast == null || forecast.daysLeft <= 0) return const SizedBox.shrink();
+    final warn = AppColors.brassOf(theme.brightness);
+    final bad = AppColors.negativeOf(theme.brightness);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Row(
+        children: [
+          Icon(
+            forecast.willExceed ? Icons.warning_amber_rounded : Icons.speed,
+            size: 16,
+            color: forecast.willExceed ? bad : warn,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              forecast.willExceed
+                  ? '按当前配速月底将花 ${fmtMinor(forecast.projectedMinor, base)}（超 ${fmtMinor(forecast.projectedMinor - e.limitMinor, base)}）'
+                  : '按当前配速月底约花 ${fmtMinor(forecast.projectedMinor, base)}，剩余日均可花 ${fmtMinor(forecast.suggestedDailyMinor, base)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: forecast.willExceed ? bad : theme.hintColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

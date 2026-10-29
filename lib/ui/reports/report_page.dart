@@ -10,6 +10,7 @@ import '../widgets/common.dart';
 import 'allocation_card.dart';
 import 'fire_card.dart';
 import 'invest_card.dart';
+import 'personal_cpi_card.dart';
 import 'risk_card.dart';
 import 'year_view.dart';
 
@@ -75,6 +76,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                 _attributionCard(context, r),
                 _categoryCard(context, r, income: true),
                 _categoryCard(context, r, income: false),
+                const PersonalCpiCard(),
                 const InvestCard(),
                 const RiskCard(),
                 const AllocationCard(),

@@ -1,5 +1,6 @@
 import '../domain/invest/allocation.dart';
 import '../domain/ledger/account.dart';
+import '../domain/money/fx_rate.dart';
 import '../domain/planning/cash_projection.dart';
 import '../domain/planning/scenario.dart';
 import 'projection_service.dart';
@@ -24,6 +25,26 @@ class FireDefaults {
   final BigInt ttmSpendMinor;
 
   /// 近 12 个月中有收支记录的月数（不足 12 时 UI 提示代表性有限）。
+  final int monthsOfHistory;
+}
+
+/// 人生规划预填值（docs/05 §14）。
+class LifeDefaults {
+  const LifeDefaults({
+    required this.investMinor,
+    required this.fixedAssetsMinor,
+    required this.monthlyIncomeMinor,
+    required this.monthlyExpenseMinor,
+    required this.monthsOfHistory,
+  });
+
+  final BigInt investMinor;
+
+  /// 固定资产 + 长期权益（锁定资产，名义恒值不生息）。
+  final BigInt fixedAssetsMinor;
+
+  final BigInt monthlyIncomeMinor;
+  final BigInt monthlyExpenseMinor;
   final int monthsOfHistory;
 }
 
@@ -99,6 +120,41 @@ class ScenarioService {
       ttmSavingsMinor: savings,
       ttmSpendMinor: spend,
       monthsOfHistory: months,
+    );
+  }
+
+  /// 从账本提炼人生规划默认参数（月收支取 TTM/12，与 FIRE 年口径一致）。
+  Future<LifeDefaults> lifeDefaults({DateTime? now}) async {
+    final n = now ?? DateTime.now();
+    final f = await fireDefaults(now: n);
+
+    // 固定/锁定资产：realAssets + longTerm 桶（有估值）。
+    final nw = await _stats.netWorthAt(n);
+    var fixedLike = BigInt.zero;
+    for (final i in nw.items) {
+      if (i.account.type != AccountType.asset || i.valuationMissing) continue;
+      final sub = i.account.assetSubtype;
+      if (sub == null) continue;
+      final c = AllocationClass.fromSubtype(sub);
+      if (c == AllocationClass.realAssets || c == AllocationClass.longTerm) {
+        fixedLike += i.valueBaseMinor;
+      }
+    }
+
+    // 月基线 = TTM 合计 ÷ 12（不足 12 月历史时 UI 提示代表性有限）。
+    final twelve = Rational.fromInt(BigInt.from(12));
+    final income = f.ttmSavingsMinor + f.ttmSpendMinor;
+    final monthlyIncome =
+        (Rational.fromInt(income) / twelve).rounded();
+    final monthlyExpense =
+        (Rational.fromInt(f.ttmSpendMinor) / twelve).rounded();
+
+    return LifeDefaults(
+      investMinor: f.investableMinor,
+      fixedAssetsMinor: fixedLike,
+      monthlyIncomeMinor: monthlyIncome,
+      monthlyExpenseMinor: monthlyExpense,
+      monthsOfHistory: f.monthsOfHistory,
     );
   }
 }

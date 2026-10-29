@@ -7,6 +7,7 @@ import '../../domain/money/money.dart';
 import '../../domain/planning/recurrence.dart';
 import '../../domain/utils/dates.dart';
 import '../widgets/common.dart';
+import 'life_planner_sheet.dart';
 import 'recurring_sheet.dart';
 import 'scenario_sheet.dart';
 
@@ -21,6 +22,11 @@ class PlansPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('固定开销 / 计划'),
         actions: [
+          IconButton(
+            tooltip: '人生规划 · 多年度推演',
+            icon: const Icon(Icons.explore_outlined),
+            onPressed: () => showLifePlannerSheet(context, ref),
+          ),
           IconButton(
             tooltip: '情景模拟 · 现金压力测试',
             icon: const Icon(Icons.shield_outlined),

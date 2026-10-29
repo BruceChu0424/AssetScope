@@ -15,6 +15,7 @@ import 'package:assetscope/ui/reports/report_page.dart';
 import 'package:assetscope/ui/transactions/transactions_page.dart';
 import 'package:assetscope/ui/widgets/section_card.dart';
 
+import 'package:assetscope/ui/planning/life_planner_sheet.dart';
 import 'widget_host.dart';
 
 /// 关键页面 widget 测试：内存库 + 真实全服务栈，页面渲染与核心交互冒烟。
@@ -118,6 +119,53 @@ void main() {
     // 结果卡出现：基线/情景最低现金与可承受结论。
     expect(find.textContaining('最低现金 · 基线'), findsOneWidget);
     expect(find.text('预测期内未耗尽'), findsOneWidget);
+  });
+
+  testWidgets('计划页：人生规划弹层 · 添加买房事件并推演', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const PlansPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('人生规划 · 多年度推演'));
+    await tester.pumpAndSettle();
+    expect(find.text('人生规划 · 多年度推演'), findsOneWidget);
+
+    // 添加买房事件（默认 3 年后 · 3.6% · 30 年）。
+    await tester.tap(find.byTooltip('添加事件'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('买房（含贷款）'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '总价（元）'), '1000000');
+    await tester.enterText(
+        find.widgetWithText(TextField, '首付（元）'), '300000');
+    // 光标闪烁 Timer 会阻塞 pumpAndSettle，先 unfocus 再点确定。
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '确定'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 事件列表出现摘要；结论卡在惰性列表视口外，滚动到位后断言
+    //（显式指定弹层内的 Scrollable——自动探测会命中底层页面的列表）。
+    expect(find.textContaining('3 年后买房'), findsOneWidget);
+    final sheetScrollable = find
+        .descendant(
+            of: find.byType(LifePlannerSheet),
+            matching: find.byType(Scrollable))
+        .first;
+    await tester.scrollUntilVisible(find.text('推演结论'), 200,
+        scrollable: sheetScrollable);
+    expect(find.text('推演结论'), findsOneWidget);
+    expect(find.textContaining('年后净资产'), findsOneWidget);
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   });
 
   testWidgets('报表页：归因卡渲染 + 年度切换', (tester) async {
