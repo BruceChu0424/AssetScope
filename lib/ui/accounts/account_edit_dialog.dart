@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/currency.dart';
+import '../../domain/money/fx_rate.dart';
+import 'ownership.dart';
 
 /// 新建账户对话框（资产/负债 + 子类型 + 币种 + 持仓代码）。
 class AccountEditDialog extends ConsumerStatefulWidget {
@@ -17,6 +19,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   final _name = TextEditingController();
   final _institution = TextEditingController();
   final _code = TextEditingController();
+  final _ownership = TextEditingController(text: '100');
   AccountType _type = AccountType.asset;
   AssetSubtype _assetSubtype = AssetSubtype.bank;
   LiabilitySubtype _liabilitySubtype = LiabilitySubtype.creditCard;
@@ -27,12 +30,14 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
     _name.dispose();
     _institution.dispose();
     _code.dispose();
+    _ownership.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _name.text.trim().isEmpty) return;
+    final ownership = parseOwnership(_ownership.text) ?? Rational.one;
     final isHolding = _type == AccountType.asset && _assetSubtype.isHolding;
     if (isHolding) {
       final code =
@@ -57,6 +62,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
         institution:
             _institution.text.trim().isEmpty ? null : _institution.text.trim(),
         currencyCode: _currency,
+        ownership: ownership == Rational.one ? null : ownership,
       ));
     }
     if (mounted) Navigator.of(context).pop(true);
@@ -125,6 +131,17 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                   decoration: const InputDecoration(
                       labelText: '证券代码（如 510300）')),
             ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ownership,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: '本人份额（%）',
+                suffixText: '%',
+                helperText: '共同账户可设部分份额（如 50）；100 = 全额本人',
+              ),
+            ),
           ],
         ),
       ),

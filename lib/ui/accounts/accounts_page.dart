@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/ledger/account.dart';
+import '../../domain/money/fx_rate.dart';
 import '../../services/stats_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'account_detail_sheet.dart';
+import 'ownership.dart';
 import 'account_edit_dialog.dart';
 import 'accounts_providers.dart';
 
@@ -106,6 +108,26 @@ class AccountsPage extends ConsumerWidget {
               title: Row(
                 children: [
                   Flexible(child: Text(a.name, overflow: TextOverflow.ellipsis)),
+                  if (a.effectiveOwnership != Rational.one) ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: '本人份额 ${fmtOwnership(a.effectiveOwnership)}%',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          color: AppColors.brassOf(theme.brightness)
+                              .withValues(alpha: 0.14),
+                        ),
+                        child: Text(
+                            '我 ${fmtOwnership(a.effectiveOwnership)}%',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                color:
+                                    AppColors.brassOf(theme.brightness))),
+                      ),
+                    ),
+                  ],
                   if (a.hasLocation) ...[
                     const SizedBox(width: 6),
                     Icon(Icons.location_on, size: 14, color: AppColors.brassOf(theme.brightness)),
@@ -142,24 +164,46 @@ class _TotalBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-                child: AmountTile(
-                    label: '总资产',
-                    amount: fmtMinor(nw.totalAssets, nw.baseCurrencyCode))),
-            Expanded(
-                child: AmountTile(
-                    label: '总负债',
-                    amount: fmtMinor(nw.totalLiabilities, nw.baseCurrencyCode))),
-            Expanded(
-                child: AmountTile(
-                    label: '净资产',
-                    amount: fmtMinor(nw.netWorth, nw.baseCurrencyCode),
-                    color: Theme.of(context).colorScheme.primary)),
+            Row(
+              children: [
+                Expanded(
+                    child: AmountTile(
+                        label: '总资产',
+                        amount: fmtMinor(nw.totalAssets, nw.baseCurrencyCode))),
+                Expanded(
+                    child: AmountTile(
+                        label: '总负债',
+                        amount:
+                            fmtMinor(nw.totalLiabilities, nw.baseCurrencyCode))),
+                Expanded(
+                    child: AmountTile(
+                        label: '净资产',
+                        amount: fmtMinor(nw.netWorth, nw.baseCurrencyCode),
+                        color: theme.colorScheme.primary)),
+              ],
+            ),
+            if (nw.hasSharedAccounts)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.group_outlined,
+                        size: 14, color: AppColors.brassOf(theme.brightness)),
+                    const SizedBox(width: 6),
+                    Text(
+                        '我的份额净资产 ${fmtMinor(nw.myNetWorth, nw.baseCurrencyCode)}'
+                        '（账户归属见列表标注）',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            fontFeatures: [FontFeature.tabularFigures()])),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

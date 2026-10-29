@@ -42,6 +42,17 @@ class NetWorthHeroCard extends StatelessWidget {
             const SizedBox(height: 6),
             MoneyText(d.nw.netWorth,
                 currencyCode: d.nw.baseCurrencyCode, size: MoneySize.xl),
+            if (d.nw.hasSharedAccounts) ...[
+              const SizedBox(height: 4),
+              Text(
+                '我的份额 ${fmtMinor(d.nw.myNetWorth, d.nw.baseCurrencyCode)}'
+                ' · 资产 ${fmtMinor(d.nw.myTotalAssets, d.nw.baseCurrencyCode)}'
+                ' · 负债 ${fmtMinor(d.nw.myTotalLiabilities, d.nw.baseCurrencyCode)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.brassOf(theme.brightness),
+                    fontFeatures: [FontFeature.tabularFigures()]),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [

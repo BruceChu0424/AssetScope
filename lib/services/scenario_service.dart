@@ -100,6 +100,7 @@ class ScenarioService {
     }
 
     // 可投资净资产：扣除固定资产与长期权益（养老/公积金等锁定），负债全额抵减。
+    // FIRE 是个人规划 → 存量按本人份额（共享账户只算我的，docs/05 §16）。
     final nw = await _stats.netWorthAt(n);
     var investableBuckets = BigInt.zero;
     for (final i in nw.items) {
@@ -110,9 +111,9 @@ class ScenarioService {
       if (c == AllocationClass.realAssets || c == AllocationClass.longTerm) {
         continue;
       }
-      investableBuckets += i.valueBaseMinor;
+      investableBuckets += i.myValueBaseMinor;
     }
-    var investable = investableBuckets - nw.totalLiabilities;
+    var investable = investableBuckets - nw.myTotalLiabilities;
     if (investable < BigInt.zero) investable = BigInt.zero;
 
     return FireDefaults(
@@ -128,7 +129,7 @@ class ScenarioService {
     final n = now ?? DateTime.now();
     final f = await fireDefaults(now: n);
 
-    // 固定/锁定资产：realAssets + longTerm 桶（有估值）。
+    // 固定/锁定资产：realAssets + longTerm 桶（有估值），按本人份额。
     final nw = await _stats.netWorthAt(n);
     var fixedLike = BigInt.zero;
     for (final i in nw.items) {
@@ -137,7 +138,7 @@ class ScenarioService {
       if (sub == null) continue;
       final c = AllocationClass.fromSubtype(sub);
       if (c == AllocationClass.realAssets || c == AllocationClass.longTerm) {
-        fixedLike += i.valueBaseMinor;
+        fixedLike += i.myValueBaseMinor;
       }
     }
 

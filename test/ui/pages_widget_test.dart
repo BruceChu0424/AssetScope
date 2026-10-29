@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
 import 'package:assetscope/domain/ledger/transaction.dart';
+import 'package:assetscope/domain/money/fx_rate.dart';
 import 'package:assetscope/domain/planning/recurrence.dart';
 import 'package:assetscope/domain/utils/dates.dart';
 import 'package:assetscope/ui/accounts/accounts_page.dart';
@@ -214,6 +215,23 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('仪表盘：共享账户显示我的份额行', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    final bank = (await session.accounts.byId('bank'))!;
+    await session.accounts.upsert(bank.copyWith(
+        ownership: Rational.fromFrac(BigInt.one, BigInt.from(2))));
+    await tester.pumpWidget(host(const DashboardPage()));
+    await tester.pumpAndSettle();
+    // hero 上出现"我的份额"口径行（家庭总仍是主数字）。
+    expect(find.textContaining('我的份额'), findsOneWidget);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 
   testWidgets('计划页：到期计划一键全部记入 → 清单消失', (tester) async {

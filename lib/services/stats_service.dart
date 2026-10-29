@@ -30,6 +30,12 @@ class AccountValuationItem {
   final BigInt? balanceMinor;
   final bool valuationStale;
   final bool valuationMissing;
+
+  /// 本人份额价值（家庭账本归属比例，1 = 全额本人）。
+  /// 逐账户（Rational × BigInt）精确计算后 halfEven 舍入（docs/05 §16）。
+  BigInt get myValueBaseMinor =>
+      (Rational.fromInt(valueBaseMinor) * account.effectiveOwnership)
+          .rounded();
 }
 
 /// 净资产构成。
@@ -53,6 +59,21 @@ class NetWorthBreakdown {
       .fold(BigInt.zero, (s, i) => s + i.valueBaseMinor);
 
   BigInt get netWorth => totalAssets - totalLiabilities;
+
+  /// 本人份额口径（存量归属，见 docs/05 §16）。
+  BigInt get myTotalAssets => items
+      .where((i) => i.account.type == AccountType.asset)
+      .fold(BigInt.zero, (s, i) => s + i.myValueBaseMinor);
+
+  BigInt get myTotalLiabilities => items
+      .where((i) => i.account.type == AccountType.liability)
+      .fold(BigInt.zero, (s, i) => s + i.myValueBaseMinor);
+
+  BigInt get myNetWorth => myTotalAssets - myTotalLiabilities;
+
+  /// 是否存在份额 < 100% 的账户（UI 决定是否展示双口径）。
+  bool get hasSharedAccounts =>
+      items.any((i) => i.account.effectiveOwnership != Rational.one);
 
   int get missingValuations =>
       items.where((i) => i.valuationMissing).length;

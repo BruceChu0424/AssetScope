@@ -11,6 +11,7 @@ import '../../domain/valuation/valuation.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'accounts_providers.dart';
+import 'ownership.dart';
 import 'location_dialog.dart';
 import 'lot_section.dart';
 import 'trade_dialogs.dart';
@@ -45,7 +46,7 @@ class AccountDetailSheet extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         '${account.institution ?? ''} ${account.assetSubtype?.labelZh ?? account.liabilitySubtype?.labelZh ?? ''} · ${account.currencyCode}'
-                        '${account.hasLocation ? ' · ${account.locationName ?? '已定位'}' : ''}',
+                        '${account.effectiveOwnership != Rational.one ? ' · 我 ${fmtOwnership(account.effectiveOwnership)}%' : ''}''${account.hasLocation ? ' · ${account.locationName ?? '已定位'}' : ''}',
                         style: theme.textTheme.bodySmall
                             ?.copyWith(color: theme.hintColor),
                       ),
@@ -96,6 +97,17 @@ class AccountDetailSheet extends ConsumerWidget {
                   label: const Text('分红/利息'),
                   onPressed: () => showTradeDialog(context, ref, s,
                       account: account, action: TradeAction.dividend),
+                ),
+                ActionChip(
+                  label: const Text('归属份额'),
+                  onPressed: () async {
+                    final saved =
+                        await showOwnershipDialog(context, ref, s, account);
+                    if (saved) {
+                      ref.invalidate(accountsViewProvider);
+                      if (context.mounted) Navigator.of(context).pop();
+                    }
+                  },
                 ),
                 ActionChip(
                   label: Text(account.hasLocation ? '修改位置' : '设置位置'),
