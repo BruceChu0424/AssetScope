@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../../app/providers.dart';
 import '../../security/dart_crypto_suite.dart';
 import '../../services/backup_service.dart';
+import '../../services/merge_counts.dart';
 import '../../services/merge_service.dart';
 
 /// 从备份合并（多设备同步）：预览 → 安全备份 → 单事务合并。
