@@ -15,18 +15,23 @@ final allocationProvider =
   return s.portfolioAnalytics.allocationReport();
 });
 
-/// 配置类配色（祖母绿-铜金体系内的层次）。
-const allocationColors = {
-  AllocationClass.equity: Color(0xFF1E5C45),
-  AllocationClass.fund: Color(0xFF2E7D5B),
-  AllocationClass.bond: Color(0xFF4CA98A),
-  AllocationClass.cash: Color(0xFF7BC5A8),
-  AllocationClass.fixedIncome: Color(0xFFB08A2E),
-  AllocationClass.alternatives: Color(0xFFC9A95C),
-  AllocationClass.realAssets: Color(0xFF9A6B1F),
-  AllocationClass.longTerm: Color(0xFF7C6F5A),
-  AllocationClass.other: Color(0xFF9AA5A0),
-};
+/// 配置类配色：统一取图表调色板（祖母绿-铜金体系，深色模式提亮）。
+Color allocationColor(AllocationClass c, Brightness b) {
+  const order = [
+    AllocationClass.equity,
+    AllocationClass.fund,
+    AllocationClass.bond,
+    AllocationClass.cash,
+    AllocationClass.fixedIncome,
+    AllocationClass.alternatives,
+    AllocationClass.realAssets,
+    AllocationClass.longTerm,
+    AllocationClass.other,
+  ];
+  final palette = AppChartPalette.of(b);
+  final i = order.indexOf(c);
+  return i < 0 ? palette.last : palette[i.clamp(0, palette.length - 1)];
+}
 
 /// 资产配置卡：九类配置桶 + 目标对比 + 5/25 带宽再平衡建议（docs/05 §10）。
 class AllocationCard extends ConsumerWidget {
@@ -100,6 +105,7 @@ class AllocationCard extends ConsumerWidget {
   }
 
   Widget _stackedBar(BuildContext context, AllocationReport r) {
+    final b = Theme.of(context).brightness;
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: SizedBox(
@@ -111,7 +117,8 @@ class AllocationCard extends ConsumerWidget {
                 flex: s.valueBaseMinor > BigInt.zero
                     ? s.valueBaseMinor.toInt()
                     : 1,
-                child: Container(color: allocationColors[s.allocationClass]),
+                child:
+                    Container(color: allocationColor(s.allocationClass, b)),
               ),
           ],
         ),
@@ -133,7 +140,7 @@ class AllocationCard extends ConsumerWidget {
         width: 10,
         height: 10,
         decoration: BoxDecoration(
-          color: allocationColors[s.allocationClass],
+          color: allocationColor(s.allocationClass, Theme.of(context).brightness),
           shape: BoxShape.circle,
         ),
       ),

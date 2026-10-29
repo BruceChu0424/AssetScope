@@ -1,32 +1,10 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
-import 'package:assetscope/data/repositories/accounts_repo.dart';
-import 'package:assetscope/data/repositories/ledger_repo.dart';
-import 'package:assetscope/data/repositories/meta_repo.dart';
-import 'package:assetscope/data/repositories/planning_repo.dart';
-import 'package:assetscope/domain/ledger/account.dart';
 import 'package:assetscope/domain/ledger/transaction.dart';
-import 'package:assetscope/domain/planning/recurrence.dart';
-import 'package:assetscope/security/dart_crypto_suite.dart';
-import 'package:assetscope/security/key_manager.dart';
-import 'package:assetscope/services/ai/ai_chat.dart';
-import 'package:assetscope/services/ai/quote_fetch_service.dart';
-import 'package:assetscope/services/export_service.dart';
-import 'package:assetscope/services/import_service.dart';
-import 'package:assetscope/services/insight_service.dart';
-import 'package:assetscope/services/ledger_service.dart';
-import 'package:assetscope/services/portfolio_analytics_service.dart';
-import 'package:assetscope/services/portfolio_service.dart';
-import 'package:assetscope/services/projection_service.dart';
-import 'package:assetscope/services/quotes/direct_quote_service.dart';
-import 'package:assetscope/services/scenario_service.dart';
-import 'package:assetscope/services/stats_service.dart';
-import 'package:assetscope/services/year_report_service.dart';
 import 'package:assetscope/ui/accounts/accounts_page.dart';
 import 'package:assetscope/ui/budget/budgets_page.dart';
 import 'package:assetscope/ui/dashboard/dashboard_page.dart';
@@ -34,9 +12,10 @@ import 'package:assetscope/ui/debts/debts_page.dart';
 import 'package:assetscope/ui/globe/globe_page.dart';
 import 'package:assetscope/ui/planning/plans_page.dart';
 import 'package:assetscope/ui/reports/report_page.dart';
-import 'package:assetscope/ui/theme/app_theme.dart';
 import 'package:assetscope/ui/transactions/transactions_page.dart';
 import 'package:assetscope/ui/widgets/section_card.dart';
+
+import 'widget_host.dart';
 
 /// 关键页面 widget 测试：内存库 + 真实全服务栈，页面渲染与核心交互冒烟。
 /// 运行需要宿主可加载 sqlite3；不可用时跳过。
@@ -55,19 +34,15 @@ void main() {
       dbAvailable = false;
       return;
     }
-    session = await _buildSession(db);
-    await _seed(session);
+    session = await buildWidgetSession(db);
+    await seedWidgetData(session);
   });
 
   tearDown(() async {
     if (dbAvailable) await db.close();
   });
 
-  Widget host(Widget child) => ProviderScope(
-        overrides: [vaultProvider.overrideWith(() => _FixedVault(session))],
-        child: MaterialApp(
-            theme: buildAppTheme(Brightness.light), home: child),
-      );
+  Widget host(Widget child) => widgetHost(child, session);
 
   testWidgets('仪表盘：净资产 hero 与洞察卡渲染', (tester) async {
     if (!dbAvailable) {
@@ -207,90 +182,3 @@ void main() {
   });
 }
 
-/// 与 providers._openDatabase 同构的会话（内存库 + 未解锁的哑 KeyManager，
-/// 页面流程不触达密钥操作）。
-Future<VaultUnlocked> _buildSession(AppDatabase db) async {
-  final accounts = AccountsRepo(db);
-  final ledger = LedgerRepo(db);
-  final planning = PlanningRepo(db);
-  final meta = MetaRepo(db);
-  final stats = StatsService(accounts, ledger, meta);
-  final portfolio = PortfolioService(accounts, ledger, meta, stats);
-  final projection = ProjectionService(accounts, ledger, planning, meta);
-  final quoteFetch =
-      QuoteFetchService(accounts, ledger, meta, const AiChat());
-  return VaultUnlocked(
-    db: db,
-    keyManager: KeyManager(suite: DartCryptoSuite.instance),
-    accounts: accounts,
-    ledger: ledger,
-    planning: planning,
-    meta: meta,
-    ledgerService: LedgerService(accounts, ledger),
-    statsService: stats,
-    projectionService: projection,
-    importService: ImportService(accounts, ledger, meta),
-    insightService: InsightService(accounts, ledger, planning, meta),
-    exportService: ExportService(accounts, ledger),
-    portfolioService: portfolio,
-    portfolioAnalytics:
-        PortfolioAnalyticsService(ledger, meta, stats, portfolio),
-    yearReportService: YearReportService(accounts, ledger, stats),
-    quoteFetch: quoteFetch,
-    directQuotes: DirectQuoteService(accounts, quoteFetch),
-    scenarios: ScenarioService(projection, stats),
-  );
-}
-
-Future<void> _seed(VaultUnlocked s) async {
-  final bank = Account(
-      id: 'bank',
-      name: '招行',
-      type: AccountType.asset,
-      assetSubtype: AssetSubtype.bank,
-      currencyCode: 'CNY');
-  await s.accounts.upsert(bank);
-  final dining = (await s.accounts.byId('cat:e:dining'))!;
-  final salary = (await s.accounts.byId('cat:i:salary'))!;
-  await s.ledger.post(TxBuilders.openingBalance(
-      assetAccount: bank,
-      amountMinor: BigInt.from(10000000),
-      date: DateTime(nowY, nowM, 1)));
-  // 本月交易：报表页默认展示当前月，分类卡才有内容。
-  for (var i = 1; i <= 3; i++) {
-    await s.ledger.post(TxBuilders.expense(
-        payFrom: bank,
-        expenseCategory: dining,
-        amountMinor: BigInt.from(4200 + i),
-        date: DateTime(nowY, nowM, i * 2),
-        counterparty: '超市'));
-  }
-  await s.ledger.post(TxBuilders.income(
-      destAsset: bank,
-      incomeCategory: salary,
-      amountMinor: BigInt.from(500000),
-      date: DateTime(nowY, nowM, 10),
-      counterparty: '公司'));
-  await s.planning.saveScheduledEvent(ScheduledEvent(
-      id: 'evt:rent',
-      name: '房租',
-      direction: EventDirection.outflow,
-      currencyCode: 'CNY',
-      cadence: Cadence.monthly,
-      anchorDate: DateTime(nowY, nowM, 3),
-      amountMinor: BigInt.from(150000)));
-}
-
-/// 种子用的当前年月（报表页默认月）。
-final nowDT = DateTime.now();
-final nowY = nowDT.year;
-final nowM = nowDT.month;
-
-/// 固定已解锁状态：不走真实金库初始化（文件系统/路径插件在测试里不可用）。
-class _FixedVault extends VaultNotifier {
-  _FixedVault(this.session);
-  final VaultUnlocked session;
-
-  @override
-  VaultState build() => session;
-}

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -203,6 +204,11 @@ class VaultNotifier extends Notifier<VaultState> {
     final projection = ProjectionService(accounts, ledger, planning, meta);
     final quoteFetch =
         QuoteFetchService(accounts, ledger, meta, const AiChat());
+    // 主题偏好先于会话发布生效，避免解锁首帧闪烁。
+    final themeStr = await meta.settingString('themeMode');
+    if (themeStr != null) {
+      ref.read(themeModeProvider.notifier).apply(themeModeFromString(themeStr));
+    }
     state = VaultUnlocked(
       db: db,
       keyManager: km,
@@ -294,6 +300,42 @@ final vaultProvider =
 
 /// 便捷：当前已解锁会话（未解锁时为 null）。
 VaultUnlocked? sessionOf(VaultState s) => s is VaultUnlocked ? s : null;
+
+/// 外观模式持久化（settings 表 themeMode 键，值 system/light/dark）。
+ThemeMode themeModeFromString(String s) => switch (s) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+String themeModeToString(ThemeMode m) => switch (m) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+
+/// 外观模式（跟随系统/浅色/深色）：解锁流程从设置表预读，
+/// 设置页修改后立即生效；锁定期间记忆保留（锁定页自绘深色）。
+class ThemeModeController extends Notifier<ThemeMode> {
+  ThemeMode _mode = ThemeMode.system;
+
+  @override
+  ThemeMode build() {
+    ref.watch(vaultProvider); // 解锁/锁定时重建，但保留已记忆的模式
+    return _mode;
+  }
+
+  /// 供解锁流程在发布 VaultUnlocked 前预填，避免首帧闪烁。
+  void apply(ThemeMode mode) => _mode = mode;
+
+  Future<void> set(ThemeMode mode, VaultUnlocked s) async {
+    await s.meta.setSetting('themeMode', themeModeToString(mode));
+    _mode = mode;
+    ref.invalidateSelf();
+  }
+}
+
+final themeModeProvider =
+    NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
 
 /// 当前 base 币种。
 final baseCurrencyProvider = FutureProvider<String>((ref) async {

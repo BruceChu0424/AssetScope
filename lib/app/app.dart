@@ -33,6 +33,7 @@ class AssetScopeApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
+      themeMode: ref.watch(themeModeProvider),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

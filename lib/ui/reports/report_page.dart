@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/reports/year_report.dart';
 import '../../services/stats_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'allocation_card.dart';
 import 'fire_card.dart';
@@ -165,16 +166,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       ..sort((x, y) => y.value.compareTo(x.value));
     final total = entries.fold(BigInt.zero, (s, e) => s + e.value);
     if (entries.isEmpty) return const SizedBox.shrink();
-    const palette = [
-      Color(0xFF1E5C45),
-      Color(0xFF2E7D5B),
-      Color(0xFF4CA98A),
-      Color(0xFF7BC5A8),
-      Color(0xFFB08A2E),
-      Color(0xFFC9A95C),
-      Color(0xFF9A6B1F),
-      Color(0xFF7C6F5A),
-    ];
+    final palette = AppChartPalette.of(Theme.of(context).brightness);
     return SectionCard(
       title: income ? '收入构成' : '消费构成',
       child: Column(

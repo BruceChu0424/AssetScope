@@ -34,6 +34,39 @@ abstract final class AppColors {
       b == Brightness.light ? brass : darkBrass;
 }
 
+/// 图表调色板：祖母绿→铜金→灰的渐次层次。
+/// 深色模式整体提亮一档，避免深祖母绿在深底上不可见。
+/// 图表/图例取色一律走这里，禁止页面自建 palette。
+abstract final class AppChartPalette {
+  static const light = [
+    Color(0xFF1E5C45), // 祖母绿
+    Color(0xFF2E7D5B),
+    Color(0xFF4CA98A),
+    Color(0xFF7BC5A8),
+    Color(0xFFB08A2E), // 铜金
+    Color(0xFFC9A95C),
+    Color(0xFF9A6B1F),
+    Color(0xFF7C6F5A),
+    Color(0xFF9AA5A0),
+  ];
+  static const dark = [
+    Color(0xFF4CA98A),
+    Color(0xFF5FBB98),
+    Color(0xFF7BC5A8),
+    Color(0xFF9AD4BC),
+    Color(0xFFD4B25E),
+    Color(0xFFE0C684),
+    Color(0xFFC9963F),
+    Color(0xFFA79B87),
+    Color(0xFFB5BEB9),
+  ];
+  static List<Color> of(Brightness b) =>
+      b == Brightness.light ? light : dark;
+}
+
+/// 外观模式持久化在 app 层（lib/app/providers.dart 的 ThemeModeController），
+/// 序列化函数 themeModeFromString/ToString 也定义在那里。
+
 abstract final class AppRadii {
   static const card = 14.0;
   static const chip = 10.0;

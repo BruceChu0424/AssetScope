@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
+import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'add_transaction_dialog.dart';
 import 'import_wizard.dart';
@@ -204,8 +205,9 @@ class _TxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return ListTile(
-      leading: _kindIcon(tx.kind),
+      leading: _kindIcon(tx.kind, brightness),
       title: Text(
         tx.note ?? tx.counterparty ?? tx.kind.labelZh,
         maxLines: 1,
@@ -241,18 +243,23 @@ class _TxTile extends StatelessWidget {
         : fmtMinor(any.amountMinor!.abs(), any.currencyCode!);
   }
 
-  Widget _kindIcon(TxKind k) => switch (k) {
-        TxKind.income => const Icon(Icons.south_west, color: Color(0xFF2E7D5B)),
+  /// 类型图标：语义色走令牌（深浅模式自动适配），中性类型用主题默认色。
+  Widget _kindIcon(TxKind k, Brightness b) => switch (k) {
+        TxKind.income => Icon(Icons.south_west,
+            color: AppColors.positiveOf(b)),
         TxKind.expense =>
-          const Icon(Icons.north_east, color: Color(0xFFB3402E)),
-        TxKind.refund => const Icon(Icons.replay, color: Color(0xFF9A6B1F)),
+          Icon(Icons.north_east, color: AppColors.negativeOf(b)),
+        TxKind.refund =>
+          Icon(Icons.replay, color: AppColors.brassOf(b)),
         TxKind.transfer || TxKind.fxConversion => const Icon(Icons.swap_horiz),
         TxKind.creditCardRepay || TxKind.loanRepay =>
           const Icon(Icons.credit_score),
-        TxKind.borrow => const Icon(Icons.south_east, color: Color(0xFFB3402E)),
+        TxKind.borrow => Icon(Icons.south_east,
+            color: AppColors.negativeOf(b)),
         TxKind.lend || TxKind.receiveBack => const Icon(Icons.handshake),
         TxKind.buy || TxKind.sell => const Icon(Icons.show_chart),
-        TxKind.dividend => const Icon(Icons.paid, color: Color(0xFF2E7D5B)),
+        TxKind.dividend => Icon(Icons.paid,
+            color: AppColors.positiveOf(b)),
         TxKind.openingBalance || TxKind.adjustment => const Icon(Icons.flag),
       };
 }

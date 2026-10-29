@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dashboard_cards.dart';
 import 'dashboard_providers.dart';
+import 'dashboard_secondary_cards.dart';
 import '../widgets/common.dart';
 
 /// 首页总览：净资产 hero、财务体检、智慧洞察、预测与提醒。
