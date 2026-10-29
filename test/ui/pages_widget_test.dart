@@ -101,6 +101,52 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   });
 
+
+  testWidgets('流水页：详情 → 编辑交易 → 原地更新', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    await tester.pumpWidget(host(const TransactionsPage()));
+    await tester.pumpAndSettle();
+
+    // 打开第一笔"超市"详情 → 编辑。
+    await tester.tap(find.text('超市').first);
+    await tester.pumpAndSettle();
+    expect(find.text('分录（借贷平衡）'), findsOneWidget);
+    await tester.tap(find.text('编辑'));
+    await tester.pumpAndSettle();
+    expect(find.text('编辑交易'), findsOneWidget);
+
+    // 金额改为 99.99（预填原金额 42.xx，覆盖）。
+    final amountField = find
+        .descendant(
+            of: find.byType(AlertDialog), matching: find.byType(TextField))
+        .first;
+    await tester.enterText(amountField, '99.99');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '保存'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final now = DateTime.now();
+    final txs = await session.ledger
+        .list(from: DateTime(now.year, now.month, 1));
+    // 编辑不增不减交易数（3 笔消费），且新金额在账、旧分类分录被替换。
+    expect(txs.where((t) => t.kind == TxKind.expense).length, 3);
+    expect(
+        txs.any((t) => t.postings
+            .any((p) => p.amountMinor == -BigInt.from(9999))),
+        isTrue,
+        reason: '编辑后的 99.99 元应已原地入账');
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
   testWidgets('计划页：情景模拟弹层端到端', (tester) async {
     if (!dbAvailable) {
       markTestSkipped('宿主环境无可用 sqlite3，跳过');

@@ -118,6 +118,9 @@ Future<void> showBackupExportDialog(
       target: File(file.path),
       passphrase: pass.text,
     );
+    // 记录备份时间（仪表盘备份提醒的依据）。
+    await s.meta
+        .setSetting('lastBackupAtMs', DateTime.now().millisecondsSinceEpoch);
     if (!context.mounted) return;
     _snack(context, '已导出：${file.path}');
   } catch (e) {

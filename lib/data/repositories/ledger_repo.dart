@@ -76,6 +76,87 @@ class LedgerRepo {
           .write(TransactionsCompanion(
               status: const Value('voided'), updatedAt: Value(DateTime.now())));
 
+  /// posted 交易总数（备份提醒等轻量探测）。
+  Future<int> countPosted() async {
+    final count = await _db.customSelect(
+      'SELECT COUNT(*) AS c FROM transactions WHERE status = ?',
+      variables: [Variable.withString('posted')],
+    ).getSingle();
+    return count.read<int>('c');
+  }
+
+  /// 编辑交易：用新草稿原子替换分录与可变元数据（日期/种类/备注/对手方/
+  /// 分类/标签），**保留** id、createdAt、status、来源三件套
+  /// （source/externalId/importBatchId）——导入的交易改完仍是导入来源。
+  /// 守恒校验同过账；新旧任一侧含数量分录（持仓交易）即拒绝：
+  /// 成本镜像 sys:cost 的结转不可回放，请作废后重记。
+  Future<LedgerTransaction> replaceTransaction(
+      String txId, TransactionDraft draft) async {
+    if (draft.postings.any((p) => p.securityId != null)) {
+      throw StateError('新分录含数量记账，不支持编辑（请作废后重记）');
+    }
+    final oldTx = await (_db.select(_db.transactions)
+          ..where((t) => t.id.equals(txId)))
+        .getSingleOrNull();
+    if (oldTx == null) throw StateError('交易不存在：$txId');
+    final oldPostings = await (_db.select(_db.postings)
+          ..where((p) => p.txId.equals(txId)))
+        .get();
+    if (oldPostings.any((p) => p.securityId != null)) {
+      throw StateError('持仓交易不支持编辑（成本结转不可回放），请作废后重记');
+    }
+    final violation = LedgerMath.checkConservation(draft.postings);
+    if (violation != null) {
+      throw StateError('拒绝编辑（$violation）kind=${draft.kind.name}');
+    }
+    final now = DateTime.now();
+    await _db.transaction(() async {
+      await (_db.update(_db.transactions)..where((t) => t.id.equals(txId)))
+          .write(TransactionsCompanion(
+        date: Value(draft.date),
+        kind: Value(draft.kind.name),
+        note: Value(draft.note),
+        counterparty: Value(draft.counterparty),
+        categoryId: Value(draft.categoryId),
+        tagsJson: Value(draft.tags.join(',')),
+        isAdjustment:
+            Value(draft.isAdjustment || draft.kind.isAdjustmentKind),
+        updatedAt: Value(now),
+      ));
+      await (_db.delete(_db.postings)..where((p) => p.txId.equals(txId))).go();
+      for (final p in draft.postings) {
+        await _db.into(_db.postings).insert(PostingsCompanion.insert(
+              txId: txId,
+              accountId: p.accountId,
+              amountMinor: Value(p.amountMinor),
+              currencyCode: Value(p.currencyCode),
+              securityId: Value(p.securityId),
+              quantityN: Value(p.quantity?.n),
+              quantityD: Value(p.quantity?.d),
+              memo: Value(p.memo),
+            ));
+      }
+    });
+    return LedgerTransaction(
+      id: txId,
+      date: draft.date,
+      kind: draft.kind,
+      // 保留自旧行：status 与来源三件套。
+      status: TxStatus.values.firstWhere((s) => s.name == oldTx.status),
+      postings: draft.postings,
+      note: draft.note,
+      counterparty: draft.counterparty,
+      categoryId: draft.categoryId,
+      tags: draft.tags,
+      externalId: oldTx.externalId,
+      source: TxSource.values.firstWhere((s) => s.name == oldTx.source),
+      importBatchId: oldTx.importBatchId,
+      isAdjustment: draft.isAdjustment || draft.kind.isAdjustmentKind,
+      createdAt: oldTx.createdAt,
+      updatedAt: now,
+    );
+  }
+
   Future<void> deleteTransaction(String txId) => _db.transaction(() async {
         await (_db.delete(_db.postings)..where((p) => p.txId.equals(txId))).go();
         await (_db.delete(_db.transactions)..where((t) => t.id.equals(txId)))
@@ -177,6 +258,44 @@ class LedgerRepo {
         byTx.putIfAbsent(p.txId, () => []).add(p);
       }
       return [for (final t in rows) _toDomain(t, byTx[t.id] ?? const [])];
+    });
+  }
+
+  /// 全账本文本搜索（备注/对手方/标签，SQL LIKE 下推；搜索不限于
+  /// watchLatest 的最近 N 条）。查询词中的 %/_ 通配符剔除——SQLite
+  /// LIKE 的 ESCAPE 子句 drift 未暴露，剔除比歧义匹配更诚实。
+  /// posted 交易，日期倒序，最多 [limit] 条。
+  Future<List<LedgerTransaction>> search(String query, {int limit = 200}) {
+    final sanitized = query.replaceAll('%', '').replaceAll('_', '').trim();
+    if (sanitized.isEmpty) return Future.value(const []);
+    final pattern = '%$sanitized%';
+    final rows = (_db.select(_db.transactions).join(
+        [innerJoin(_db.postings, _db.postings.txId.equalsExp(_db.transactions.id))]))
+      ..where(_db.transactions.status.equals('posted'))
+      ..where(_db.transactions.note.like(pattern) |
+          _db.transactions.counterparty.like(pattern) |
+          _db.transactions.tagsJson.like(pattern))
+      ..groupBy([_db.transactions.id])
+      ..orderBy([OrderingTerm.desc(_db.transactions.date)])
+      ..limit(limit);
+    return rows.get().then((joined) async {
+      final txIds = joined.map((r) => r.readTable(_db.transactions)).toList();
+      if (txIds.isEmpty) return const <LedgerTransaction>[];
+      final postingRows = await (_db.select(_db.postings)
+            ..where((p) => p.txId.isIn(txIds.map((t) => t.id).toList())))
+          .get();
+      final byTx = <String, List<PostingRow>>{};
+      for (final p in postingRows) {
+        byTx.putIfAbsent(p.txId, () => []).add(p);
+      }
+      final seen = <String>{};
+      final out = <LedgerTransaction>[];
+      for (final t in txIds) {
+        if (seen.contains(t.id)) continue;
+        seen.add(t.id);
+        out.add(_toDomain(t, byTx[t.id] ?? const []));
+      }
+      return out;
     });
   }
 

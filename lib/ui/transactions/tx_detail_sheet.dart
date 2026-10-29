@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
+import '../../services/ledger_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import 'add_transaction_dialog.dart';
+import 'transactions_page.dart' show txListProvider;
 
-/// 交易详情：全部分录（复式记账透视）、来源、外部 ID、作废入口。
+/// 交易详情：全部分录（复式记账透视）、来源、外部 ID、编辑与作废入口。
 Future<void> showTxDetail(
     BuildContext context, WidgetRef ref, LedgerTransaction tx) async {
   final s = sessionOf(ref.read(vaultProvider));
@@ -82,27 +85,50 @@ Future<void> showTxDetail(
                     children: [for (final t in tx.tags) Chip(label: Text(t))],
                   ),
                 ),
-              if (tx.status != TxStatus.voided)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.undo, size: 18),
-                    label: const Text('作废此交易'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor:
-                            AppColors.negativeOf(theme.brightness)),
-                    onPressed: () async {
-                      final ok = await confirmDialog(ctx,
-                          title: '作废此交易？',
-                          message: '作废后分录不再计入余额与统计，但保留审计痕迹。',
-                          confirmLabel: '作废',
-                          destructive: true);
-                      if (ok != true) return;
-                      await s.ledger.voidTransaction(tx.id);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                  ),
+              if (tx.status != TxStatus.voided) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (LedgerService.isEditable(tx))
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('编辑'),
+                          onPressed: () async {
+                            Navigator.pop(ctx); // 先关详情再开编辑，避免弹层叠层
+                            final ok = await showDialog<bool>(
+              context: context,
+                              builder: (_) =>
+                                  AddTransactionDialog(editing: tx),
+                            );
+                            if (ok == true) ref.invalidate(txListProvider);
+                          },
+                        ),
+                      ),
+                    if (LedgerService.isEditable(tx))
+                      const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.undo, size: 18),
+                        label: const Text('作废'),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor:
+                                AppColors.negativeOf(theme.brightness)),
+                        onPressed: () async {
+                          final ok = await confirmDialog(ctx,
+                              title: '作废此交易？',
+                              message: '作废后分录不再计入余额与统计，但保留审计痕迹。',
+                              confirmLabel: '作废',
+                              destructive: true);
+                          if (ok != true) return;
+                          await s.ledger.voidTransaction(tx.id);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
+              ],
             ],
           ),
         ),

@@ -17,6 +17,28 @@ class LedgerService {
 
   Future<void> voidTx(String id) => ledger.voidTransaction(id);
 
+  /// 编辑交易（重放分录，保留 id 与来源审计字段，见 LedgerRepo.replaceTransaction）。
+  Future<LedgerTransaction> editTx(String id, TransactionDraft draft) =>
+      ledger.replaceTransaction(id, draft);
+
+  /// 可编辑判定：非作废、无数量分录、无成本镜像分录，且种类在
+  /// 编辑对话框支持的简单资金流集合内（loanRepay 本息拆分不可无损重放）。
+  static bool isEditable(LedgerTransaction tx) {
+    const supported = {
+      TxKind.expense,
+      TxKind.income,
+      TxKind.transfer,
+      TxKind.creditCardRepay,
+      TxKind.borrow,
+      TxKind.lend,
+      TxKind.receiveBack,
+    };
+    if (tx.status == TxStatus.voided) return false;
+    if (!supported.contains(tx.kind)) return false;
+    return !tx.postings.any((p) =>
+        p.securityId != null || p.accountId.startsWith('sys:cost'));
+  }
+
   /// 卖出：按平均成本法自动计算应结转的成本与已实现损益。
   Future<LedgerTransaction> sellSecurity({
     required String holdingAccountId,

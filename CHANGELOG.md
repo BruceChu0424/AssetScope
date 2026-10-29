@@ -3,6 +3,34 @@
 本项目的显著变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.12.0] - 2026-10-29
+
+### 新增 · 交易编辑（核心闭环补全）
+- 详情页新增"编辑"：金额/类型/账户/分类/日期/备注全部可改，保存时
+  经 `LedgerRepo.replaceTransaction` **原子替换分录**（守恒校验同过账），
+  **保留**交易 ID、createdAt、status 与来源三件套
+  （source/externalId/importBatchId）——导入的交易改完仍是导入来源，
+  不产生"作废+重记"的审计杂讯。
+- 不可无损重放的类型保守拒绝（`LedgerService.isEditable`）：持仓交易
+  （成本镜像 sys:cost 结转不可回放）、loanRepay（本息拆分）、已作废等，
+  继续走作废重记；`TxBuilders.lend/receiveBack` 补全 note 参数。
+- 编辑表单复用记一笔对话框：按分录方向（正=流入）+ 类型语义推断预填，
+  金额保持分的精度（88.50 不会预填成 88）。
+
+### 新增 · 数据通道
+- **全账本搜索**：流水页搜索改 SQL LIKE 下推（备注/对方/标签），
+  不再只搜最近 500 条；查询词通配符 %/_ 剔除。
+- **全量 JSON 导出**（设置 → 数据管理）：账户/估值/汇率/交易全量
+  （含作废与数量分录）/计划/预算 + 白名单设置；金额最小单位字符串、
+  数量 "n/d" 有理数字符串无损；**含密钥的设置绝不进入明文导出**。
+- **备份提醒**：导出加密备份成功即记录时间戳；从未备份（且有交易）或
+  距上次备份 >30 天时，仪表盘智慧洞察主动提醒（Android 卸载即清空）。
+
+### 内部
+- `LedgerRepo.countPosted`；`ExportService` 依赖扩展（meta+planning）。
+- 测试 229 → 236（编辑 3、搜索 1、导出脱敏 1、countPosted 1、
+  编辑端到端 widget 1），analyze 零 issue。
+
 ## [0.11.0] - 2026-10-29
 
 ### 新增 · 人生规划器（多年度推演，docs/05 §14）

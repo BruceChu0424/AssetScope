@@ -409,6 +409,7 @@ class TxBuilders {
     required BigInt amountMinor,
     required DateTime date,
     String? counterparty,
+    String? note,
   }) {
     _require(receivable.assetSubtype == AssetSubtype.receivable, '借出必须挂应收款账户');
     _requirePositive(amountMinor);
@@ -417,6 +418,7 @@ class TxBuilders {
       date: date,
       kind: TxKind.lend,
       counterparty: counterparty,
+      note: note,
       postings: [
         Posting.money(accountId: receivable.id, amountMinor: amountMinor, currencyCode: c),
         Posting.money(accountId: fromAsset.id, amountMinor: -amountMinor, currencyCode: c),
@@ -431,6 +433,7 @@ class TxBuilders {
     required BigInt amountMinor,
     required DateTime date,
     String? counterparty,
+    String? note,
   }) {
     _require(receivable.assetSubtype == AssetSubtype.receivable, '收回必须冲减应收款账户');
     _requirePositive(amountMinor);
@@ -439,6 +442,7 @@ class TxBuilders {
       date: date,
       kind: TxKind.receiveBack,
       counterparty: counterparty,
+      note: note,
       postings: [
         Posting.money(accountId: toAsset.id, amountMinor: amountMinor, currencyCode: c),
         Posting.money(accountId: receivable.id, amountMinor: -amountMinor, currencyCode: c),

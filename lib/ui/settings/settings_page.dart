@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,6 +78,12 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => showImportWizard(context, ref),
           ),
           ListTile(
+            leading: const Icon(Icons.data_object),
+            title: const Text('导出全量 JSON'),
+            subtitle: const Text('账户/估值/交易/计划/预算的明文快照（不含密钥），可审计可迁移'),
+            onTap: () => _exportFullJson(context, s),
+          ),
+          ListTile(
             leading: const Icon(Icons.currency_exchange),
             title: const Text('汇率管理'),
             subtitle: const Text('手工录入各币种对本位币汇率'),
@@ -114,6 +123,28 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _exportFullJson(BuildContext context, VaultUnlocked s) async {
+    final loc = await getSaveLocation(
+      suggestedName:
+          'assetscope-full-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'JSON', extensions: ['json']),
+      ],
+    );
+    if (loc == null) return;
+    try {
+      final json = await s.exportService.fullLedgerJson(appVersion: appVersion);
+      await File(loc.path).writeAsString(json, flush: true);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已导出全量 JSON（明文，不含任何密钥）')));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('导出失败：$e')));
+    }
   }
 }
 

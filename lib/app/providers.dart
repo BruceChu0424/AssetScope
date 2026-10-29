@@ -221,7 +221,7 @@ class VaultNotifier extends Notifier<VaultState> {
       projectionService: projection,
       importService: ImportService(accounts, ledger, meta),
       insightService: InsightService(accounts, ledger, planning, meta),
-      exportService: ExportService(accounts, ledger),
+      exportService: ExportService(accounts, ledger, meta, planning),
       portfolioService: portfolio,
       portfolioAnalytics:
           PortfolioAnalyticsService(ledger, meta, stats, portfolio),

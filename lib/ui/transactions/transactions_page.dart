@@ -20,6 +20,15 @@ final txListProvider =
   return s.ledger.watchLatest(limit: 500);
 });
 
+/// 搜索走全账本（SQL LIKE 下推），不受最近 500 条限制。
+final txSearchProvider =
+    FutureProvider.autoDispose.family<List<LedgerTransaction>, String>(
+        (ref, query) async {
+  final s = sessionOf(ref.watch(vaultProvider));
+  if (s == null || query.isEmpty) return const [];
+  return s.ledger.search(query);
+});
+
 final txAccountsProvider = FutureProvider.autoDispose<List<Account>>((ref) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) return const [];
@@ -67,7 +76,10 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(txListProvider);
+    // 搜索时切换到全账本搜索；空查询用最近的 watch 流（实时刷新）。
+    final async = _query.isEmpty
+        ? ref.watch(txListProvider)
+        : ref.watch(txSearchProvider(_query));
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -103,13 +115,6 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
           final visible = txs
               .where((t) => t.status != TxStatus.voided)
               .where(_accepts)
-              .where((t) {
-                if (_query.isEmpty) return true;
-                final q = _query.toLowerCase();
-                return (t.note ?? '').toLowerCase().contains(q) ||
-                    (t.counterparty ?? '').toLowerCase().contains(q) ||
-                    t.kind.labelZh.contains(q);
-              })
               .toList();
           return Column(
             children: [
@@ -119,7 +124,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   onChanged: (v) => setState(() => _query = v.trim()),
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.search, size: 20),
-                    hintText: '搜索备注、对方、类型',
+                    hintText: '搜索全账本：备注、对方、标签',
                     isDense: true,
                   ),
                 ),

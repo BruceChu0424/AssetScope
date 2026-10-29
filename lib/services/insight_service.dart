@@ -288,6 +288,10 @@ class InsightService {
       ));
     }
 
+    // --- 备份提醒：距上次加密备份超过 30 天（或有账无备份）时提示 ---
+    final backupInsight = await _backupReminder(now);
+    if (backupInsight != null) insights.add(backupInsight);
+
     return InsightBundle(
       health: health,
       pace: pace,
@@ -297,6 +301,34 @@ class InsightService {
       insights: insights,
     );
   }
+  /// 备份提醒洞察：从未备份（且有交易）或距上次备份 > 30 天时返回。
+  Future<Insight?> _backupReminder(DateTime now) async {
+    final lastMs = await _meta.settingInt('lastBackupAtMs');
+    final txCount = await _ledger.countPosted();
+    if (txCount == 0) return null;
+    if (lastMs == null) {
+      return Insight(
+        icon: '💾',
+        title: '还没有备份过',
+        detail: '数据只存在本机（Android 卸载即清空）。到 设置 → 导出加密备份，'
+            '生成 .asbk 离线保存一份',
+        severity: InsightSeverity.warn,
+      );
+    }
+    final days = now.difference(
+            DateTime.fromMillisecondsSinceEpoch(lastMs))
+        .inDays;
+    if (days >= 30) {
+      return Insight(
+        icon: '💾',
+        title: '距上次备份已 $days 天',
+        detail: '重要数据建议每月备份一次；到 设置 → 导出加密备份 更新 .asbk',
+        severity: InsightSeverity.warn,
+      );
+    }
+    return null;
+  }
+
 
   /// 下一个"整数关口"：10 万级 → 最近的 10 万倍数；百万以上 → 100 万倍数。
   BigInt _nextRoundNumber(Iterable<BigInt> values) {

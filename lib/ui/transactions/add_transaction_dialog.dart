@@ -10,8 +10,14 @@ import '../widgets/common.dart';
 import 'transactions_page.dart' show txAccountsProvider;
 
 /// 记一笔：覆盖常用种类（消费/收入/转账/还款/借入/借出/收回）。
+///
+/// [editing] 非空时为编辑模式：预填原交易字段，保存时经
+/// LedgerService.editTx 重放分录（保留 id 与来源审计字段，不产生
+/// "作废+重记"杂讯）。仅支持简单资金流类型（LedgerService.isEditable）。
 class AddTransactionDialog extends ConsumerStatefulWidget {
-  const AddTransactionDialog({super.key});
+  const AddTransactionDialog({super.key, this.editing});
+
+  final LedgerTransaction? editing;
 
   @override
   ConsumerState<AddTransactionDialog> createState() =>
@@ -28,6 +34,76 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
   String? _category;
 
   @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    if (e != null) _prefill(e);
+  }
+
+  /// 从原交易推断表单初值：金额取首条用户账户货币分录的绝对值，
+  /// 账户按"负 = 流出方、正 = 流入方"结合类型语义匹配（分录方向口径
+  /// 见 docs/05 §2：正 = 借 = 资金流入该账户）。
+  void _prefill(LedgerTransaction tx) {
+    _kind = tx.kind;
+    _date.text =
+        '${tx.date.year}-${tx.date.month.toString().padLeft(2, '0')}-${tx.date.day.toString().padLeft(2, '0')}';
+    _note.text = tx.note ?? '';
+    _category = tx.categoryId;
+    BigInt? amount;
+    for (final p in tx.postings) {
+      if (p.amountMinor == null) continue;
+      final id = p.accountId;
+      final isUser = !id.startsWith('sys:') && !id.startsWith('cat:');
+      if (amount == null && isUser) amount = p.amountMinor!.abs();
+      // 方向匹配账户。
+      final neg = p.amountMinor!.isNegative;
+      switch (tx.kind) {
+        case TxKind.expense:
+          if (isUser) _accountA = id;
+        case TxKind.income:
+          if (isUser && !neg) _accountA = id;
+        case TxKind.transfer:
+          if (isUser && neg) {
+            _accountA = id;
+          } else if (isUser) {
+            _accountB = id;
+          }
+        case TxKind.creditCardRepay:
+          if (neg) {
+            _accountB = id; // 还款来源
+          } else {
+            _accountA = id; // 卡
+          }
+        case TxKind.borrow:
+          if (isUser && !neg) {
+            _accountA = id; // 借入到账
+          } else if (!isUser) {
+            _accountB = id; // 贷款账户（负债）
+          }
+        case TxKind.lend || TxKind.receiveBack:
+          // 方向定账户：lend 应收(+) / receiveBack 应收(−) 在 A，现金在 B。
+          if (isUser) {
+            if ((tx.kind == TxKind.lend) != neg) {
+              _accountA = id;
+            } else {
+              _accountB = id;
+            }
+          }
+        default:
+          break;
+      }
+    }
+    if (amount != null) {
+      // 保持分的精度（88.50 不得预填成 88）。
+      final ccy = tx.postings
+          .firstWhere((p) => p.currencyCode != null && p.currencyCode!.isNotEmpty,
+              orElse: () => tx.postings.first)
+          .currencyCode;
+      _amount.text = fmtMinor(amount, ccy ?? 'CNY');
+    }
+  }
+
+  @override
   void dispose() {
     _amount.dispose();
     _note.dispose();
@@ -39,7 +115,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
   Widget build(BuildContext context) {
     final accountsAsync = ref.watch(txAccountsProvider);
     return AlertDialog(
-      title: const Text('记一笔'),
+      title: Text(widget.editing == null ? '记一笔' : '编辑交易'),
       content: accountsAsync.when(
         loading: () => const SizedBox(
             height: 200, child: Center(child: CircularProgressIndicator())),
@@ -249,53 +325,58 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     if (aA == null || amountText.isEmpty) return;
     final amount =
         Money.parse(amountText, CurrencyInfo.parse(aA.currencyCode)).amountMinor;
+    final note = _note.text.isEmpty ? null : _note.text;
 
-    switch (_kind) {
-      case TxKind.expense:
-        await s.ledger.post(TxBuilders.expense(
-            payFrom: aA,
-            expenseCategory: cat ?? byId['cat:e:other']!,
-            amountMinor: amount,
-            date: date,
-            note: _note.text.isEmpty ? null : _note.text));
-      case TxKind.income:
-        await s.ledger.post(TxBuilders.income(
-            destAsset: aA,
-            incomeCategory: cat ?? byId['cat:i:other']!,
-            amountMinor: amount,
-            date: date,
-            note: _note.text.isEmpty ? null : _note.text));
-      case TxKind.transfer:
-        if (aB == null) return;
-        await s.ledger.post(TxBuilders.transfer(
-            from: aA, to: aB, amountMinor: amount, date: date));
-      case TxKind.creditCardRepay:
-        if (aB == null) return;
-        await s.ledger.post(TxBuilders.creditCardRepay(
-            card: aA, payFrom: aB, amountMinor: amount, date: date));
-      case TxKind.loanRepay:
-        if (aB == null) return;
-        await s.ledger.post(TxBuilders.loanRepay(
-            loan: aA,
-            payFrom: aB,
-            principalMinor: amount,
-            interestMinor: BigInt.zero,
-            interestCategory: cat ?? byId['cat:e:interest']!,
-            date: date));
-      case TxKind.borrow:
-        if (aB == null) return;
-        await s.ledger.post(
-            TxBuilders.borrow(loan: aA, toAsset: aB, principalMinor: amount, date: date));
-      case TxKind.lend:
-        if (aB == null) return;
-        await s.ledger.post(TxBuilders.lend(
-            receivable: aA, fromAsset: aB, amountMinor: amount, date: date));
-      case TxKind.receiveBack:
-        if (aB == null) return;
-        await s.ledger.post(TxBuilders.receiveBack(
-            receivable: aA, toAsset: aB, amountMinor: amount, date: date));
-      default:
-        return;
+    final draft = switch (_kind) {
+      TxKind.expense => TxBuilders.expense(
+          payFrom: aA,
+          expenseCategory: cat ?? byId['cat:e:other']!,
+          amountMinor: amount,
+          date: date,
+          note: note),
+      TxKind.income => TxBuilders.income(
+          destAsset: aA,
+          incomeCategory: cat ?? byId['cat:i:other']!,
+          amountMinor: amount,
+          date: date,
+          note: note),
+      TxKind.transfer => aB == null
+          ? null
+          : TxBuilders.transfer(
+              from: aA, to: aB, amountMinor: amount, date: date, note: note),
+      TxKind.creditCardRepay => aB == null
+          ? null
+          : TxBuilders.creditCardRepay(
+              card: aA, payFrom: aB, amountMinor: amount, date: date, note: note),
+      TxKind.loanRepay => aB == null
+          ? null
+          : TxBuilders.loanRepay(
+              loan: aA,
+              payFrom: aB,
+              principalMinor: amount,
+              interestMinor: BigInt.zero,
+              interestCategory: cat ?? byId['cat:e:interest']!,
+              date: date),
+      TxKind.borrow => aB == null
+          ? null
+          : TxBuilders.borrow(
+              loan: aA, toAsset: aB, principalMinor: amount, date: date, note: note),
+      TxKind.lend => aB == null
+          ? null
+          : TxBuilders.lend(
+              receivable: aA, fromAsset: aB, amountMinor: amount, date: date, note: note),
+      TxKind.receiveBack => aB == null
+          ? null
+          : TxBuilders.receiveBack(
+              receivable: aA, toAsset: aB, amountMinor: amount, date: date, note: note),
+      _ => null,
+    };
+    if (draft == null) return;
+    final editingId = widget.editing?.id;
+    if (editingId != null) {
+      await s.ledgerService.editTx(editingId, draft);
+    } else {
+      await s.ledger.post(draft);
     }
     if (mounted) Navigator.pop(context, true);
   }
