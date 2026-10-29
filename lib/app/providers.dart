@@ -149,7 +149,12 @@ class VaultNotifier extends Notifier<VaultState> {
     await appDir.create(recursive: true);
     _store = FileKeyStore(appDir);
     final header = await _store!.loadPrimary();
-    state = VaultLocked(hasRecovery: header != null);
+    // 首次运行（无密钥头）：保持 VaultUninitialized，锁屏显示"创建"表单。
+    // 不得在此置为 Locked——否则新用户会面对永远解不开的解锁死锁
+    // （v0.2 引入锁屏起存在，直至 v0.15 由真机首启动发现）。
+    if (header != null) {
+      state = VaultLocked(hasRecovery: true);
+    }
   }
 
   Future<Directory> appDir() async {

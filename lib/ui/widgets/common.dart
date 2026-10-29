@@ -4,6 +4,7 @@
 /// 页面只应从这里 import，不要深入子文件。
 library;
 
+export 'brand_logo.dart' show BrandMark, BrandLockup;
 export 'fields_and_badges.dart'
     show
         DeltaBadge,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../security/key_manager.dart';
+import '../widgets/common.dart';
 
 /// 锁屏：首次创建金库（设定主口令 + 展示恢复码）/ 日常解锁。
 class LockPage extends ConsumerStatefulWidget {
@@ -142,7 +143,12 @@ class _LockPageState extends ConsumerState<LockPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _BrandMark(size: 64),
+                if (setup)
+                  _BrandReveal(
+                    child: Center(child: BrandLockup(width: 280)),
+                  )
+                else
+                  const Center(child: BrandMark(size: 64)),
                 const SizedBox(height: 12),
                 Text(
                   setup ? '创建加密账本' : '资观 AssetScope',
@@ -198,38 +204,54 @@ class _LockPageState extends ConsumerState<LockPage> {
   }
 }
 
-/// 品牌标识：祖母绿圆片 + 盾形锁标（锁屏与空状态共用视觉锚点）。
-class _BrandMark extends StatelessWidget {
-  const _BrandMark({required this.size});
+/// 首启动品牌揭示：lockup 淡入并自 96% 轻微放大（easeOutCubic，450ms）。
+///
+/// 动效门槛：仅首次创建金库（一次性 onboarding）播放——日常解锁是
+/// 高频路径，logo 静态直达；系统"减少动画"时直接呈现终态。
+class _BrandReveal extends StatefulWidget {
+  const _BrandReveal({required this.child});
 
-  final double size;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withValues(alpha: 0.7),
-          ],
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(Icons.shield_outlined,
-          size: size * 0.5, color: Colors.white),
-    );
+  State<_BrandReveal> createState() => _BrandRevealState();
+}
+
+class _BrandRevealState extends State<_BrandReveal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+  );
+  late final Animation<double> _anim =
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.value = 1;
+      } else {
+        _controller.forward();
+      }
+    }
   }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: Tween<double>(begin: 0, end: 1).animate(_anim),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.96, end: 1).animate(_anim),
+          child: widget.child,
+        ),
+      );
 }

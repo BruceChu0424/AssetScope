@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'theme/app_theme.dart';
+import 'widgets/common.dart';
 
 /// 主框架：桌面侧边导航（全量）；手机底部导航（4 个高频目的地 + "更多"弹层，
 /// Material 3 建议 NavigationBar 不超过 5 个目的地）。
@@ -44,6 +45,10 @@ class HomeShell extends StatelessWidget {
         body: Row(
           children: [
             NavigationRail(
+              leading: const Padding(
+                padding: EdgeInsets.fromLTRB(8, 20, 8, 4),
+                child: BrandMark(size: 34),
+              ),
               selectedIndex: currentIndex.clamp(0, _primary.length + _secondary.length - 1),
               onDestinationSelected: (i) {
                 if (i < _primary.length) {

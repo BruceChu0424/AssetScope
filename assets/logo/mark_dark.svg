@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">AssetScope A mark — white</title>
+  <desc id="desc">Single-color A symbol. Transparent background. Pure vector outlines.</desc>
+  <g id="mark" fill="#FFFFFF" transform="translate(-110.5 -123)">
+    <path d="M197 974 L548 322 C557 305 568 296 590 296 H705 L874 631 C832 610 789 602 742 599 L665 409 L552 629 C477 659 414 700 359 755 C443 676 566 617 692 623 C768 619 840 637 891 664 L934 746 C851 697 767 685 688 690 C559 696 446 777 392 864 L354 943 C345 964 329 974 306 974 Z"/>
+    <path d="M755 701 C831 708 883 735 928 772 L1048 974 H899 C867 974 846 963 833 936 C813 887 780 781 755 701 Z"/>
+  </g>
+</svg>

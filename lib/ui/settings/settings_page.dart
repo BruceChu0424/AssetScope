@@ -115,8 +115,9 @@ class SettingsPage extends ConsumerWidget {
             subtitle: const Text('AI 联网搜索最新价格与汇率，预览确认后入账'),
             onTap: () => showQuoteFetchSheet(context, ref),
           ),
-          const AboutListTile(
-            icon: Icon(Icons.info_outline),
+          AboutListTile(
+            icon: const Icon(Icons.info_outline),
+            applicationIcon: const BrandMark(size: 44),
             applicationName: appName,
             applicationVersion: appVersion,
             aboutBoxChildren: [

@@ -56,8 +56,20 @@ dev_dependencies:
   drift_dev: ^2.35.1
   build_runner: ^2.15.1
   sqlite3: ^3.5.2
+  path_provider_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true
   assets:
     - assets/globe/land_dots.json
+    # 品牌标识（A mark，透明背景矢量）：
+    # mark_light.svg = 绿色 #087F6B，配浅色背景（浅色模式）
+    # mark_dark.svg = 白色，配深色背景（深色模式）
+    - assets/logo/mark_light.svg
+    - assets/logo/mark_dark.svg
+    # 品牌标识 PNG（应用内展示用；命名同上，light=绿色款 dark=白色款）：
+    # mark = 单 A 图形；lockup = A 标 + AssetScope 字标
+    - assets/logo/mark_light.png
+    - assets/logo/mark_dark.png
+    - assets/logo/lockup_light.png
+    - assets/logo/lockup_dark.png
