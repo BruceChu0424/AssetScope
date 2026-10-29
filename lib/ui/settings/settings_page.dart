@@ -12,6 +12,7 @@ import 'ai_config_sheet.dart';
 import 'category_manager_sheet.dart';
 import 'fx_manager_sheet.dart';
 import 'quote_fetch_sheet.dart';
+import 'merge_dialog.dart';
 import 'settings_dialogs.dart';
 
 /// 设置：安全、备份与恢复、偏好（外观/本位币/锁定/预测/底线）、数据管理。
@@ -58,6 +59,12 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('从备份恢复'),
             subtitle: const Text('先隔离校验，通过后才替换当前账本（原库保留 .bak）'),
             onTap: () => showBackupRestoreDialog(context, ref, s),
+          ),
+          ListTile(
+            leading: const Icon(Icons.merge_type),
+            title: const Text('从备份合并（多设备）'),
+            subtitle: const Text('把另一设备的 .asbk 并入当前账本：交易按时间新者胜，先自动安全备份'),
+            onTap: () => showMergeDialog(context, ref, s),
           ),
           const _SectionHeader('偏好'),
           _ThemeModeTile(session: s),

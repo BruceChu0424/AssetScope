@@ -23,10 +23,14 @@ class BackupService {
   final CryptoSuite _suite;
 
   /// 导出加密备份到 [target]。
+  ///
+  /// [vaultFingerprint]：账本谱系指纹（MergeService.vaultFingerprint），
+  /// 写入容器明文 meta，供多设备合并时校验"同一本账"。
   Future<void> exportTo({
     required File target,
     Uint8List? dek,
     String? passphrase,
+    String? vaultFingerprint,
     Map<String, Object> meta = const {},
   }) async {
     final dir = target.parent;
@@ -48,6 +52,7 @@ class BackupService {
         meta: {
           'app': 'assetscope',
           'schemaVersion': _db.schemaVersion,
+          'vaultId': ?vaultFingerprint,
           ...meta,
         },
       );

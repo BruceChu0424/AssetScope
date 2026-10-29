@@ -9,6 +9,7 @@ import '../../app/providers.dart';
 import '../../domain/money/currency.dart';
 import '../../security/dart_crypto_suite.dart';
 import '../../services/backup_service.dart';
+import '../../services/merge_service.dart';
 
 /// 设置页的全部对话框流程（安全/备份/本位币），与页面骨架分离。
 ///
@@ -117,6 +118,8 @@ Future<void> showBackupExportDialog(
     await service.exportTo(
       target: File(file.path),
       passphrase: pass.text,
+      vaultFingerprint:
+          MergeService.vaultFingerprint(s.keyManager.databaseKeyHex()),
     );
     // 记录备份时间（仪表盘备份提醒的依据）。
     await s.meta

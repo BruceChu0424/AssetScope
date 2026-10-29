@@ -108,6 +108,8 @@ void main() {
 
     expect(container.read(themeModeProvider), ThemeMode.system);
 
+    // 新增入口（如"从备份合并"）可能把外观项挤出视口，先滚动到位。
+    await tester.scrollUntilVisible(find.text('外观'), 200);
     await tester.tap(find.text('外观'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('深色').last);
