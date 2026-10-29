@@ -17,6 +17,7 @@ class DashboardData {
     required this.series,
     required this.insights,
     required this.locatedAssets,
+    this.pendingDueCount = 0,
   });
 
   final NetWorthBreakdown nw;
@@ -38,6 +39,9 @@ class DashboardData {
   /// 已设置地理位置的资产数（地球入口用）。
   final int locatedAssets;
 
+  /// 到期未落地的计划发生数（待处理提醒）。
+  final int pendingDueCount;
+
   BigInt get income =>
       report.incomeByCategory.values.fold(BigInt.zero, (a, b) => a + b);
 
@@ -57,8 +61,10 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) async 
       await s.projectionService.project(horizonDays: s.projectionHorizonDays);
   final through = now.add(const Duration(days: 30));
   final upcoming = <Occurrence>[];
+  final postedExtIds = await s.ledger.externalIds();
   for (final e in await s.planning.scheduledEvents()) {
-    upcoming.addAll(e.expand(DateTime(now.year, now.month, now.day), through));
+    upcoming.addAll(e.expand(DateTime(now.year, now.month, now.day), through)
+        .where((o) => !postedExtIds.contains(planExternalId(e.id, o.date))));
   }
   upcoming.sort((a, b) => a.date.compareTo(b.date));
   final series = await s.statsService.netWorthSeries(12, now: now);
@@ -68,6 +74,7 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) async 
       .where((a) =>
           a.type.name == 'asset' && !a.isSystem && a.hasLocation && !a.archived)
       .length;
+  final pendingDue = (await s.planExecution.pendingDue()).length;
   return DashboardData(
     nw: nw,
     report: report,
@@ -77,5 +84,6 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) async 
     series: series,
     insights: insights,
     locatedAssets: located,
+    pendingDueCount: pendingDue,
   );
 });

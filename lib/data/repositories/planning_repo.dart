@@ -86,6 +86,10 @@ class PlanningRepo {
             for (final m in (jsonDecode(r.skippedMonthsJson) as List))
               m as String
           },
+          skippedDateKeys: {
+            for (final m in (jsonDecode(r.skippedDatesJson) as List))
+              m as String
+          },
           amountOverrides: {
             for (final e in (jsonDecode(r.amountOverridesJson)
                 as Map<String, dynamic>).entries)
@@ -117,6 +121,8 @@ class PlanningRepo {
               status: Value(e.status.name),
               skippedMonthsJson:
                   Value(jsonEncode(e.skippedMonthKeys.toList())),
+              skippedDatesJson:
+                  Value(jsonEncode(e.skippedDateKeys.toList())),
               amountOverridesJson: Value(jsonEncode({
                 for (final e2 in e.amountOverrides.entries)
                   e2.key: e2.value.toString()

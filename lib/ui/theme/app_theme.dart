@@ -25,6 +25,7 @@ abstract final class AppColors {
   static const darkPositive = Color(0xFF5FBB98);
   static const darkNegative = Color(0xFFE07862);
   static const darkBrass = Color(0xFFD4B25E);
+  static const darkWarn = Color(0xFFD9A441);
 
   static Color positiveOf(Brightness b) =>
       b == Brightness.light ? positive : darkPositive;
@@ -32,6 +33,7 @@ abstract final class AppColors {
       b == Brightness.light ? negative : darkNegative;
   static Color brassOf(Brightness b) =>
       b == Brightness.light ? brass : darkBrass;
+  static Color warnOf(Brightness b) => b == Brightness.light ? warn : darkWarn;
 }
 
 /// 图表调色板：祖母绿→铜金→灰的渐次层次。

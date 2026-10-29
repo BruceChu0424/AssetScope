@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
 import 'package:assetscope/domain/ledger/transaction.dart';
+import 'package:assetscope/domain/planning/recurrence.dart';
+import 'package:assetscope/domain/utils/dates.dart';
 import 'package:assetscope/ui/accounts/accounts_page.dart';
 import 'package:assetscope/ui/budget/budgets_page.dart';
 import 'package:assetscope/ui/dashboard/dashboard_page.dart';
@@ -207,6 +209,92 @@ void main() {
         scrollable: sheetScrollable);
     expect(find.text('推演结论'), findsOneWidget);
     expect(find.textContaining('年后净资产'), findsOneWidget);
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('计划页：到期计划一键全部记入 → 清单消失', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    // 今天到期的咖啡计划（配置齐全，可直接一键记入）。
+    // 先删种子自带的房租计划（未配账户会留在待落地清单，干扰断言）。
+    await session.planning.deleteScheduledEvent('evt:rent');
+    final today = DateTime.now();
+    await session.planning.saveScheduledEvent(ScheduledEvent(
+        id: 'evt:coffee',
+        name: '咖啡豆',
+        direction: EventDirection.outflow,
+        currencyCode: 'CNY',
+        cadence: Cadence.weekly,
+        anchorDate: DateTime(today.year, today.month, today.day),
+        amountMinor: BigInt.from(6600),
+        paymentAccountId: 'bank',
+        categoryId: 'cat:e:dining'));
+    await tester.pumpWidget(host(const PlansPage()));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('待落地'), findsOneWidget);
+    expect(find.text('咖啡豆'), findsWidgets);
+
+    await tester.tap(find.text('全部记入'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已记入 1 笔计划'), findsOneWidget);
+    // 清单刷新后消失。
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('待落地'), findsNothing);
+
+    final extId =
+        'plan:evt:coffee:${dateKey(DateTime(today.year, today.month, today.day))}';
+    expect(await session.ledger.externalIdExists(extId), isTrue);
+    // 再点不会重复入账（幂等）。
+    expect(find.text('全部记入'), findsNothing);
+  });
+
+  testWidgets('计划页：确认弹层改金额记入账本', (tester) async {
+    if (!dbAvailable) {
+      markTestSkipped('宿主环境无可用 sqlite3，跳过');
+      return;
+    }
+    // 未配置支付账户的到期计划：确认弹层里选默认账户并改金额。
+    await session.planning.deleteScheduledEvent('evt:rent');
+    final today = DateTime.now();
+    await session.planning.saveScheduledEvent(ScheduledEvent(
+        id: 'evt:milk',
+        name: '鲜奶',
+        direction: EventDirection.outflow,
+        currencyCode: 'CNY',
+        cadence: Cadence.once,
+        anchorDate: DateTime(today.year, today.month, today.day),
+        amountMinor: BigInt.from(3000)));
+    await tester.pumpWidget(host(const PlansPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('鲜奶'), findsWidgets);
+
+    await tester.tap(find.byTooltip('记入账本'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('记入账本 · 鲜奶'), findsOneWidget);
+
+    final sheetAmount = find
+        .descendant(
+            of: find.byType(BottomSheet), matching: find.byType(TextField))
+        .first;
+    await tester.enterText(sheetAmount, '32.50');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '记入账本'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('待落地'), findsNothing);
+    final rows = await (db.select(db.transactions)
+          ..where((t) => t.externalId.equals('plan:evt:milk:${dateKey(DateTime(today.year, today.month, today.day))}')))
+        .get();
+    expect(rows, hasLength(1));
+    expect(rows.single.kind, 'expense');
+    expect(rows.single.source, 'planGenerated');
 
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpWidget(const SizedBox.shrink());

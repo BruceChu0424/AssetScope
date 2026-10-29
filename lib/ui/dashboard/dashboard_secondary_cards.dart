@@ -203,37 +203,52 @@ class IssuesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final issues = <String>[];
-    if (d.nw.missingValuations > 0) {
-      issues.add('${d.nw.missingValuations} 个账户缺估值（不计为 0，请在账户页补录）');
-    }
-    if (d.nw.staleValuations > 0) {
-      issues.add('${d.nw.staleValuations} 个账户估值已过期（>30 天）');
-    }
-    if (d.report.attribution.hasResidual) {
-      issues.add(
-          '本月归因存在待核对差额：${fmtMinor(d.report.attribution.residual, d.report.baseCurrencyCode)}');
-    }
+    final issues = <(String, String?)>[
+      if (d.pendingDueCount > 0)
+        ('${d.pendingDueCount} 笔到期计划待入账（计划页可一键记入）', '/plans'),
+      if (d.nw.missingValuations > 0)
+        ('${d.nw.missingValuations} 个账户缺估值（不计为 0，请在账户页补录）', null),
+      if (d.nw.staleValuations > 0)
+        ('${d.nw.staleValuations} 个账户估值已过期（>30 天）', null),
+      if (d.report.attribution.hasResidual)
+        ('本月归因存在待核对差额：${fmtMinor(d.report.attribution.residual, d.report.baseCurrencyCode)}', null),
+    ];
     if (issues.isEmpty) return const SizedBox.shrink();
     return SectionCard(
       title: '待处理',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final i in issues)
+          for (final (text, path) in issues)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 16,
-                      color: AppColors.brassOf(theme.brightness)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                      child:
-                          Text(i, style: theme.textTheme.bodyMedium)),
-                ],
+              child: InkWell(
+                onTap: path == null ? null : () => context.go(path),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                          path != null
+                              ? Icons.event_available_outlined
+                              : Icons.error_outline,
+                          size: 16,
+                          color: path != null
+                              ? AppColors.brassOf(theme.brightness)
+                              : AppColors.warnOf(theme.brightness)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(text,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                color: path != null
+                                    ? theme.colorScheme.primary
+                                    : null)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

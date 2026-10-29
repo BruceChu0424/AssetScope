@@ -3964,6 +3964,18 @@ class $ScheduledEventsTable extends ScheduledEvents
         requiredDuringInsert: false,
         defaultValue: const Constant('[]'),
       );
+  static const VerificationMeta _skippedDatesJsonMeta = const VerificationMeta(
+    'skippedDatesJson',
+  );
+  @override
+  late final GeneratedColumn<String> skippedDatesJson = GeneratedColumn<String>(
+    'skipped_dates_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   static const VerificationMeta _amountOverridesJsonMeta =
       const VerificationMeta('amountOverridesJson');
   @override
@@ -3996,6 +4008,7 @@ class $ScheduledEventsTable extends ScheduledEvents
     notes,
     status,
     skippedMonthsJson,
+    skippedDatesJson,
     amountOverridesJson,
   ];
   @override
@@ -4124,6 +4137,15 @@ class $ScheduledEventsTable extends ScheduledEvents
         ),
       );
     }
+    if (data.containsKey('skipped_dates_json')) {
+      context.handle(
+        _skippedDatesJsonMeta,
+        skippedDatesJson.isAcceptableOrUnknown(
+          data['skipped_dates_json']!,
+          _skippedDatesJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('amount_overrides_json')) {
       context.handle(
         _amountOverridesJsonMeta,
@@ -4220,6 +4242,10 @@ class $ScheduledEventsTable extends ScheduledEvents
         DriftSqlType.string,
         data['${effectivePrefix}skipped_months_json'],
       )!,
+      skippedDatesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skipped_dates_json'],
+      )!,
       amountOverridesJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}amount_overrides_json'],
@@ -4266,6 +4292,7 @@ class ScheduledEventRow extends DataClass
   final String? notes;
   final String status;
   final String skippedMonthsJson;
+  final String skippedDatesJson;
   final String amountOverridesJson;
   const ScheduledEventRow({
     required this.id,
@@ -4286,6 +4313,7 @@ class ScheduledEventRow extends DataClass
     this.notes,
     required this.status,
     required this.skippedMonthsJson,
+    required this.skippedDatesJson,
     required this.amountOverridesJson,
   });
   @override
@@ -4329,6 +4357,7 @@ class ScheduledEventRow extends DataClass
     }
     map['status'] = Variable<String>(status);
     map['skipped_months_json'] = Variable<String>(skippedMonthsJson);
+    map['skipped_dates_json'] = Variable<String>(skippedDatesJson);
     map['amount_overrides_json'] = Variable<String>(amountOverridesJson);
     return map;
   }
@@ -4367,6 +4396,7 @@ class ScheduledEventRow extends DataClass
           : Value(notes),
       status: Value(status),
       skippedMonthsJson: Value(skippedMonthsJson),
+      skippedDatesJson: Value(skippedDatesJson),
       amountOverridesJson: Value(amountOverridesJson),
     );
   }
@@ -4395,6 +4425,7 @@ class ScheduledEventRow extends DataClass
       notes: serializer.fromJson<String?>(json['notes']),
       status: serializer.fromJson<String>(json['status']),
       skippedMonthsJson: serializer.fromJson<String>(json['skippedMonthsJson']),
+      skippedDatesJson: serializer.fromJson<String>(json['skippedDatesJson']),
       amountOverridesJson: serializer.fromJson<String>(
         json['amountOverridesJson'],
       ),
@@ -4422,6 +4453,7 @@ class ScheduledEventRow extends DataClass
       'notes': serializer.toJson<String?>(notes),
       'status': serializer.toJson<String>(status),
       'skippedMonthsJson': serializer.toJson<String>(skippedMonthsJson),
+      'skippedDatesJson': serializer.toJson<String>(skippedDatesJson),
       'amountOverridesJson': serializer.toJson<String>(amountOverridesJson),
     };
   }
@@ -4445,6 +4477,7 @@ class ScheduledEventRow extends DataClass
     Value<String?> notes = const Value.absent(),
     String? status,
     String? skippedMonthsJson,
+    String? skippedDatesJson,
     String? amountOverridesJson,
   }) => ScheduledEventRow(
     id: id ?? this.id,
@@ -4471,6 +4504,7 @@ class ScheduledEventRow extends DataClass
     notes: notes.present ? notes.value : this.notes,
     status: status ?? this.status,
     skippedMonthsJson: skippedMonthsJson ?? this.skippedMonthsJson,
+    skippedDatesJson: skippedDatesJson ?? this.skippedDatesJson,
     amountOverridesJson: amountOverridesJson ?? this.amountOverridesJson,
   );
   ScheduledEventRow copyWithCompanion(ScheduledEventsCompanion data) {
@@ -4513,6 +4547,9 @@ class ScheduledEventRow extends DataClass
       skippedMonthsJson: data.skippedMonthsJson.present
           ? data.skippedMonthsJson.value
           : this.skippedMonthsJson,
+      skippedDatesJson: data.skippedDatesJson.present
+          ? data.skippedDatesJson.value
+          : this.skippedDatesJson,
       amountOverridesJson: data.amountOverridesJson.present
           ? data.amountOverridesJson.value
           : this.amountOverridesJson,
@@ -4540,6 +4577,7 @@ class ScheduledEventRow extends DataClass
           ..write('notes: $notes, ')
           ..write('status: $status, ')
           ..write('skippedMonthsJson: $skippedMonthsJson, ')
+          ..write('skippedDatesJson: $skippedDatesJson, ')
           ..write('amountOverridesJson: $amountOverridesJson')
           ..write(')'))
         .toString();
@@ -4565,6 +4603,7 @@ class ScheduledEventRow extends DataClass
     notes,
     status,
     skippedMonthsJson,
+    skippedDatesJson,
     amountOverridesJson,
   );
   @override
@@ -4589,6 +4628,7 @@ class ScheduledEventRow extends DataClass
           other.notes == this.notes &&
           other.status == this.status &&
           other.skippedMonthsJson == this.skippedMonthsJson &&
+          other.skippedDatesJson == this.skippedDatesJson &&
           other.amountOverridesJson == this.amountOverridesJson);
 }
 
@@ -4611,6 +4651,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
   final Value<String?> notes;
   final Value<String> status;
   final Value<String> skippedMonthsJson;
+  final Value<String> skippedDatesJson;
   final Value<String> amountOverridesJson;
   final Value<int> rowid;
   const ScheduledEventsCompanion({
@@ -4632,6 +4673,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
     this.notes = const Value.absent(),
     this.status = const Value.absent(),
     this.skippedMonthsJson = const Value.absent(),
+    this.skippedDatesJson = const Value.absent(),
     this.amountOverridesJson = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4654,6 +4696,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
     this.notes = const Value.absent(),
     this.status = const Value.absent(),
     this.skippedMonthsJson = const Value.absent(),
+    this.skippedDatesJson = const Value.absent(),
     this.amountOverridesJson = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -4681,6 +4724,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
     Expression<String>? notes,
     Expression<String>? status,
     Expression<String>? skippedMonthsJson,
+    Expression<String>? skippedDatesJson,
     Expression<String>? amountOverridesJson,
     Expression<int>? rowid,
   }) {
@@ -4703,6 +4747,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
       if (notes != null) 'notes': notes,
       if (status != null) 'status': status,
       if (skippedMonthsJson != null) 'skipped_months_json': skippedMonthsJson,
+      if (skippedDatesJson != null) 'skipped_dates_json': skippedDatesJson,
       if (amountOverridesJson != null)
         'amount_overrides_json': amountOverridesJson,
       if (rowid != null) 'rowid': rowid,
@@ -4728,6 +4773,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
     Value<String?>? notes,
     Value<String>? status,
     Value<String>? skippedMonthsJson,
+    Value<String>? skippedDatesJson,
     Value<String>? amountOverridesJson,
     Value<int>? rowid,
   }) {
@@ -4750,6 +4796,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
       notes: notes ?? this.notes,
       status: status ?? this.status,
       skippedMonthsJson: skippedMonthsJson ?? this.skippedMonthsJson,
+      skippedDatesJson: skippedDatesJson ?? this.skippedDatesJson,
       amountOverridesJson: amountOverridesJson ?? this.amountOverridesJson,
       rowid: rowid ?? this.rowid,
     );
@@ -4822,6 +4869,9 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
     if (skippedMonthsJson.present) {
       map['skipped_months_json'] = Variable<String>(skippedMonthsJson.value);
     }
+    if (skippedDatesJson.present) {
+      map['skipped_dates_json'] = Variable<String>(skippedDatesJson.value);
+    }
     if (amountOverridesJson.present) {
       map['amount_overrides_json'] = Variable<String>(
         amountOverridesJson.value,
@@ -4854,6 +4904,7 @@ class ScheduledEventsCompanion extends UpdateCompanion<ScheduledEventRow> {
           ..write('notes: $notes, ')
           ..write('status: $status, ')
           ..write('skippedMonthsJson: $skippedMonthsJson, ')
+          ..write('skippedDatesJson: $skippedDatesJson, ')
           ..write('amountOverridesJson: $amountOverridesJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -10086,6 +10137,7 @@ typedef $$ScheduledEventsTableCreateCompanionBuilder =
       Value<String?> notes,
       Value<String> status,
       Value<String> skippedMonthsJson,
+      Value<String> skippedDatesJson,
       Value<String> amountOverridesJson,
       Value<int> rowid,
     });
@@ -10109,6 +10161,7 @@ typedef $$ScheduledEventsTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<String> status,
       Value<String> skippedMonthsJson,
+      Value<String> skippedDatesJson,
       Value<String> amountOverridesJson,
       Value<int> rowid,
     });
@@ -10212,6 +10265,11 @@ class $$ScheduledEventsTableFilterComposer
 
   ColumnFilters<String> get skippedMonthsJson => $composableBuilder(
     column: $table.skippedMonthsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skippedDatesJson => $composableBuilder(
+    column: $table.skippedDatesJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10320,6 +10378,11 @@ class $$ScheduledEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get skippedDatesJson => $composableBuilder(
+    column: $table.skippedDatesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get amountOverridesJson => $composableBuilder(
     column: $table.amountOverridesJson,
     builder: (column) => ColumnOrderings(column),
@@ -10412,6 +10475,11 @@ class $$ScheduledEventsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get skippedDatesJson => $composableBuilder(
+    column: $table.skippedDatesJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get amountOverridesJson => $composableBuilder(
     column: $table.amountOverridesJson,
     builder: (column) => column,
@@ -10473,6 +10541,7 @@ class $$ScheduledEventsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String> skippedMonthsJson = const Value.absent(),
+                Value<String> skippedDatesJson = const Value.absent(),
                 Value<String> amountOverridesJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ScheduledEventsCompanion(
@@ -10494,6 +10563,7 @@ class $$ScheduledEventsTableTableManager
                 notes: notes,
                 status: status,
                 skippedMonthsJson: skippedMonthsJson,
+                skippedDatesJson: skippedDatesJson,
                 amountOverridesJson: amountOverridesJson,
                 rowid: rowid,
               ),
@@ -10517,6 +10587,7 @@ class $$ScheduledEventsTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String> skippedMonthsJson = const Value.absent(),
+                Value<String> skippedDatesJson = const Value.absent(),
                 Value<String> amountOverridesJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ScheduledEventsCompanion.insert(
@@ -10538,6 +10609,7 @@ class $$ScheduledEventsTableTableManager
                 notes: notes,
                 status: status,
                 skippedMonthsJson: skippedMonthsJson,
+                skippedDatesJson: skippedDatesJson,
                 amountOverridesJson: amountOverridesJson,
                 rowid: rowid,
               ),

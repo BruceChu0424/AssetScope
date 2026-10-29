@@ -90,6 +90,52 @@ void main() {
     expect(e.expand(DateTime(2026, 1, 1), DateTime(2026, 6, 30)), isEmpty);
   });
 
+  test('单次跳过某日：该次不产生预期，同月其他次保留', () {
+    final e = ScheduledEvent(
+      id: 'e6',
+      name: '保洁',
+      direction: EventDirection.outflow,
+      currencyCode: 'CNY',
+      cadence: Cadence.weekly,
+      anchorDate: DateTime(2026, 3, 2), // 周一
+      amountMinor: BigInt.from(20000),
+      skippedDateKeys: {dateKey(DateTime(2026, 3, 16))},
+    );
+    final occ = e.expand(DateTime(2026, 3, 1), DateTime(2026, 3, 31));
+    // 3 月的周一：2/9/16/23/30，跳过 16 日 → 4 次
+    expect(occ.length, 4);
+    expect(occ.any((o) => dateKey(o.date) == '2026-03-16'), isFalse);
+  });
+
+  test('copyWith 保留未改字段（改状态不丢跳过与覆盖配置）', () {
+    final e = ScheduledEvent(
+      id: 'e7',
+      name: '房租',
+      direction: EventDirection.outflow,
+      currencyCode: 'CNY',
+      cadence: Cadence.monthly,
+      anchorDate: DateTime(2026, 1, 5),
+      amountMinor: BigInt.from(300000),
+      paymentAccountId: 'acc:cash',
+      categoryId: 'cat:e:rent',
+      skippedMonthKeys: {'2026-02'},
+      amountOverrides: {'2026-04': BigInt.from(350000)},
+    );
+    final paused = e.copyWith(status: PlanStatus.paused);
+    expect(paused.id, e.id);
+    expect(paused.name, '房租');
+    expect(paused.amountMinor, BigInt.from(300000));
+    expect(paused.paymentAccountId, 'acc:cash');
+    expect(paused.categoryId, 'cat:e:rent');
+    expect(paused.skippedMonthKeys, {'2026-02'});
+    expect(paused.amountOverrides, {'2026-04': BigInt.from(350000)});
+    expect(paused.status, PlanStatus.paused);
+    // copyWith 语义：只覆盖显式传入的字段，其余原样保留。
+    final renamed = e.copyWith(name: '月租');
+    expect(renamed.name, '月租');
+    expect(renamed.anchorDate, e.anchorDate);
+  });
+
   test('目标每月预留计算（向上取整）与过期处理', () {
     final g = SavingsGoal(
       id: 'g1',

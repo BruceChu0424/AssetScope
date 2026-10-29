@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import 'dashboard_cards.dart';
 import 'dashboard_providers.dart';
 import 'dashboard_secondary_cards.dart';
@@ -23,6 +24,7 @@ class DashboardPage extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
+              const _AutoPostNotice(),
               NetWorthHeroCard(d: d),
               if (d.locatedAssets > 0) ...[
                 const SizedBox(height: 10),
@@ -48,4 +50,31 @@ class DashboardPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// 解锁时自动落地了计划交易的透明提示（只提示一次）。
+class _AutoPostNotice extends ConsumerStatefulWidget {
+  const _AutoPostNotice();
+
+  @override
+  ConsumerState<_AutoPostNotice> createState() => _AutoPostNoticeState();
+}
+
+class _AutoPostNoticeState extends ConsumerState<_AutoPostNotice> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = sessionOf(ref.read(vaultProvider));
+      if (s == null || s.autoPostedCount <= 0) return;
+      final n = s.autoPostedCount;
+      s.autoPostedCount = 0;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('已按计划自动记入 $n 笔交易，可在流水中查看（来源：计划）')));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

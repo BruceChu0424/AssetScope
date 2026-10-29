@@ -80,7 +80,8 @@ class ProjectionService {
       ));
     }
 
-    // 2) 计划事件
+    // 2) 计划事件（已落地的发生剔除：余额已含当天交易，不再重复扣减。
+    //    docs/05 §4"已实际支付的计划由服务层过滤"。）
     final events = <CashEvent>[];
     Future<BigInt> toBaseMinorV(BigInt minor, String ccy) async {
       if (ccy == base) return minor;
@@ -88,8 +89,10 @@ class ProjectionService {
       return r == null ? minor : (Rational.fromInt(minor) * r.rate).rounded();
     }
 
+    final postedExtIds = await _ledger.externalIds();
     for (final e in await _planning.scheduledEvents()) {
       for (final occ in e.expand(from, through)) {
+        if (postedExtIds.contains(planExternalId(e.id, occ.date))) continue;
         events.add(CashEvent(
           date: occ.date,
           amountBaseMinor:

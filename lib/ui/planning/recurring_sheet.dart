@@ -6,7 +6,7 @@ import '../../domain/analytics/recurring_detector.dart';
 import '../../domain/planning/recurrence.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
-import 'plans_page.dart' show PlanEditDialog;
+import 'plan_edit_dialog.dart';
 
 /// 周期识别建议弹层：流水里识别出的固定收支 → 一键固化为计划。
 Future<void> showRecurringSheet(BuildContext context, WidgetRef ref) {

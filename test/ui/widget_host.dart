@@ -19,6 +19,7 @@ import 'package:assetscope/services/export_service.dart';
 import 'package:assetscope/services/import_service.dart';
 import 'package:assetscope/services/insight_service.dart';
 import 'package:assetscope/services/ledger_service.dart';
+import 'package:assetscope/services/plan_execution_service.dart';
 import 'package:assetscope/services/portfolio_analytics_service.dart';
 import 'package:assetscope/services/portfolio_service.dart';
 import 'package:assetscope/services/projection_service.dart';
@@ -66,6 +67,7 @@ Future<VaultUnlocked> buildWidgetSession(AppDatabase db) async {
     quoteFetch: quoteFetch,
     directQuotes: DirectQuoteService(accounts, quoteFetch),
     scenarios: ScenarioService(projection, stats),
+    planExecution: PlanExecutionService(accounts, ledger, planning),
   );
 }
 

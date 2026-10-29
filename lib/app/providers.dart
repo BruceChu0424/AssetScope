@@ -20,6 +20,7 @@ import '../services/export_service.dart';
 import '../services/import_service.dart';
 import '../services/insight_service.dart';
 import '../services/ledger_service.dart';
+import '../services/plan_execution_service.dart';
 import '../services/portfolio_analytics_service.dart';
 import '../services/portfolio_service.dart';
 import '../services/projection_service.dart';
@@ -62,6 +63,7 @@ class VaultUnlocked extends VaultState {
     required this.quoteFetch,
     required this.directQuotes,
     required this.scenarios,
+    required this.planExecution,
   });
 
   final AppDatabase db;
@@ -82,6 +84,10 @@ class VaultUnlocked extends VaultState {
   final QuoteFetchService quoteFetch;
   final DirectQuoteService directQuotes;
   final ScenarioService scenarios;
+  final PlanExecutionService planExecution;
+
+  /// 解锁后自动执行计划落地入账的笔数（UI 提示一次后清零）。
+  int autoPostedCount = 0;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -204,6 +210,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final projection = ProjectionService(accounts, ledger, planning, meta);
     final quoteFetch =
         QuoteFetchService(accounts, ledger, meta, const AiChat());
+    final planExecution = PlanExecutionService(accounts, ledger, planning);
     // 主题偏好先于会话发布生效，避免解锁首帧闪烁。
     final themeStr = await meta.settingString('themeMode');
     if (themeStr != null) {
@@ -229,9 +236,23 @@ class VaultNotifier extends Notifier<VaultState> {
       quoteFetch: quoteFetch,
       directQuotes: DirectQuoteService(accounts, quoteFetch),
       scenarios: ScenarioService(projection, stats),
+      planExecution: planExecution,
     );
     await _loadTunables();
+    await _autoPostPlans();
     _armAutoLock();
+  }
+
+  /// 解锁后自动落地到期计划（只处理 autoPost 且配置齐全的计划）。
+  /// 失败不阻塞会话——待落地清单里仍可手动处理。
+  Future<void> _autoPostPlans() async {
+    final s = state;
+    if (s is! VaultUnlocked) return;
+    try {
+      s.autoPostedCount = await s.planExecution.postAutoDue();
+    } catch (_) {
+      s.autoPostedCount = 0;
+    }
   }
 
   /// 设置驱动的可调参数（改设置后无需重启，下次解锁生效；立即生效走 [refreshTunables]）。

@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
         ));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +63,11 @@ class AppDatabase extends _$AppDatabase {
                 'CREATE INDEX IF NOT EXISTS idx_postings_tx ON postings (tx_id)');
             await customStatement(
                 'CREATE INDEX IF NOT EXISTS idx_postings_account ON postings (account_id)');
+          }
+          if (from < 4) {
+            // v4：周期计划单次跳过（计划落地执行，docs/05 §6）。
+            await m.addColumn(
+                scheduledEvents, scheduledEvents.skippedDatesJson);
           }
         },
       );

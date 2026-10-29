@@ -166,6 +166,7 @@ class ScheduledEvents extends Table {
   TextColumn get notes => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
   TextColumn get skippedMonthsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get skippedDatesJson => text().withDefault(const Constant('[]'))();
   TextColumn get amountOverridesJson => text().withDefault(const Constant('{}'))();
 
   @override

@@ -214,6 +214,7 @@ class ExportService {
             'notes': e.notes,
             'status': e.status.name,
             'skippedMonthKeys': e.skippedMonthKeys.toList(),
+            'skippedDateKeys': e.skippedDateKeys.toList(),
             'amountOverrides':
                 {for (final kv in e.amountOverrides.entries) kv.key: kv.value.toString()},
           }

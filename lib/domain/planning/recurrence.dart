@@ -21,6 +21,11 @@ enum EventDirection { inflow('收入'), outflow('支出');
 
 enum PlanStatus { active, paused, finished, cancelled }
 
+/// 计划发生的幂等键：落地通道（externalId 去重）与预测事件流
+/// （已落地不重复扣减）共用同一口径。
+String planExternalId(String eventId, DateTime date) =>
+    'plan:$eventId:${dateKey(date)}';
+
 /// 固定开销/预定支出计划。
 ///
 /// 金额支持三档：固定值（[amountMinor]）、区间估算（[amountLow]/[amountHigh]）。
@@ -45,6 +50,7 @@ class ScheduledEvent {
     this.notes,
     this.status = PlanStatus.active,
     this.skippedMonthKeys = const {},
+    this.skippedDateKeys = const {},
     this.amountOverrides = const {},
   });
 
@@ -74,10 +80,61 @@ class ScheduledEvent {
   /// 跳过的月份（yyyy-MM）。
   final Set<String> skippedMonthKeys;
 
+  /// 单次跳过的发生日（yyyy-MM-dd）：该次既不进预测也不进待落地。
+  /// 月粒度整月跳过用 [skippedMonthKeys]。
+  final Set<String> skippedDateKeys;
+
   /// 从某月（yyyy-MM，含）起生效的金额覆盖。
   final Map<String, BigInt> amountOverrides;
 
   bool get isEstimate => amountMinor == null;
+
+  bool get isActive => status == PlanStatus.active;
+
+  /// 只覆盖显式传入的字段，其余（含跳过/覆盖配置、审计字段）原样保留。
+  ScheduledEvent copyWith({
+    String? name,
+    EventDirection? direction,
+    Cadence? cadence,
+    DateTime? anchorDate,
+    BigInt? amountMinor,
+    BigInt? amountLowMinor,
+    BigInt? amountHighMinor,
+    int? intervalValue,
+    MonthEndPolicy? monthEndPolicy,
+    DateTime? endDate,
+    bool? clearEndDate,
+    String? paymentAccountId,
+    String? categoryId,
+    bool? autoPost,
+    String? notes,
+    PlanStatus? status,
+    Set<String>? skippedMonthKeys,
+    Set<String>? skippedDateKeys,
+    Map<String, BigInt>? amountOverrides,
+  }) =>
+      ScheduledEvent(
+        id: id,
+        name: name ?? this.name,
+        direction: direction ?? this.direction,
+        currencyCode: currencyCode,
+        cadence: cadence ?? this.cadence,
+        anchorDate: anchorDate ?? this.anchorDate,
+        amountMinor: amountMinor ?? this.amountMinor,
+        amountLowMinor: amountLowMinor ?? this.amountLowMinor,
+        amountHighMinor: amountHighMinor ?? this.amountHighMinor,
+        intervalValue: intervalValue ?? this.intervalValue,
+        monthEndPolicy: monthEndPolicy ?? this.monthEndPolicy,
+        endDate: clearEndDate == true ? null : (endDate ?? this.endDate),
+        paymentAccountId: paymentAccountId ?? this.paymentAccountId,
+        categoryId: categoryId ?? this.categoryId,
+        autoPost: autoPost ?? this.autoPost,
+        notes: notes ?? this.notes,
+        status: status ?? this.status,
+        skippedMonthKeys: skippedMonthKeys ?? this.skippedMonthKeys,
+        skippedDateKeys: skippedDateKeys ?? this.skippedDateKeys,
+        amountOverrides: amountOverrides ?? this.amountOverrides,
+      );
 
   /// 计划金额：固定值优先；区间取中位数（估算）。
   BigInt resolvedAmountMinor({String? monthKey}) {
@@ -140,6 +197,7 @@ class ScheduledEvent {
     if (endDate != null && d.isAfter(endDate!)) return;
     final mk = monthKey(d);
     if (skippedMonthKeys.contains(mk)) return;
+    if (skippedDateKeys.contains(dateKey(d))) return;
     final amount = resolvedAmountMinor(monthKey: mk);
     if (amount == BigInt.zero) return;
     out.add(Occurrence(
