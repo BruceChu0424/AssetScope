@@ -8,6 +8,7 @@
 library;
 
 import 'dart:convert';
+
 class CategoryRule {
   const CategoryRule({
     required this.keyword,
@@ -20,16 +21,16 @@ class CategoryRule {
   final bool caseSensitive;
 
   Map<String, Object?> toJson() => {
-        'keyword': keyword,
-        'categoryId': categoryId,
-        'caseSensitive': caseSensitive,
-      };
+    'keyword': keyword,
+    'categoryId': categoryId,
+    'caseSensitive': caseSensitive,
+  };
 
   factory CategoryRule.fromJson(Map<String, Object?> j) => CategoryRule(
-        keyword: j['keyword'] as String,
-        categoryId: j['categoryId'] as String,
-        caseSensitive: j['caseSensitive'] as bool? ?? false,
-      );
+    keyword: j['keyword'] as String,
+    categoryId: j['categoryId'] as String,
+    caseSensitive: j['caseSensitive'] as bool? ?? false,
+  );
 }
 
 /// 一条历史样本：对手方被记到某分类的次数。
@@ -91,10 +92,14 @@ class CategoryRulesEngine {
     // 1) 显式规则：最长关键词优先（"美团外卖" 比 "美团" 更具体）。
     final hit = rules.where((r) => _contains(cp, r));
     if (hit.isNotEmpty) {
-      final best = hit.reduce((a, b) =>
-          a.keyword.length >= b.keyword.length ? a : b);
+      final best = hit.reduce(
+        (a, b) => a.keyword.length >= b.keyword.length ? a : b,
+      );
       return RuleMatch(
-          categoryId: best.categoryId, confidence: 1.0, source: RuleSource.keywordRule);
+        categoryId: best.categoryId,
+        confidence: 1.0,
+        source: RuleSource.keywordRule,
+      );
     }
     // 2) 历史精确：取同名对手方中计数最高的分类，按占比给置信度。
     final exact = <String, int>{};
@@ -136,8 +141,9 @@ class CategoryRulesEngine {
     return null;
   }
 
-  bool _contains(String cp, CategoryRule r) =>
-      r.caseSensitive ? cp.contains(r.keyword) : cp.toLowerCase().contains(r.keyword.toLowerCase());
+  bool _contains(String cp, CategoryRule r) => r.caseSensitive
+      ? cp.contains(r.keyword)
+      : cp.toLowerCase().contains(r.keyword.toLowerCase());
 
   bool _eq(String a, String b) => a.toLowerCase() == b.toLowerCase();
 

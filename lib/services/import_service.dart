@@ -37,8 +37,13 @@ class ImportService {
     required String genericParserId,
     String currencyCode = 'CNY',
   }) {
-    return Isolate.run(() => parseBillAuto(decodeBillBytes(bytes),
-        genericParserId: genericParserId, currencyCode: currencyCode));
+    return Isolate.run(
+      () => parseBillAuto(
+        decodeBillBytes(bytes),
+        genericParserId: genericParserId,
+        currencyCode: currencyCode,
+      ),
+    );
   }
 
   List<List<String>> parseCsv(String text) => CsvTable.parse(text).rows;
@@ -51,9 +56,11 @@ class ImportService {
     String text, {
     required String genericParserId,
     String currencyCode = 'CNY',
-  }) =>
-      parseBillAuto(text,
-          genericParserId: genericParserId, currencyCode: currencyCode);
+  }) => parseBillAuto(
+    text,
+    genericParserId: genericParserId,
+    currencyCode: currencyCode,
+  );
 
   /// 通用 CSV 解析（表头映射）。
   /// 列名（表头必须包含）：date, time?, type/direction, amount, counterparty, note?
@@ -63,11 +70,12 @@ class ImportService {
     required String parserId,
     required String accountId,
     String currencyCode = 'CNY',
-  }) =>
-      parseGenericCsvPure(text,
-          parserId: parserId,
-          accountId: accountId,
-          currencyCode: currencyCode);
+  }) => parseGenericCsvPure(
+    text,
+    parserId: parserId,
+    accountId: accountId,
+    currencyCode: currencyCode,
+  );
 
   /// 预览：去重分级。返回可入账行 + 跳过原因。
   Future<ImportPreview> preview({
@@ -90,11 +98,18 @@ class ImportService {
     // 同批次转账对建议
     final pairs = Deduper.pairTransfers(rows);
     for (final _ in pairs) {
-      suggestions.add(const DedupMatch(
+      suggestions.add(
+        const DedupMatch(
           decision: DedupDecision.transferPair,
-          reason: '同批次内金额一致的一出一进，建议确认为内部转账'));
+          reason: '同批次内金额一致的一出一进，建议确认为内部转账',
+        ),
+      );
     }
-    return ImportPreview(rows: toImport, skipped: skipped, suggestions: suggestions);
+    return ImportPreview(
+      rows: toImport,
+      skipped: skipped,
+      suggestions: suggestions,
+    );
   }
 
   /// 入账：按行生成 收入/消费 交易（外部 ID 幂等）。
@@ -121,8 +136,11 @@ class ImportService {
       (s) => s.name == sourceName,
       orElse: () => TxSource.importCsv,
     );
-    final batchId =
-        await _meta.createImportBatch(source: sourceName, filename: parserId, parserVersion: 'v1');
+    final batchId = await _meta.createImportBatch(
+      source: sourceName,
+      filename: parserId,
+      parserVersion: 'v1',
+    );
     var count = 0;
     var dupSkipped = 0;
     for (final row in rows) {
@@ -162,8 +180,10 @@ class ImportService {
       await _ledger.post(draft);
       count++;
     }
-    await _meta.finishImportBatch(batchId, {'imported': count, 'skipped': dupSkipped},
-        status: 'done');
+    await _meta.finishImportBatch(batchId, {
+      'imported': count,
+      'skipped': dupSkipped,
+    }, status: 'done');
     return count;
   }
 }
@@ -237,8 +257,9 @@ List<NormalizedRow> parseGenericCsvPure(
   final timeI = col('time');
   final typeI = col('type') >= 0 ? col('type') : col('direction');
   final amountI = col('amount');
-  final cpartyI =
-      col('counterparty') >= 0 ? col('counterparty') : col('merchant');
+  final cpartyI = col('counterparty') >= 0
+      ? col('counterparty')
+      : col('merchant');
   final noteI = col('note');
   final txIdI = col('txid') >= 0 ? col('txid') : col('transaction_id');
   if (dateI < 0 || typeI < 0 || amountI < 0) {
@@ -251,24 +272,29 @@ List<NormalizedRow> parseGenericCsvPure(
     if (r.length <= amountI) continue;
     try {
       final d = _parseDate(
-          r[dateI], timeI >= 0 && r.length > timeI ? r[timeI] : null);
+        r[dateI],
+        timeI >= 0 && r.length > timeI ? r[timeI] : null,
+      );
       final dirText = r[typeI];
       final isIncome =
           dirText.contains('收入') || dirText.toLowerCase().contains('in');
       final amount = Money.parse(r[amountI], ccy);
-      final sourceTxId =
-          txIdI >= 0 && r.length > txIdI && r[txIdI].isNotEmpty ? r[txIdI] : null;
-      out.add(NormalizedRow(
-        date: d,
-        direction: isIncome,
-        amountMinor: amount.amountMinor,
-        currencyCode: currencyCode,
-        counterparty: cpartyI >= 0 && r.length > cpartyI ? r[cpartyI] : '',
-        note: noteI >= 0 && r.length > noteI ? r[noteI] : null,
-        rawRowJson: _rowJson(r),
-        rowKey: sourceTxId,
-        sourceTxId: sourceTxId,
-      ));
+      final sourceTxId = txIdI >= 0 && r.length > txIdI && r[txIdI].isNotEmpty
+          ? r[txIdI]
+          : null;
+      out.add(
+        NormalizedRow(
+          date: d,
+          direction: isIncome,
+          amountMinor: amount.amountMinor,
+          currencyCode: currencyCode,
+          counterparty: cpartyI >= 0 && r.length > cpartyI ? r[cpartyI] : '',
+          note: noteI >= 0 && r.length > noteI ? r[noteI] : null,
+          rawRowJson: _rowJson(r),
+          rowKey: sourceTxId,
+          sourceTxId: sourceTxId,
+        ),
+      );
     } on FormatException {
       // 无法解析的行：跳过并计入失败数（预览时显示）
       continue;

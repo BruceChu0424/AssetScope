@@ -9,6 +9,15 @@ class WrongPassphraseException implements Exception {
   String toString() => 'WrongPassphraseException: 主口令或恢复码不正确';
 }
 
+/// 恢复码形态：8 组 4 位十六进制、`-` 相连（见 [_generateRecoveryCode]
+/// 的生成格式）。用于解锁流程的快排门控——不符合此形态的输入不可能
+/// 等于任何恢复码，主口令失败后无需再对恢复码头白跑一轮慢哈希。
+final RegExp _recoveryCodeShape = RegExp(
+  r'^[0-9a-fA-F]{4}(-[0-9a-fA-F]{4}){7}$',
+);
+
+bool looksLikeRecoveryCode(String s) => _recoveryCodeShape.hasMatch(s);
+
 /// 密钥头（明文 JSON，不含任何机密）：记录 KDF 参数与被包裹的 DEK。
 ///
 /// 结构与 KDBX 类似：拿到头部文件无法得到任何明文；
@@ -35,15 +44,15 @@ class VaultHeader {
   final DateTime? createdAt;
 
   Map<String, Object?> toJson() => {
-        'version': version,
-        'kdfAlgo': kdfAlgo,
-        'kdfParams': kdfParams,
-        'salt': base64Encode(salt),
-        'wrapAlgo': wrapAlgo,
-        'nonce': base64Encode(wrappedDek.nonce),
-        'wrappedDek': base64Encode(wrappedDek.ciphertext),
-        'createdAt': createdAt?.toIso8601String(),
-      };
+    'version': version,
+    'kdfAlgo': kdfAlgo,
+    'kdfParams': kdfParams,
+    'salt': base64Encode(salt),
+    'wrapAlgo': wrapAlgo,
+    'nonce': base64Encode(wrappedDek.nonce),
+    'wrappedDek': base64Encode(wrappedDek.ciphertext),
+    'createdAt': createdAt?.toIso8601String(),
+  };
 
   static VaultHeader fromJson(Map<String, dynamic> j) {
     try {
@@ -109,8 +118,10 @@ class KeyManager {
 
   /// 创建新金库：生成 DEK，用主口令包裹。
   /// 返回（头部, 生成的恢复码包裹头列表）。
-  Future<VaultBootstrap> createVault(String passphrase,
-      {Uint8List? importDek}) async {
+  Future<VaultBootstrap> createVault(
+    String passphrase, {
+    Uint8List? importDek,
+  }) async {
     final suite = _suite;
     final dek = importDek ?? suite.randomBytes(32);
     final header = await _wrap(dek, passphrase);
@@ -118,7 +129,11 @@ class KeyManager {
     final recoveryHeader = await _wrap(dek, recoveryCode);
     _dek = dek;
     return VaultBootstrap(
-        header: header, recoveryCode: recoveryCode, recoveryHeader: recoveryHeader, dek: dek);
+      header: header,
+      recoveryCode: recoveryCode,
+      recoveryHeader: recoveryHeader,
+      dek: dek,
+    );
   }
 
   Future<VaultHeader> _wrap(Uint8List dek, String passphrase) async {
@@ -140,9 +155,16 @@ class KeyManager {
   /// 解锁：主口令或恢复码均可。失败抛 [WrongPassphraseException]。
   Future<Uint8List> unlock(String passphrase, VaultHeader header) async {
     final suite = _suite;
-    final kek = await suite.kdf.derive(passphrase: passphrase, salt: header.salt);
+    final kek = await suite.kdf.derive(
+      passphrase: passphrase,
+      salt: header.salt,
+    );
     try {
-      final dek = await suite.open(key: kek, box: header.wrappedDek, aad: _aad());
+      final dek = await suite.open(
+        key: kek,
+        box: header.wrappedDek,
+        aad: _aad(),
+      );
       if (dek.length != 32) throw CryptoException('DEK 长度异常');
       _dek = dek;
       return dek;
@@ -153,7 +175,10 @@ class KeyManager {
 
   /// 修改主口令：DEK 不变，重新包裹。返回新头部。
   Future<VaultHeader> changePassphrase(
-      String oldPassphrase, String newPassphrase, VaultHeader header) async {
+    String oldPassphrase,
+    String newPassphrase,
+    VaultHeader header,
+  ) async {
     final dek = await unlock(oldPassphrase, header);
     return _wrap(dek, newPassphrase);
   }

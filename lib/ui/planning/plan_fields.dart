@@ -9,7 +9,11 @@ import '../../domain/planning/recurrence.dart';
 /// 收入 → 普通资产（非持仓/应收）；支出 → 普通资产或信用卡/负债。
 /// 币种必须与计划一致（跨币种计划不支持自动落地）。
 
-List<Account> payableFor(List<Account> all, EventDirection dir, String currency) {
+List<Account> payableFor(
+  List<Account> all,
+  EventDirection dir,
+  String currency,
+) {
   bool plain(Account a) =>
       a.currencyCode == currency &&
       !a.isSystem &&
@@ -23,11 +27,14 @@ List<Account> payableFor(List<Account> all, EventDirection dir, String currency)
 }
 
 List<Account> categoriesFor(List<Account> all, EventDirection dir) => all
-    .where((a) =>
-        !a.isSystem &&
-        a.type == (dir == EventDirection.inflow
-            ? AccountType.income
-            : AccountType.expense))
+    .where(
+      (a) =>
+          !a.isSystem &&
+          a.type ==
+              (dir == EventDirection.inflow
+                  ? AccountType.income
+                  : AccountType.expense),
+    )
     .toList();
 
 /// 支付/入账账户下拉。
@@ -88,9 +95,7 @@ class PlanCategoryDropdown extends StatelessWidget {
     final options = categoriesFor(accounts, direction);
     final valid = value != null && options.any((a) => a.id == value);
     return DropdownButtonFormField<String>(
-      initialValue: valid
-          ? value
-          : (options.isEmpty ? null : options.first.id),
+      initialValue: valid ? value : (options.isEmpty ? null : options.first.id),
       decoration: const InputDecoration(labelText: '分类'),
       items: [
         for (final a in options)
@@ -103,8 +108,8 @@ class PlanCategoryDropdown extends StatelessWidget {
 
 /// 计划状态 → 中文标签。
 String planStatusLabel(PlanStatus s) => switch (s) {
-      PlanStatus.active => '进行中',
-      PlanStatus.paused => '已暂停',
-      PlanStatus.finished => '已结束',
-      PlanStatus.cancelled => '已取消',
-    };
+  PlanStatus.active => '进行中',
+  PlanStatus.paused => '已暂停',
+  PlanStatus.finished => '已结束',
+  PlanStatus.cancelled => '已取消',
+};

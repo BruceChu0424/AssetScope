@@ -28,7 +28,15 @@ class CurrencyInfo {
   static const xau = CurrencyInfo('XAU', 4, 'XAU', '黄金（克/盎司计价）');
 
   static const List<CurrencyInfo> builtin = [
-    cny, usd, hkd, eur, jpy, gbp, btc, usdt, xau,
+    cny,
+    usd,
+    hkd,
+    eur,
+    jpy,
+    gbp,
+    btc,
+    usdt,
+    xau,
   ];
 
   static final Map<String, CurrencyInfo> _registry = {

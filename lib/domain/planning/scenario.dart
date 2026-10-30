@@ -50,9 +50,8 @@ class IncomeShock extends ScenarioComponent {
       return e;
     }
     if (!_inWindow(e.date, window(from))) return e;
-    final scaled =
-        (Rational.fromInt(e.amountBaseMinor) * (Rational.one - drop))
-            .rounded();
+    final scaled = (Rational.fromInt(e.amountBaseMinor) * (Rational.one - drop))
+        .rounded();
     if (scaled.isNegative) return e; // 防御：降幅非法时不放大伤害
     return CashEvent(
       date: e.date,
@@ -208,19 +207,16 @@ class ScenarioPresets {
   const ScenarioPresets._();
 
   static ScenarioSpec unemployment({int months = 3}) => ScenarioSpec(
-        name: '失业 $months 个月',
-        components: [
-          IncomeShock(drop: Rational.one, months: months),
-        ],
-      );
+    name: '失业 $months 个月',
+    components: [IncomeShock(drop: Rational.one, months: months)],
+  );
 
-  static ScenarioSpec incomeDown(
-      {Rational? drop, int months = 6}) {
-    final d = drop ??
-        Rational.fromFrac(BigInt.from(3), BigInt.from(10));
+  static ScenarioSpec incomeDown({Rational? drop, int months = 6}) {
+    final d = drop ?? Rational.fromFrac(BigInt.from(3), BigInt.from(10));
     return ScenarioSpec(
-        name: '收入降三成 · $months 个月',
-        components: [IncomeShock(drop: d, months: months)]);
+      name: '收入降三成 · $months 个月',
+      components: [IncomeShock(drop: d, months: months)],
+    );
   }
 
   static ScenarioSpec salaryDelay({int delayDays = 30, int months = 2}) =>
@@ -229,27 +225,35 @@ class ScenarioPresets {
         components: [IncomeDelay(delayDays: delayDays, months: months)],
       );
 
-  static ScenarioSpec oneOff(BigInt amountMinor, int afterDays,
-          {String label = '情景：一次性支出'}) =>
-      ScenarioSpec(
-        name: '一次性支出',
-        components: [
-          OneOffEvent(
-              afterDays: afterDays,
-              amountBaseMinor: -amountMinor,
-              label: label),
-        ],
-      );
+  static ScenarioSpec oneOff(
+    BigInt amountMinor,
+    int afterDays, {
+    String label = '情景：一次性支出',
+  }) => ScenarioSpec(
+    name: '一次性支出',
+    components: [
+      OneOffEvent(
+        afterDays: afterDays,
+        amountBaseMinor: -amountMinor,
+        label: label,
+      ),
+    ],
+  );
 
-  static ScenarioSpec extraOutflow(BigInt monthlyMinor, int months,
-          {String label = '情景：额外月支出'}) =>
-      ScenarioSpec(
-        name: '额外月支出 · $months 个月',
-        components: [
-          ExtraMonthlyOutflow(
-              monthlyMinor: monthlyMinor, months: months, label: label),
-        ],
-      );
+  static ScenarioSpec extraOutflow(
+    BigInt monthlyMinor,
+    int months, {
+    String label = '情景：额外月支出',
+  }) => ScenarioSpec(
+    name: '额外月支出 · $months 个月',
+    components: [
+      ExtraMonthlyOutflow(
+        monthlyMinor: monthlyMinor,
+        months: months,
+        label: label,
+      ),
+    ],
+  );
 }
 
 /// 情景引擎：把组件列表作用到基线事件流（纯函数，无 IO）。
@@ -259,7 +263,10 @@ class ScenarioEngine {
   /// 组件按顺序依次作用（前一个的输出是后一个的输入），
   /// 生成型组件（一次性/额外月支出）最后追加。
   static List<CashEvent> apply(
-      List<CashEvent> events, ScenarioSpec spec, DateTime from) {
+    List<CashEvent> events,
+    ScenarioSpec spec,
+    DateTime from,
+  ) {
     var current = [...events];
     final generated = <CashEvent>[];
 
@@ -271,21 +278,25 @@ class ScenarioEngine {
           current = [for (final e in current) c.applyTo(e, from)];
         case OneOffEvent():
           final d = from.add(Duration(days: c.afterDays));
-          generated.add(CashEvent(
-            date: d,
-            amountBaseMinor: c.amountBaseMinor,
-            label: c.label,
-            kind: CashEventKind.other,
-          ));
+          generated.add(
+            CashEvent(
+              date: d,
+              amountBaseMinor: c.amountBaseMinor,
+              label: c.label,
+              kind: CashEventKind.other,
+            ),
+          );
         case ExtraMonthlyOutflow():
           final s = from.add(Duration(days: c.startAfterDays));
           for (var k = 0; k < c.months; k++) {
-            generated.add(CashEvent(
-              date: addMonthsClamped(s, k),
-              amountBaseMinor: -c.monthlyMinor,
-              label: c.label,
-              kind: CashEventKind.other,
-            ));
+            generated.add(
+              CashEvent(
+                date: addMonthsClamped(s, k),
+                amountBaseMinor: -c.monthlyMinor,
+                label: c.label,
+                kind: CashEventKind.other,
+              ),
+            );
           }
       }
     }
@@ -312,10 +323,13 @@ class ScenarioComparison {
   /// 逐日差的最差值（比最低点差更严格：看最难受的那一天）。
   BigInt get worstDailyDelta {
     var worst = BigInt.zero;
-    for (var i = 0;
-        i < scenario.series.length && i < baseline.series.length;
-        i++) {
-      final d = scenario.series[i].balanceBaseMinor -
+    for (
+      var i = 0;
+      i < scenario.series.length && i < baseline.series.length;
+      i++
+    ) {
+      final d =
+          scenario.series[i].balanceBaseMinor -
           baseline.series[i].balanceBaseMinor;
       if (d < worst) worst = d;
     }
@@ -348,7 +362,7 @@ class ScenarioComparison {
     final base = baseline.shortfalls.map(_key).toSet();
     return [
       for (final s in scenario.shortfalls)
-        if (!base.contains(_key(s))) s
+        if (!base.contains(_key(s))) s,
     ];
   }
 

@@ -16,7 +16,8 @@ class LedgerMath {
     for (final p in postings) {
       if (p.isQuantity) continue;
       final key = p.currencyCode!;
-      moneyByCurrency[key] = (moneyByCurrency[key] ?? BigInt.zero) + p.amountMinor!;
+      moneyByCurrency[key] =
+          (moneyByCurrency[key] ?? BigInt.zero) + p.amountMinor!;
     }
     for (final e in moneyByCurrency.entries) {
       if (e.value != BigInt.zero) {
@@ -49,7 +50,9 @@ class LedgerMath {
 
   /// 展示口径余额：资产/费用取借方净额；负债/权益/收入取贷方净额（正数=欠款/已挣）。
   static BigInt displayBalance(AccountType type, BigInt signedTotal) =>
-      type == AccountType.asset || type == AccountType.expense ? signedTotal : -signedTotal;
+      type == AccountType.asset || type == AccountType.expense
+      ? signedTotal
+      : -signedTotal;
 
   /// 该交易是否触及给定账户。
   static bool touches(Iterable<Posting> postings, String accountId) =>

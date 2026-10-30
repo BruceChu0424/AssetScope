@@ -23,33 +23,43 @@ class LedgerRepo {
     final txId = id ?? 'tx:${_newId()}';
     final now = DateTime.now();
     await _db.transaction(() async {
-      await _db.into(_db.transactions).insert(TransactionsCompanion.insert(
-            id: txId,
-            date: draft.date,
-            kind: draft.kind.name,
-            status: Value(draft.status.name),
-            note: Value(draft.note),
-            counterparty: Value(draft.counterparty),
-            categoryId: Value(draft.categoryId),
-            tagsJson: Value(draft.tags.join(',')),
-            externalId: Value(draft.externalId),
-            source: Value(draft.source.name),
-            importBatchId: Value(draft.importBatchId),
-            isAdjustment: Value(draft.isAdjustment || draft.kind.isAdjustmentKind),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ));
+      await _db
+          .into(_db.transactions)
+          .insert(
+            TransactionsCompanion.insert(
+              id: txId,
+              date: draft.date,
+              kind: draft.kind.name,
+              status: Value(draft.status.name),
+              note: Value(draft.note),
+              counterparty: Value(draft.counterparty),
+              categoryId: Value(draft.categoryId),
+              tagsJson: Value(draft.tags.join(',')),
+              externalId: Value(draft.externalId),
+              source: Value(draft.source.name),
+              importBatchId: Value(draft.importBatchId),
+              isAdjustment: Value(
+                draft.isAdjustment || draft.kind.isAdjustmentKind,
+              ),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
       for (final p in draft.postings) {
-        await _db.into(_db.postings).insert(PostingsCompanion.insert(
-              txId: txId,
-              accountId: p.accountId,
-              amountMinor: Value(p.amountMinor),
-              currencyCode: Value(p.currencyCode),
-              securityId: Value(p.securityId),
-              quantityN: Value(p.quantity?.n),
-              quantityD: Value(p.quantity?.d),
-              memo: Value(p.memo),
-            ));
+        await _db
+            .into(_db.postings)
+            .insert(
+              PostingsCompanion.insert(
+                txId: txId,
+                accountId: p.accountId,
+                amountMinor: Value(p.amountMinor),
+                currencyCode: Value(p.currencyCode),
+                securityId: Value(p.securityId),
+                quantityN: Value(p.quantity?.n),
+                quantityD: Value(p.quantity?.d),
+                memo: Value(p.memo),
+              ),
+            );
       }
     });
     return LedgerTransaction(
@@ -72,16 +82,21 @@ class LedgerRepo {
   }
 
   Future<void> voidTransaction(String txId) =>
-      (_db.update(_db.transactions)..where((t) => t.id.equals(txId)))
-          .write(TransactionsCompanion(
-              status: const Value('voided'), updatedAt: Value(DateTime.now())));
+      (_db.update(_db.transactions)..where((t) => t.id.equals(txId))).write(
+        TransactionsCompanion(
+          status: const Value('voided'),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
 
   /// posted 交易总数（备份提醒等轻量探测）。
   Future<int> countPosted() async {
-    final count = await _db.customSelect(
-      'SELECT COUNT(*) AS c FROM transactions WHERE status = ?',
-      variables: [Variable.withString('posted')],
-    ).getSingle();
+    final count = await _db
+        .customSelect(
+          'SELECT COUNT(*) AS c FROM transactions WHERE status = ?',
+          variables: [Variable.withString('posted')],
+        )
+        .getSingle();
     return count.read<int>('c');
   }
 
@@ -91,17 +106,19 @@ class LedgerRepo {
   /// 守恒校验同过账；新旧任一侧含数量分录（持仓交易）即拒绝：
   /// 成本镜像 sys:cost 的结转不可回放，请作废后重记。
   Future<LedgerTransaction> replaceTransaction(
-      String txId, TransactionDraft draft) async {
+    String txId,
+    TransactionDraft draft,
+  ) async {
     if (draft.postings.any((p) => p.securityId != null)) {
       throw StateError('新分录含数量记账，不支持编辑（请作废后重记）');
     }
-    final oldTx = await (_db.select(_db.transactions)
-          ..where((t) => t.id.equals(txId)))
-        .getSingleOrNull();
+    final oldTx = await (_db.select(
+      _db.transactions,
+    )..where((t) => t.id.equals(txId))).getSingleOrNull();
     if (oldTx == null) throw StateError('交易不存在：$txId');
-    final oldPostings = await (_db.select(_db.postings)
-          ..where((p) => p.txId.equals(txId)))
-        .get();
+    final oldPostings = await (_db.select(
+      _db.postings,
+    )..where((p) => p.txId.equals(txId))).get();
     if (oldPostings.any((p) => p.securityId != null)) {
       throw StateError('持仓交易不支持编辑（成本结转不可回放），请作废后重记');
     }
@@ -111,30 +128,38 @@ class LedgerRepo {
     }
     final now = DateTime.now();
     await _db.transaction(() async {
-      await (_db.update(_db.transactions)..where((t) => t.id.equals(txId)))
-          .write(TransactionsCompanion(
-        date: Value(draft.date),
-        kind: Value(draft.kind.name),
-        note: Value(draft.note),
-        counterparty: Value(draft.counterparty),
-        categoryId: Value(draft.categoryId),
-        tagsJson: Value(draft.tags.join(',')),
-        isAdjustment:
-            Value(draft.isAdjustment || draft.kind.isAdjustmentKind),
-        updatedAt: Value(now),
-      ));
+      await (_db.update(
+        _db.transactions,
+      )..where((t) => t.id.equals(txId))).write(
+        TransactionsCompanion(
+          date: Value(draft.date),
+          kind: Value(draft.kind.name),
+          note: Value(draft.note),
+          counterparty: Value(draft.counterparty),
+          categoryId: Value(draft.categoryId),
+          tagsJson: Value(draft.tags.join(',')),
+          isAdjustment: Value(
+            draft.isAdjustment || draft.kind.isAdjustmentKind,
+          ),
+          updatedAt: Value(now),
+        ),
+      );
       await (_db.delete(_db.postings)..where((p) => p.txId.equals(txId))).go();
       for (final p in draft.postings) {
-        await _db.into(_db.postings).insert(PostingsCompanion.insert(
-              txId: txId,
-              accountId: p.accountId,
-              amountMinor: Value(p.amountMinor),
-              currencyCode: Value(p.currencyCode),
-              securityId: Value(p.securityId),
-              quantityN: Value(p.quantity?.n),
-              quantityD: Value(p.quantity?.d),
-              memo: Value(p.memo),
-            ));
+        await _db
+            .into(_db.postings)
+            .insert(
+              PostingsCompanion.insert(
+                txId: txId,
+                accountId: p.accountId,
+                amountMinor: Value(p.amountMinor),
+                currencyCode: Value(p.currencyCode),
+                securityId: Value(p.securityId),
+                quantityN: Value(p.quantity?.n),
+                quantityD: Value(p.quantity?.d),
+                memo: Value(p.memo),
+              ),
+            );
       }
     });
     return LedgerTransaction(
@@ -158,10 +183,9 @@ class LedgerRepo {
   }
 
   Future<void> deleteTransaction(String txId) => _db.transaction(() async {
-        await (_db.delete(_db.postings)..where((p) => p.txId.equals(txId))).go();
-        await (_db.delete(_db.transactions)..where((t) => t.id.equals(txId)))
-            .go();
-      });
+    await (_db.delete(_db.postings)..where((p) => p.txId.equals(txId))).go();
+    await (_db.delete(_db.transactions)..where((t) => t.id.equals(txId))).go();
+  });
 
   LedgerTransaction _toDomain(TransactionRow t, List<PostingRow> postings) {
     return LedgerTransaction(
@@ -175,7 +199,8 @@ class LedgerRepo {
               ? Posting.quantity(
                   accountId: p.accountId,
                   securityId: p.securityId,
-                  quantity: Rational.fromInt(p.quantityN ?? BigInt.zero) /
+                  quantity:
+                      Rational.fromInt(p.quantityN ?? BigInt.zero) /
                       Rational.fromInt(p.quantityD ?? BigInt.one),
                   memo: p.memo,
                 )
@@ -184,7 +209,7 @@ class LedgerRepo {
                   amountMinor: p.amountMinor ?? BigInt.zero,
                   currencyCode: p.currencyCode ?? '',
                   memo: p.memo,
-                )
+                ),
       ],
       note: t.note,
       counterparty: t.counterparty,
@@ -207,10 +232,15 @@ class LedgerRepo {
     String? accountId,
     int? limit,
   }) async {
-    final query = _db.select(_db.transactions).join(
-        [innerJoin(_db.postings, _db.postings.txId.equalsExp(_db.transactions.id))]);
-    query.where(_db.transactions.date.isBetweenValues(
-        from ?? DateTime(1970), to ?? DateTime(2999, 12, 31)));
+    final query = _db.select(_db.transactions).join([
+      innerJoin(_db.postings, _db.postings.txId.equalsExp(_db.transactions.id)),
+    ]);
+    query.where(
+      _db.transactions.date.isBetweenValues(
+        from ?? DateTime(1970),
+        to ?? DateTime(2999, 12, 31),
+      ),
+    );
     if (!includeVoided) {
       query.where(_db.transactions.status.equals('posted'));
     }
@@ -225,9 +255,9 @@ class LedgerRepo {
     final rows = await query.get();
     final txIds = rows.map((r) => r.readTable(_db.transactions)).toList();
     if (txIds.isEmpty) return [];
-    final postingRows = await (_db.select(_db.postings)
-          ..where((p) => p.txId.isIn(txIds.map((t) => t.id).toList())))
-        .get();
+    final postingRows = await (_db.select(
+      _db.postings,
+    )..where((p) => p.txId.isIn(txIds.map((t) => t.id).toList()))).get();
     final byTx = <String, List<PostingRow>>{};
     for (final p in postingRows) {
       byTx.putIfAbsent(p.txId, () => []).add(p);
@@ -250,9 +280,9 @@ class LedgerRepo {
       ..limit(limit);
     return query.watch().asyncMap((rows) async {
       if (rows.isEmpty) return [];
-      final postingRows = await (_db.select(_db.postings)
-            ..where((p) => p.txId.isIn(rows.map((t) => t.id).toList())))
-          .get();
+      final postingRows = await (_db.select(
+        _db.postings,
+      )..where((p) => p.txId.isIn(rows.map((t) => t.id).toList()))).get();
       final byTx = <String, List<PostingRow>>{};
       for (final p in postingRows) {
         byTx.putIfAbsent(p.txId, () => []).add(p);
@@ -269,21 +299,28 @@ class LedgerRepo {
     final sanitized = query.replaceAll('%', '').replaceAll('_', '').trim();
     if (sanitized.isEmpty) return Future.value(const []);
     final pattern = '%$sanitized%';
-    final rows = (_db.select(_db.transactions).join(
-        [innerJoin(_db.postings, _db.postings.txId.equalsExp(_db.transactions.id))]))
-      ..where(_db.transactions.status.equals('posted'))
-      ..where(_db.transactions.note.like(pattern) |
-          _db.transactions.counterparty.like(pattern) |
-          _db.transactions.tagsJson.like(pattern))
-      ..groupBy([_db.transactions.id])
-      ..orderBy([OrderingTerm.desc(_db.transactions.date)])
-      ..limit(limit);
+    final rows =
+        (_db.select(_db.transactions).join([
+            innerJoin(
+              _db.postings,
+              _db.postings.txId.equalsExp(_db.transactions.id),
+            ),
+          ]))
+          ..where(_db.transactions.status.equals('posted'))
+          ..where(
+            _db.transactions.note.like(pattern) |
+                _db.transactions.counterparty.like(pattern) |
+                _db.transactions.tagsJson.like(pattern),
+          )
+          ..groupBy([_db.transactions.id])
+          ..orderBy([OrderingTerm.desc(_db.transactions.date)])
+          ..limit(limit);
     return rows.get().then((joined) async {
       final txIds = joined.map((r) => r.readTable(_db.transactions)).toList();
       if (txIds.isEmpty) return const <LedgerTransaction>[];
-      final postingRows = await (_db.select(_db.postings)
-            ..where((p) => p.txId.isIn(txIds.map((t) => t.id).toList())))
-          .get();
+      final postingRows = await (_db.select(
+        _db.postings,
+      )..where((p) => p.txId.isIn(txIds.map((t) => t.id).toList()))).get();
       final byTx = <String, List<PostingRow>>{};
       for (final p in postingRows) {
         byTx.putIfAbsent(p.txId, () => []).add(p);
@@ -304,8 +341,10 @@ class LedgerRepo {
   ///
   /// 快路径：SQLite 端 GROUP BY 求和（金额存 TEXT，仅当全部可安全
   /// 转 int64 时 CAST；任一账户含超大金额即整体回退 Dart 精确折叠）。
-  Future<Map<String, BigInt>> moneyBalancesAt(DateTime date,
-      {Set<String>? accountIds}) async {
+  Future<Map<String, BigInt>> moneyBalancesAt(
+    DateTime date, {
+    Set<String>? accountIds,
+  }) async {
     try {
       return await _moneyBalancesSql(date, accountIds);
     } catch (_) {
@@ -314,11 +353,14 @@ class LedgerRepo {
   }
 
   Future<Map<String, BigInt>> _moneyBalancesSql(
-      DateTime date, Set<String>? accountIds) async {
+    DateTime date,
+    Set<String>? accountIds,
+  ) async {
     // 安全条件：纯数字（可带负号）且 ≤ 19 位（|n| < 2^63）。
     // 任一分录不满足 → unsafe > 0 → 整体回退 Dart 精确折叠
     //（SUM 忽略 NULL，不能靠 NULL 探测部分和）。
-    const safe = "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
+    const safe =
+        "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
         'AND LENGTH(amount_minor) <= 19';
     final accountFilter = accountIds == null
         ? ''
@@ -327,41 +369,54 @@ class LedgerRepo {
       Variable.withDateTime(date),
       ...?accountIds?.map((a) => Variable(a)),
     ];
-    final rows = await _db.customSelect(
-      'SELECT p.account_id AS accountId, '
-      'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
-      'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
-      'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
-      "WHERE t.date <= ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL"
-      '$accountFilter '
-      'GROUP BY p.account_id',
-      variables: vars,
-      readsFrom: {_db.transactions, _db.postings},
-    ).get();
+    final rows = await _db
+        .customSelect(
+          'SELECT p.account_id AS accountId, '
+          'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
+          'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
+          'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
+          "WHERE t.date <= ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL"
+          '$accountFilter '
+          'GROUP BY p.account_id',
+          variables: vars,
+          readsFrom: {_db.transactions, _db.postings},
+        )
+        .get();
     final sums = <String, BigInt>{};
     for (final r in rows) {
       if ((r.data['unsafe'] as num? ?? 0) > 0) {
         throw StateError('金额超出 int64，回退精确折叠');
       }
-      sums[r.read<String>('accountId')] =
-          BigInt.from((r.data['total'] as num?) ?? 0);
+      sums[r.read<String>('accountId')] = BigInt.from(
+        (r.data['total'] as num?) ?? 0,
+      );
     }
     return sums;
   }
 
   Future<Map<String, BigInt>> _moneyBalancesDart(
-      DateTime date, Set<String>? accountIds) async {
+    DateTime date,
+    Set<String>? accountIds,
+  ) async {
     final query = _db.select(_db.postings).join([
-      innerJoin(_db.transactions, _db.transactions.id.equalsExp(_db.postings.txId))
+      innerJoin(
+        _db.transactions,
+        _db.transactions.id.equalsExp(_db.postings.txId),
+      ),
     ]);
-    query.where(_db.transactions.date.isSmallerOrEqualValue(date) &
-        _db.transactions.status.equals('posted') &
-        _db.postings.amountMinor.isNotNull());
+    query.where(
+      _db.transactions.date.isSmallerOrEqualValue(date) &
+          _db.transactions.status.equals('posted') &
+          _db.postings.amountMinor.isNotNull(),
+    );
     if (accountIds != null) {
       query.where(_db.postings.accountId.isIn(accountIds.toList()));
     }
     final rows = await query
-        .map((row) => (row.readTable(_db.postings), row.readTable(_db.transactions)))
+        .map(
+          (row) =>
+              (row.readTable(_db.postings), row.readTable(_db.transactions)),
+        )
         .get();
     final sums = <String, BigInt>{};
     for (final (p, _) in rows) {
@@ -374,16 +429,22 @@ class LedgerRepo {
   /// 持仓账户在 [date] 的数量余额。
   Future<Map<String, Rational>> quantityBalancesAt(DateTime date) async {
     final query = _db.select(_db.postings).join([
-      innerJoin(_db.transactions, _db.transactions.id.equalsExp(_db.postings.txId))
+      innerJoin(
+        _db.transactions,
+        _db.transactions.id.equalsExp(_db.postings.txId),
+      ),
     ]);
-    query.where(_db.transactions.date.isSmallerOrEqualValue(date) &
-        _db.transactions.status.equals('posted') &
-        _db.postings.securityId.isNotNull());
+    query.where(
+      _db.transactions.date.isSmallerOrEqualValue(date) &
+          _db.transactions.status.equals('posted') &
+          _db.postings.securityId.isNotNull(),
+    );
     final rows = await query.map((row) => row.readTable(_db.postings)).get();
     final sums = <String, Rational>{};
     for (final p in rows) {
       final cur = sums[p.accountId] ?? Rational.zero();
-      sums[p.accountId] = cur +
+      sums[p.accountId] =
+          cur +
           Rational.fromInt(p.quantityN ?? BigInt.zero) /
               Rational.fromInt(p.quantityD ?? BigInt.one);
     }
@@ -393,7 +454,9 @@ class LedgerRepo {
   /// 某月触达账户/分类的货币分录合计（用于统计）。
   /// 返回 accountId → signed sum。SQL 快路径同 [moneyBalancesAt]。
   Future<Map<String, BigInt>> postingSumsBetween(
-      DateTime from, DateTime to) async {
+    DateTime from,
+    DateTime to,
+  ) async {
     try {
       return await _postingSumsSql(from, to);
     } catch (_) {
@@ -401,60 +464,77 @@ class LedgerRepo {
     }
   }
 
-  Future<Map<String, BigInt>> _postingSumsSql(DateTime from, DateTime to) async {
-    const safe = "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
+  Future<Map<String, BigInt>> _postingSumsSql(
+    DateTime from,
+    DateTime to,
+  ) async {
+    const safe =
+        "(amount_minor GLOB '[0-9]*' OR amount_minor GLOB '-[0-9]*') "
         'AND LENGTH(amount_minor) <= 19';
-    final rows = await _db.customSelect(
-      'SELECT p.account_id AS accountId, '
-      'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
-      'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
-      'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
-      "WHERE t.date BETWEEN ? AND ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL "
-      'GROUP BY p.account_id',
-      variables: [Variable.withDateTime(from), Variable.withDateTime(to)],
-      readsFrom: {_db.transactions, _db.postings},
-    ).get();
+    final rows = await _db
+        .customSelect(
+          'SELECT p.account_id AS accountId, '
+          'SUM(CASE WHEN $safe THEN CAST(amount_minor AS INTEGER) ELSE 0 END) AS total, '
+          'SUM(CASE WHEN $safe THEN 0 ELSE 1 END) AS unsafe '
+          'FROM postings p INNER JOIN transactions t ON t.id = p.tx_id '
+          "WHERE t.date BETWEEN ? AND ? AND t.status = 'posted' AND p.amount_minor IS NOT NULL "
+          'GROUP BY p.account_id',
+          variables: [Variable.withDateTime(from), Variable.withDateTime(to)],
+          readsFrom: {_db.transactions, _db.postings},
+        )
+        .get();
     final sums = <String, BigInt>{};
     for (final r in rows) {
       if ((r.data['unsafe'] as num? ?? 0) > 0) {
         throw StateError('金额超出 int64，回退精确折叠');
       }
-      sums[r.read<String>('accountId')] =
-          BigInt.from((r.data['total'] as num?) ?? 0);
+      sums[r.read<String>('accountId')] = BigInt.from(
+        (r.data['total'] as num?) ?? 0,
+      );
     }
     return sums;
   }
 
   Future<Map<String, BigInt>> _postingSumsDart(
-      DateTime from, DateTime to) async {
+    DateTime from,
+    DateTime to,
+  ) async {
     final query = _db.select(_db.postings).join([
-      innerJoin(_db.transactions, _db.transactions.id.equalsExp(_db.postings.txId))
+      innerJoin(
+        _db.transactions,
+        _db.transactions.id.equalsExp(_db.postings.txId),
+      ),
     ]);
-    query.where(_db.transactions.date.isBetweenValues(from, to) &
-        _db.transactions.status.equals('posted') &
-        _db.postings.amountMinor.isNotNull());
+    query.where(
+      _db.transactions.date.isBetweenValues(from, to) &
+          _db.transactions.status.equals('posted') &
+          _db.postings.amountMinor.isNotNull(),
+    );
     final rows = await query.map((row) => row.readTable(_db.postings)).get();
     final sums = <String, BigInt>{};
     for (final p in rows) {
-      sums[p.accountId] = (sums[p.accountId] ?? BigInt.zero) + (p.amountMinor ?? BigInt.zero);
+      sums[p.accountId] =
+          (sums[p.accountId] ?? BigInt.zero) + (p.amountMinor ?? BigInt.zero);
     }
     return sums;
   }
 
   /// 期初余额类交易的关联账户（补录检测）。
   Future<Set<String>> externalIds() async {
-    final rows = await (_db.selectOnly(_db.transactions)
-          ..addColumns([_db.transactions.externalId])
-          ..where(_db.transactions.externalId.isNotNull()))
-        .get();
+    final rows =
+        await (_db.selectOnly(_db.transactions)
+              ..addColumns([_db.transactions.externalId])
+              ..where(_db.transactions.externalId.isNotNull()))
+            .get();
     return rows.map((r) => r.read(_db.transactions.externalId)!).toSet();
   }
 
   Future<bool> externalIdExists(String externalId) async {
-    final r = await (_db.select(_db.transactions)
-          ..where((t) => t.externalId.equals(externalId))
-          ..limit(1))
-        .getSingleOrNull();
+    final r =
+        await (_db.select(_db.transactions)
+              ..where((t) => t.externalId.equals(externalId))
+              ..limit(1))
+            .getSingleOrNull();
     return r != null;
   }
 

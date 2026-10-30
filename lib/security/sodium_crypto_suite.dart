@@ -58,8 +58,11 @@ class _SecretBoxAead extends AeadCipher {
     }
     final sk = sumo.SecureKey.fromList(_sumo, key);
     try {
-      return _sumo.crypto.secretBox
-          .easy(message: plaintext, nonce: nonce, key: sk);
+      return _sumo.crypto.secretBox.easy(
+        message: plaintext,
+        nonce: nonce,
+        key: sk,
+      );
     } on sumo.SodiumException catch (e) {
       throw CryptoException('加密失败: $e');
     } finally {
@@ -79,8 +82,11 @@ class _SecretBoxAead extends AeadCipher {
     }
     final sk = sumo.SecureKey.fromList(_sumo, key);
     try {
-      return _sumo.crypto.secretBox
-          .openEasy(cipherText: ciphertext, nonce: nonce, key: sk);
+      return _sumo.crypto.secretBox.openEasy(
+        cipherText: ciphertext,
+        nonce: nonce,
+        key: sk,
+      );
     } on sumo.SodiumException {
       throw CryptoException('认证失败：密钥错误或数据被篡改');
     } finally {
@@ -99,9 +105,9 @@ class _Argon2idKdf extends PassphraseKdf {
 
   @override
   Map<String, Object> get params => {
-        'ops': _sumo.crypto.pwhash.opsLimitModerate,
-        'mem': _sumo.crypto.pwhash.memLimitModerate,
-      };
+    'ops': _sumo.crypto.pwhash.opsLimitModerate,
+    'mem': _sumo.crypto.pwhash.memLimitModerate,
+  };
 
   @override
   Future<Uint8List> derive({

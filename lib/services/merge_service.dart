@@ -67,15 +67,19 @@ class MergeService {
     Uint8List? dek,
     String? passphrase,
   }) async {
-    final meta = await BackupContainer.open(container,
-        dek: dek, passphrase: passphrase);
+    final meta = await BackupContainer.open(
+      container,
+      dek: dek,
+      passphrase: passphrase,
+    );
     final backupVaultId = meta.meta['vaultId'];
     final backupSchema =
         (meta.meta['schemaVersion'] as num?)?.toInt() ?? currentSchemaVersion;
     return MergePrecheck(
       meta: meta.meta,
       hasLineage: backupVaultId is String,
-      sameLineage: backupVaultId is String && backupVaultId == currentFingerprint,
+      sameLineage:
+          backupVaultId is String && backupVaultId == currentFingerprint,
       schemaOk: backupSchema <= currentSchemaVersion,
       backupSchemaVersion: backupSchema,
     );
@@ -89,11 +93,15 @@ class MergeService {
     Uint8List? dek,
     String? passphrase,
   }) async {
-    final payload = await BackupContainer.open(container,
-        dek: dek, passphrase: passphrase);
+    final payload = await BackupContainer.open(
+      container,
+      dek: dek,
+      passphrase: passphrase,
+    );
     await workDir.create(recursive: true);
     final plain = File(
-        '${workDir.path}${Platform.pathSeparator}assetscope-merge-src.db');
+      '${workDir.path}${Platform.pathSeparator}assetscope-merge-src.db',
+    );
     if (await plain.exists()) await plain.delete();
     try {
       await plain.writeAsBytes(payload.bytes, flush: true);
@@ -101,7 +109,9 @@ class MergeService {
       final probe = AppDatabase(NativeDatabase(plain));
       try {
         await probe.customStatement('PRAGMA integrity_check');
-        await probe.customSelect('SELECT COUNT(*) c FROM transactions').getSingle();
+        await probe
+            .customSelect('SELECT COUNT(*) c FROM transactions')
+            .getSingle();
       } finally {
         await probe.close();
       }
@@ -131,25 +141,30 @@ class MergeService {
 
         // 1) 交易 LWW：win = 新交易或 updated_at 更新者；分录随交易整体替换。
         await _db.customStatement(
-            'CREATE TEMP TABLE IF NOT EXISTS merge_win (id TEXT NOT NULL)');
+          'CREATE TEMP TABLE IF NOT EXISTS merge_win (id TEXT NOT NULL)',
+        );
         await _db.customStatement('DELETE FROM merge_win');
         await _db.customStatement(
-            'INSERT INTO merge_win '
-            'SELECT s.id FROM $_src.transactions s '
-            'LEFT JOIN main.transactions t ON t.id = s.id '
-            'WHERE t.id IS NULL OR s.updated_at > t.updated_at');
+          'INSERT INTO merge_win '
+          'SELECT s.id FROM $_src.transactions s '
+          'LEFT JOIN main.transactions t ON t.id = s.id '
+          'WHERE t.id IS NULL OR s.updated_at > t.updated_at',
+        );
         await _db.customStatement(
-            'INSERT OR REPLACE INTO main.transactions '
-            'SELECT s.* FROM $_src.transactions s JOIN merge_win w ON w.id = s.id');
+          'INSERT OR REPLACE INTO main.transactions '
+          'SELECT s.* FROM $_src.transactions s JOIN merge_win w ON w.id = s.id',
+        );
         await _db.customStatement(
-            'DELETE FROM main.postings WHERE tx_id IN (SELECT id FROM merge_win)');
+          'DELETE FROM main.postings WHERE tx_id IN (SELECT id FROM merge_win)',
+        );
         await _db.customStatement(
-            'INSERT INTO main.postings '
-            '(tx_id, account_id, amount_minor, currency_code, security_id, '
-            'quantity_n, quantity_d, memo) '
-            'SELECT p.tx_id, p.account_id, p.amount_minor, p.currency_code, '
-            'p.security_id, p.quantity_n, p.quantity_d, p.memo '
-            'FROM $_src.postings p JOIN merge_win w ON w.id = p.tx_id');
+          'INSERT INTO main.postings '
+          '(tx_id, account_id, amount_minor, currency_code, security_id, '
+          'quantity_n, quantity_d, memo) '
+          'SELECT p.tx_id, p.account_id, p.amount_minor, p.currency_code, '
+          'p.security_id, p.quantity_n, p.quantity_d, p.memo '
+          'FROM $_src.postings p JOIN merge_win w ON w.id = p.tx_id',
+        );
 
         // 2) 按 id 补缺的表（本机已存在则保留本机）。
         for (final table in [
@@ -162,7 +177,8 @@ class MergeService {
           'scheduled_events',
         ]) {
           await _db.customStatement(
-              'INSERT OR IGNORE INTO main.$table SELECT s.* FROM $_src.$table s');
+            'INSERT OR IGNORE INTO main.$table SELECT s.* FROM $_src.$table s',
+          );
         }
 
         // 3) 计划事件双端并存：跳过/覆盖做并集（本机金额覆盖优先）。
@@ -170,33 +186,37 @@ class MergeService {
 
         // 4) 估值/汇率：自然键去重补缺（自增 id 不跨库迁移）。
         await _db.customStatement(
-            'INSERT INTO main.valuations '
-            '(account_id, date, kind, unit_price_n, unit_price_d, '
-            'total_value_minor, source, note) '
-            'SELECT s.account_id, s.date, s.kind, s.unit_price_n, '
-            's.unit_price_d, s.total_value_minor, s.source, s.note '
-            'FROM $_src.valuations s WHERE NOT EXISTS ('
-            'SELECT 1 FROM main.valuations v WHERE v.account_id = s.account_id '
-            'AND v.date = s.date AND v.kind = s.kind)');
+          'INSERT INTO main.valuations '
+          '(account_id, date, kind, unit_price_n, unit_price_d, '
+          'total_value_minor, source, note) '
+          'SELECT s.account_id, s.date, s.kind, s.unit_price_n, '
+          's.unit_price_d, s.total_value_minor, s.source, s.note '
+          'FROM $_src.valuations s WHERE NOT EXISTS ('
+          'SELECT 1 FROM main.valuations v WHERE v.account_id = s.account_id '
+          'AND v.date = s.date AND v.kind = s.kind)',
+        );
         await _db.customStatement(
-            'INSERT INTO main.fx_rates '
-            '(base_ccy, quote_ccy, date, rate_n, rate_d, source) '
-            'SELECT s.base_ccy, s.quote_ccy, s.date, s.rate_n, s.rate_d, s.source '
-            'FROM $_src.fx_rates s WHERE NOT EXISTS ('
-            'SELECT 1 FROM main.fx_rates f WHERE f.base_ccy = s.base_ccy '
-            'AND f.quote_ccy = s.quote_ccy AND f.date = s.date)');
+          'INSERT INTO main.fx_rates '
+          '(base_ccy, quote_ccy, date, rate_n, rate_d, source) '
+          'SELECT s.base_ccy, s.quote_ccy, s.date, s.rate_n, s.rate_d, s.source '
+          'FROM $_src.fx_rates s WHERE NOT EXISTS ('
+          'SELECT 1 FROM main.fx_rates f WHERE f.base_ccy = s.base_ccy '
+          'AND f.quote_ccy = s.quote_ccy AND f.date = s.date)',
+        );
 
         // 5) 月度快照 LWW（报表缓存，新者胜）。
         await _db.customStatement(
-            'INSERT INTO main.snapshots (month, payload_json, updated_at) '
-            'SELECT s.month, s.payload_json, s.updated_at FROM $_src.snapshots s '
-            'WHERE true ON CONFLICT(month) DO UPDATE SET '
-            'payload_json = excluded.payload_json, updated_at = excluded.updated_at '
-            'WHERE excluded.updated_at > snapshots.updated_at');
+          'INSERT INTO main.snapshots (month, payload_json, updated_at) '
+          'SELECT s.month, s.payload_json, s.updated_at FROM $_src.snapshots s '
+          'WHERE true ON CONFLICT(month) DO UPDATE SET '
+          'payload_json = excluded.payload_json, updated_at = excluded.updated_at '
+          'WHERE excluded.updated_at > snapshots.updated_at',
+        );
 
         // 6) 设置只补缺（本机已有键保留）。
         await _db.customStatement(
-            'INSERT OR IGNORE INTO main.settings SELECT s.* FROM $_src.settings s');
+          'INSERT OR IGNORE INTO main.settings SELECT s.* FROM $_src.settings s',
+        );
       });
     });
     return c;
@@ -211,33 +231,45 @@ class MergeService {
     c.mergedEventSets = await _countEventSetMerges();
     c.newBudgets = await _countMissingBy('budgets', 'id');
     c.newGoals = await _countMissingBy('goals', 'id');
-    c.newContracts =
-        await _countMissingBy('debt_contracts', 'liability_account_id');
-    c.newValuations = (await _db.customSelect(
-            'SELECT COUNT(*) n FROM $_src.valuations s WHERE NOT EXISTS ('
-            'SELECT 1 FROM main.valuations v WHERE v.account_id = s.account_id '
-            'AND v.date = s.date AND v.kind = s.kind)')
-        .getSingle())
-        .read<int>('n');
-    c.newFxRates = (await _db.customSelect(
-            'SELECT COUNT(*) n FROM $_src.fx_rates s WHERE NOT EXISTS ('
-            'SELECT 1 FROM main.fx_rates f WHERE f.base_ccy = s.base_ccy '
-            'AND f.quote_ccy = s.quote_ccy AND f.date = s.date)')
-        .getSingle())
-        .read<int>('n');
-    c.newSnapshots = (await _db.customSelect(
-            'SELECT COUNT(*) n FROM $_src.snapshots s WHERE NOT EXISTS ('
-            'SELECT 1 FROM main.snapshots m WHERE m.month = s.month) '
-            'OR EXISTS (SELECT 1 FROM main.snapshots m '
-            'WHERE m.month = s.month AND s.updated_at > m.updated_at)')
-        .getSingle())
-        .read<int>('n');
+    c.newContracts = await _countMissingBy(
+      'debt_contracts',
+      'liability_account_id',
+    );
+    c.newValuations =
+        (await _db
+                .customSelect(
+                  'SELECT COUNT(*) n FROM $_src.valuations s WHERE NOT EXISTS ('
+                  'SELECT 1 FROM main.valuations v WHERE v.account_id = s.account_id '
+                  'AND v.date = s.date AND v.kind = s.kind)',
+                )
+                .getSingle())
+            .read<int>('n');
+    c.newFxRates =
+        (await _db
+                .customSelect(
+                  'SELECT COUNT(*) n FROM $_src.fx_rates s WHERE NOT EXISTS ('
+                  'SELECT 1 FROM main.fx_rates f WHERE f.base_ccy = s.base_ccy '
+                  'AND f.quote_ccy = s.quote_ccy AND f.date = s.date)',
+                )
+                .getSingle())
+            .read<int>('n');
+    c.newSnapshots =
+        (await _db
+                .customSelect(
+                  'SELECT COUNT(*) n FROM $_src.snapshots s WHERE NOT EXISTS ('
+                  'SELECT 1 FROM main.snapshots m WHERE m.month = s.month) '
+                  'OR EXISTS (SELECT 1 FROM main.snapshots m '
+                  'WHERE m.month = s.month AND s.updated_at > m.updated_at)',
+                )
+                .getSingle())
+            .read<int>('n');
     c.newSettings = await _countMissingBy('settings', 'key');
   }
 
   Future<void> _withSrc(File plainDb, Future<void> Function() body) async {
-    await _db.customStatement(
-        "ATTACH DATABASE ? AS $_src KEY ''", [plainDb.path]);
+    await _db.customStatement("ATTACH DATABASE ? AS $_src KEY ''", [
+      plainDb.path,
+    ]);
     try {
       await body();
     } finally {
@@ -247,13 +279,18 @@ class MergeService {
 
   /// 交易胜负计数：填 [c].newTransactions / updatedTransactions。
   Future<void> _fillTxCounts(MergeCounts c) async {
-    final total = await _db.customSelect(
-        'SELECT COUNT(*) n FROM $_src.transactions s '
-        'LEFT JOIN main.transactions t ON t.id = s.id '
-        'WHERE t.id IS NULL OR s.updated_at > t.updated_at').getSingle();
-    final fresh = await _db.customSelect(
-        'SELECT COUNT(*) n FROM $_src.transactions s '
-        'WHERE NOT EXISTS (SELECT 1 FROM main.transactions t WHERE t.id = s.id)')
+    final total = await _db
+        .customSelect(
+          'SELECT COUNT(*) n FROM $_src.transactions s '
+          'LEFT JOIN main.transactions t ON t.id = s.id '
+          'WHERE t.id IS NULL OR s.updated_at > t.updated_at',
+        )
+        .getSingle();
+    final fresh = await _db
+        .customSelect(
+          'SELECT COUNT(*) n FROM $_src.transactions s '
+          'WHERE NOT EXISTS (SELECT 1 FROM main.transactions t WHERE t.id = s.id)',
+        )
         .getSingle();
     c.newTransactions = fresh.read<int>('n');
     c.updatedTransactions = total.read<int>('n') - c.newTransactions;
@@ -261,20 +298,25 @@ class MergeService {
 
   /// src 中存在、main 中缺失的行数（应用后调用即"实际新增"）。
   Future<int> _countMissingBy(String table, String pk) async {
-    final r = await _db.customSelect(
-        'SELECT COUNT(*) n FROM $_src.$table s WHERE NOT EXISTS ('
-        'SELECT 1 FROM main.$table m WHERE m.$pk = s.$pk)').getSingle();
+    final r = await _db
+        .customSelect(
+          'SELECT COUNT(*) n FROM $_src.$table s WHERE NOT EXISTS ('
+          'SELECT 1 FROM main.$table m WHERE m.$pk = s.$pk)',
+        )
+        .getSingle();
     return r.read<int>('n');
   }
 
   /// 双端并存且跳过/覆盖集合不同的计划数（预览口径）。
   Future<int> _countEventSetMerges() async {
-    final rows = await _db.customSelect(
-        'SELECT s.id AS id, m.skipped_months_json mm, m.skipped_dates_json md, '
-        'm.amount_overrides_json mo, s.skipped_months_json sm, '
-        's.skipped_dates_json sd, s.amount_overrides_json so '
-        'FROM $_src.scheduled_events s JOIN main.scheduled_events m ON m.id = s.id'
-        ).get();
+    final rows = await _db
+        .customSelect(
+          'SELECT s.id AS id, m.skipped_months_json mm, m.skipped_dates_json md, '
+          'm.amount_overrides_json mo, s.skipped_months_json sm, '
+          's.skipped_dates_json sd, s.amount_overrides_json so '
+          'FROM $_src.scheduled_events s JOIN main.scheduled_events m ON m.id = s.id',
+        )
+        .get();
     var n = 0;
     for (final r in rows) {
       if (_unionSets(r.read<String>('mm'), r.read<String>('sm')) !=
@@ -291,32 +333,37 @@ class MergeService {
 
   /// 计划事件集合并集落库；返回发生变化的条数。
   Future<int> _unionEventSets() async {
-    final rows = await _db.customSelect(
-        'SELECT s.id AS id, m.skipped_months_json mm, m.skipped_dates_json md, '
-        'm.amount_overrides_json mo, s.skipped_months_json sm, '
-        's.skipped_dates_json sd, s.amount_overrides_json so '
-        'FROM $_src.scheduled_events s JOIN main.scheduled_events m ON m.id = s.id'
-        ).get();
+    final rows = await _db
+        .customSelect(
+          'SELECT s.id AS id, m.skipped_months_json mm, m.skipped_dates_json md, '
+          'm.amount_overrides_json mo, s.skipped_months_json sm, '
+          's.skipped_dates_json sd, s.amount_overrides_json so '
+          'FROM $_src.scheduled_events s JOIN main.scheduled_events m ON m.id = s.id',
+        )
+        .get();
     var changed = 0;
     for (final r in rows) {
       final months = _unionSets(r.read<String>('mm'), r.read<String>('sm'));
       final dates = _unionSets(r.read<String>('md'), r.read<String>('sd'));
-      final overrides =
-          _mergeOverrides(r.read<String>('mo'), r.read<String>('so'));
+      final overrides = _mergeOverrides(
+        r.read<String>('mo'),
+        r.read<String>('so'),
+      );
       if (months == r.read<String>('mm') &&
           dates == r.read<String>('md') &&
           overrides == r.read<String>('mo')) {
         continue;
       }
       await _db.customUpdate(
-          'UPDATE main.scheduled_events SET skipped_months_json = ?, '
-          'skipped_dates_json = ?, amount_overrides_json = ? WHERE id = ?',
-          variables: [
-            Variable.withString(months),
-            Variable.withString(dates),
-            Variable.withString(overrides),
-            Variable.withString(r.read<String>('id')),
-          ]);
+        'UPDATE main.scheduled_events SET skipped_months_json = ?, '
+        'skipped_dates_json = ?, amount_overrides_json = ? WHERE id = ?',
+        variables: [
+          Variable.withString(months),
+          Variable.withString(dates),
+          Variable.withString(overrides),
+          Variable.withString(r.read<String>('id')),
+        ],
+      );
       changed++;
     }
     return changed;

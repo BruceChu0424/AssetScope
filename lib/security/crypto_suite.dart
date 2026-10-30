@@ -71,7 +71,11 @@ abstract class CryptoSuite {
   }) async {
     final nonce = randomBytes(aead.nonceLength);
     final ct = await aead.encrypt(
-        key: key, nonce: nonce, plaintext: plaintext, aad: aad);
+      key: key,
+      nonce: nonce,
+      plaintext: plaintext,
+      aad: aad,
+    );
     return SealedBox(nonce: nonce, ciphertext: ct, algoId: aead.algoId);
   }
 
@@ -79,9 +83,12 @@ abstract class CryptoSuite {
     required Uint8List key,
     required SealedBox box,
     Uint8List? aad,
-  }) =>
-      aead.decrypt(
-          key: key, nonce: box.nonce, ciphertext: box.ciphertext, aad: aad);
+  }) => aead.decrypt(
+    key: key,
+    nonce: box.nonce,
+    ciphertext: box.ciphertext,
+    aad: aad,
+  );
 }
 
 class SealedBox {

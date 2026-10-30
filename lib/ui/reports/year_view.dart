@@ -34,63 +34,84 @@ class YearView extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                  child: AmountTile(
-                      label: '全年收入',
-                      amount: fmtMinor(report.totalIncomeMinor, base))),
+                child: AmountTile(
+                  label: '全年收入',
+                  amount: fmtMinor(report.totalIncomeMinor, base),
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '全年消费',
-                      amount: fmtMinor(report.totalExpenseMinor, base))),
+                child: AmountTile(
+                  label: '全年消费',
+                  amount: fmtMinor(report.totalExpenseMinor, base),
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '结余',
-                      amount: fmtMinor(report.totalSurplusMinor, base),
-                      color: report.totalSurplusMinor.isNegative
-                          ? AppColors.negativeOf(Theme.of(context).brightness)
-                          : null)),
+                child: AmountTile(
+                  label: '结余',
+                  amount: fmtMinor(report.totalSurplusMinor, base),
+                  color: report.totalSurplusMinor.isNegative
+                      ? AppColors.negativeOf(Theme.of(context).brightness)
+                      : null,
+                ),
+              ),
             ],
           ),
           const Divider(height: 24),
           Row(
             children: [
               Expanded(
-                  child: AmountTile(
-                      label: '储蓄率',
-                      amount: rate == null ? '—' : '${(rate * 100).toStringAsFixed(0)}%',
-                      hint: '结余 / 收入')),
+                child: AmountTile(
+                  label: '储蓄率',
+                  amount: rate == null
+                      ? '—'
+                      : '${(rate * 100).toStringAsFixed(0)}%',
+                  tooltip: '结余 / 收入',
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '结余为正的月份',
-                      amount: '${report.savingsMonths} / 12')),
+                child: AmountTile(
+                  label: '结余为正的月份',
+                  amount: '${report.savingsMonths} / 12',
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '支付利息',
-                      amount: fmtMinor(report.debtInterestPaidMinor, base),
-                      hint: '全年债务成本')),
+                child: AmountTile(
+                  label: '支付利息',
+                  amount: fmtMinor(report.debtInterestPaidMinor, base),
+                  tooltip: '全年债务成本',
+                ),
+              ),
             ],
           ),
           const Divider(height: 24),
           Row(
             children: [
               Expanded(
-                  child: AmountTile(
-                      label: '已实现投资损益',
-                      amount: fmtMinor(report.realizedPnlMinor, base),
-                      color: report.realizedPnlMinor.isNegative
-                          ? AppColors.negativeOf(Theme.of(context).brightness)
-                          : AppColors.positiveOf(Theme.of(context).brightness),
-                      hint: '卖出落袋（账面口径）')),
+                child: AmountTile(
+                  label: '已实现投资损益',
+                  amount: fmtMinor(report.realizedPnlMinor, base),
+                  color: report.realizedPnlMinor.isNegative
+                      ? AppColors.negativeOf(Theme.of(context).brightness)
+                      : AppColors.positiveOf(Theme.of(context).brightness),
+                  tooltip: '卖出落袋（账面口径）',
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '分红派息',
-                      amount: fmtMinor(report.dividendMinor, base))),
+                child: AmountTile(
+                  label: '分红派息',
+                  amount: fmtMinor(report.dividendMinor, base),
+                ),
+              ),
               Expanded(
-                  child: AmountTile(
-                      label: '投资净收益',
-                      amount: fmtMinor(
-                          report.realizedPnlMinor + report.dividendMinor,
-                          base),
-                      hint: '已实现 + 分红')),
+                child: AmountTile(
+                  label: '投资净收益',
+                  amount: fmtMinor(
+                    report.realizedPnlMinor + report.dividendMinor,
+                    base,
+                  ),
+                  tooltip: '已实现 + 分红',
+                ),
+              ),
             ],
           ),
         ],
@@ -143,33 +164,40 @@ class YearView extends StatelessWidget {
                         color: theme.colorScheme.primary,
                         width: 7,
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(3)),
+                          top: Radius.circular(3),
+                        ),
                       ),
                       BarChartRodData(
                         toY: m.expenseMinor.toDouble(),
                         color: AppColors.negativeOf(theme.brightness),
                         width: 7,
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(3)),
+                          top: Radius.circular(3),
+                        ),
                       ),
                     ],
                   ),
             ],
             titlesData: FlTitlesData(
-              leftTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles:
-                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 22,
                   getTitlesWidget: (v, _) => Text(
                     '${v.toInt()}',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor, fontSize: 10),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ),
@@ -183,14 +211,17 @@ class YearView extends StatelessWidget {
   }
 
   Widget _legend(BuildContext context, Color c, String label) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-              width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+      ),
+      const SizedBox(width: 4),
+      Text(label, style: Theme.of(context).textTheme.bodySmall),
+    ],
+  );
 
   Widget _categoryCard(BuildContext context) {
     final base = report.baseCurrencyCode;
@@ -206,16 +237,22 @@ class YearView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
-                  Expanded(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                    child: Text(
+                      c.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (total != BigInt.zero)
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
                       child: Text(
-                          '${(c.totalMinor.toDouble() / total.toDouble() * 100).toStringAsFixed(0)}%',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: Theme.of(context).hintColor)),
+                        '${(c.totalMinor.toDouble() / total.toDouble() * 100).toStringAsFixed(0)}%',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
                     ),
                   SizedBox(
                     width: 110,
@@ -223,7 +260,8 @@ class YearView extends StatelessWidget {
                       fmtMinor(c.totalMinor, base),
                       textAlign: TextAlign.end,
                       style: const TextStyle(
-                          fontFeatures: [FontFeature.tabularFigures()]),
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
                 ],
@@ -247,15 +285,20 @@ class YearView extends StatelessWidget {
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.local_fire_department_outlined,
-                  color: AppColors.brass),
+              leading: const Icon(
+                Icons.local_fire_department_outlined,
+                color: AppColors.brass,
+              ),
               title: Text('最大单笔：${b.label}'),
-              subtitle: Text('${dateKey(b.date)} · ${report.categoryNames[b.categoryId] ?? '消费'}'),
+              subtitle: Text(
+                '${dateKey(b.date)} · ${report.categoryNames[b.categoryId] ?? '消费'}',
+              ),
               trailing: Text(
                 fmtMinor(b.amountMinor, base),
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: [FontFeature.tabularFigures()]),
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ListTile(
@@ -266,20 +309,25 @@ class YearView extends StatelessWidget {
             trailing: Text(
               fmtMinor(report.debtPrincipalRepaidMinor, base),
               style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()]),
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
             ),
           ),
           for (final c in incomes.take(3))
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.trending_up,
-                  size: 20, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.trending_up,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
               title: Text('收入 · ${c.name}'),
               trailing: Text(
                 fmtMinor(c.totalMinor, base),
                 style: const TextStyle(
-                    fontFeatures: [FontFeature.tabularFigures()]),
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
         ],

@@ -54,13 +54,15 @@ class AnomalyDetector {
         z = dev.toDouble() / (1.4826 * mad.toDouble());
       }
       if (z < zThreshold) continue;
-      out.add(SpendingAnomaly(
-        categoryName: categoryNames[e.key] ?? e.key,
-        currentMinor: current,
-        baselineMedianMinor: med,
-        robustZ: z,
-        spendUp: current > med,
-      ));
+      out.add(
+        SpendingAnomaly(
+          categoryName: categoryNames[e.key] ?? e.key,
+          currentMinor: current,
+          baselineMedianMinor: med,
+          robustZ: z,
+          spendUp: current > med,
+        ),
+      );
     }
     out.sort((a, b) => b.robustZ.compareTo(a.robustZ));
     return out;

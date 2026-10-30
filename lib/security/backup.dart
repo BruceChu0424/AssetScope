@@ -51,8 +51,11 @@ class BackupContainer {
       final kek = await s.kdf.derive(passphrase: passphrase!, salt: salt);
       // 口令模式：随机载荷密钥加密数据，口令 KEK 只包裹载荷密钥。
       final payloadKey = s.randomBytes(32);
-      final wrappedPayloadKey =
-          await s.seal(key: kek, plaintext: payloadKey, aad: _aadBackup());
+      final wrappedPayloadKey = await s.seal(
+        key: kek,
+        plaintext: payloadKey,
+        aad: _aadBackup(),
+      );
       header = VaultHeader(
         version: version,
         kdfAlgo: s.kdf.algoId,
@@ -69,9 +72,14 @@ class BackupContainer {
       'payloadLen': payload.length,
       'createdAt': DateTime.now().toIso8601String(),
     });
-    final sealed = await s.seal(key: key, plaintext: payload, aad: _aadBackup());
-    final headerBytes =
-        header == null ? Uint8List(0) : Uint8List.fromList(utf8.encode(header.encode()));
+    final sealed = await s.seal(
+      key: key,
+      plaintext: payload,
+      aad: _aadBackup(),
+    );
+    final headerBytes = header == null
+        ? Uint8List(0)
+        : Uint8List.fromList(utf8.encode(header.encode()));
     final out = BytesBuilder();
     out.add(magic);
     out.addByte(version);
@@ -106,7 +114,8 @@ class BackupContainer {
       throw BackupException('备份头部损坏');
     }
     final meta = Map<String, Object>.from(
-        jsonDecode(utf8.decode(container.sublist(p, p + metaLen))) as Map);
+      jsonDecode(utf8.decode(container.sublist(p, p + metaLen))) as Map,
+    );
     p += metaLen;
     int headerLen = _readU32(container, p);
     p += 4;
@@ -114,7 +123,8 @@ class BackupContainer {
     if (headerLen > 0) {
       if (p + headerLen > container.length) throw BackupException('备份头部损坏');
       header = VaultHeader.decode(
-          utf8.decode(container.sublist(p, p + headerLen)));
+        utf8.decode(container.sublist(p, p + headerLen)),
+      );
       p += headerLen;
     }
     if (dek == null && passphrase == null) {
@@ -127,7 +137,10 @@ class BackupContainer {
       if (header == null) {
         throw BackupException('该备份创建时未绑定口令，请使用原设备数据密钥');
       }
-      final kek = await s.kdf.derive(passphrase: passphrase!, salt: header.salt);
+      final kek = await s.kdf.derive(
+        passphrase: passphrase!,
+        salt: header.salt,
+      );
       try {
         key = await s.open(key: kek, box: header.wrappedDek, aad: _aadBackup());
       } on CryptoException {
@@ -141,7 +154,11 @@ class BackupContainer {
     final ct = container.sublist(p + s.aead.nonceLength);
     try {
       final payload = await s.aead.decrypt(
-          key: key, nonce: nonce, ciphertext: ct, aad: _aadBackup());
+        key: key,
+        nonce: nonce,
+        ciphertext: ct,
+        aad: _aadBackup(),
+      );
       if (payload.length != (meta['payloadLen'] as num?)?.toInt()) {
         throw BackupException('备份长度校验不一致');
       }
@@ -154,8 +171,12 @@ class BackupContainer {
   static Uint8List _aadBackup() =>
       Uint8List.fromList(utf8.encode('assetscope-backup-v1'));
 
-  static Uint8List _u32(int v) =>
-      Uint8List.fromList([(v >> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff]);
+  static Uint8List _u32(int v) => Uint8List.fromList([
+    (v >> 24) & 0xff,
+    (v >> 16) & 0xff,
+    (v >> 8) & 0xff,
+    v & 0xff,
+  ]);
 
   static int _readU32(Uint8List b, int off) =>
       (b[off] << 24) | (b[off + 1] << 16) | (b[off + 2] << 8) | b[off + 3];

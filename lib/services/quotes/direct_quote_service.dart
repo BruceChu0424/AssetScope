@@ -48,8 +48,10 @@ class DirectQuoteService {
       final raw = _codeOf(h, codes);
       final r = SymbolResolver.resolve(raw);
       if (!r.resolvable) {
-        warnings.add('「${h.name}」行情代码「$raw」无法识别'
-            '（A股 6 位数字 / hk00700 / usAAPL / aapl.us），可在账户详情修改，已跳过');
+        warnings.add(
+          '「${h.name}」行情代码「$raw」无法识别'
+          '（A股 6 位数字 / hk00700 / usAAPL / aapl.us），可在账户详情修改，已跳过',
+        );
         continue;
       }
       if (r.market == QuoteMarket.cn) {
@@ -69,8 +71,16 @@ class DirectQuoteService {
         for (final q in quotes) {
           final acc = bySym[q.symbol];
           if (acc == null) continue;
-          prices.add(_price(acc, q.name, q.price, 'CNY', q.asOf,
-              'https://qt.gtimg.cn/?q=${q.symbol}'));
+          prices.add(
+            _price(
+              acc,
+              q.name,
+              q.price,
+              'CNY',
+              q.asOf,
+              'https://qt.gtimg.cn/?q=${q.symbol}',
+            ),
+          );
         }
         for (final f in failed) {
           warnings.add('腾讯行情未返回「$f」的有效价格（停牌或代码错误），已跳过');
@@ -86,12 +96,19 @@ class DirectQuoteService {
       final bySym = {for (final e in intlGroup) e.$2.stooqSymbol!: e};
       try {
         final bytes = await get(StooqSource.buildUrl(syms));
-        final (quotes, failed) =
-            StooqSource.parse(utf8.decode(bytes), syms);
+        final (quotes, failed) = StooqSource.parse(utf8.decode(bytes), syms);
         for (final q in quotes) {
           final (acc, r) = bySym[q.symbol]!;
-          prices.add(_price(acc, r.raw, q.price, r.currencyCode ?? '',
-              q.asOf, 'https://stooq.com/?s=${q.symbol}'));
+          prices.add(
+            _price(
+              acc,
+              r.raw,
+              q.price,
+              r.currencyCode ?? '',
+              q.asOf,
+              'https://stooq.com/?s=${q.symbol}',
+            ),
+          );
         }
         for (final f in failed) {
           warnings.add('stooq 未返回「$f」的有效价格（检查代码如 0700.hk / aapl.us），已跳过');
@@ -105,16 +122,21 @@ class DirectQuoteService {
     final rates = <FetchedRate>[];
     if (currencies.isNotEmpty) {
       try {
-        final bytes =
-            await get(FrankfurterFx.buildUrl({...currencies, base}));
-        final (map, date, missing) =
-            FrankfurterFx.parse(utf8.decode(bytes), currencies, base);
+        final bytes = await get(FrankfurterFx.buildUrl({...currencies, base}));
+        final (map, date, missing) = FrankfurterFx.parse(
+          utf8.decode(bytes),
+          currencies,
+          base,
+        );
         map.forEach((ccy, rate) {
-          rates.add(FetchedRate(
+          rates.add(
+            FetchedRate(
               ccy: ccy,
               rate: rate,
               asOf: date,
-              source: 'https://api.frankfurter.dev/'));
+              source: 'https://api.frankfurter.dev/',
+            ),
+          );
         });
         for (final c in missing) {
           warnings.add('frankfurter 不支持币种 $c（欧央行列表外），请手工录入或用 AI 抓取');
@@ -143,9 +165,16 @@ class DirectQuoteService {
     return '';
   }
 
-  FetchedPrice _price(Account acc, String name, Rational price,
-      String currency, DateTime? asOf, String url) {
-    final mismatch = currency.isNotEmpty &&
+  FetchedPrice _price(
+    Account acc,
+    String name,
+    Rational price,
+    String currency,
+    DateTime? asOf,
+    String url,
+  ) {
+    final mismatch =
+        currency.isNotEmpty &&
         currency.toUpperCase() != acc.currencyCode.toUpperCase();
     return FetchedPrice(
       query: name,

@@ -37,7 +37,8 @@ class NormalizedRow {
 
   /// 稳定外部 ID：同一行重复导入得到相同 id → 幂等跳过。
   String externalId(String parserId, String accountId) {
-    final basis = rowKey ??
+    final basis =
+        rowKey ??
         (sourceTxId ?? '') +
             date.millisecondsSinceEpoch.toString() +
             amountMinor.toString() +
@@ -52,7 +53,8 @@ class NormalizedRow {
         .replaceAll(RegExp(r'\s+'), '')
         .toLowerCase()
         .replaceAll(RegExp(r'[(（].*[)）]'), '');
-    final day = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final day =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final basis =
         '$day|$amountMinor|$currencyCode|${direction ? 'in' : 'out'}|$normalizedCounterparty';
     return sha256Hex(utf8.encode(basis));
@@ -92,8 +94,9 @@ class Deduper {
     // externalId 由调用方补全 parser/account 维度后判断。
     if (row.rowKey != null && knownExternalIds.contains(row.rowKey)) {
       return DedupMatch(
-          decision: DedupDecision.exactDuplicate,
-          reason: '外部 ID 已存在：${row.rowKey}');
+        decision: DedupDecision.exactDuplicate,
+        reason: '外部 ID 已存在：${row.rowKey}',
+      );
     }
     final fp = row.fingerprint();
     final hit = fingerprintToTxId[fp];
@@ -142,5 +145,4 @@ String stableExternalId({
   required String accountId,
   required TxSource source,
   required String basis,
-}) =>
-    sha256Hex(utf8.encode('$parserId|$accountId|${source.name}|$basis'));
+}) => sha256Hex(utf8.encode('$parserId|$accountId|${source.name}|$basis'));

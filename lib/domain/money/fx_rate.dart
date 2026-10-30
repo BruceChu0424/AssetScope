@@ -16,7 +16,8 @@ class Rational {
 
   /// percent("3.85") == 385/10000
   factory Rational.percent(String decimalPercent) =>
-      Rational.parseDecimal(decimalPercent) / Rational._(BigInt.from(100), BigInt.one);
+      Rational.parseDecimal(decimalPercent) /
+      Rational._(BigInt.from(100), BigInt.one);
 
   factory Rational.parseDecimal(String s) {
     s = s.trim();
@@ -44,18 +45,19 @@ class Rational {
   /// 分数构造（自动规范化、分母转正）。
   factory Rational.fromFrac(BigInt n, BigInt d) {
     if (d == BigInt.zero) throw ArgumentError('分母为零');
-    return d.isNegative
-        ? Rational._(-n, -d)._norm()
-        : Rational._(n, d)._norm();
+    return d.isNegative ? Rational._(-n, -d)._norm() : Rational._(n, d)._norm();
   }
 
-  Rational operator +(Rational o) => Rational._(n * o.d + o.n * d, d * o.d)._norm();
-  Rational operator -(Rational o) => Rational._(n * o.d - o.n * d, d * o.d)._norm();
+  Rational operator +(Rational o) =>
+      Rational._(n * o.d + o.n * d, d * o.d)._norm();
+  Rational operator -(Rational o) =>
+      Rational._(n * o.d - o.n * d, d * o.d)._norm();
   Rational operator *(Rational o) => Rational._(n * o.n, d * o.d)._norm();
   Rational operator /(Rational o) {
     if (o.n == BigInt.zero) throw ArgumentError('除以零');
     return Rational._(n * o.d, d * o.n)._norm();
   }
+
   Rational operator -() => Rational._(-n, d);
 
   bool operator <(Rational o) => (this - o).isNegative;
@@ -115,8 +117,7 @@ class Rational {
 
   @override
   bool operator ==(Object other) =>
-      other is Rational &&
-      other.n * d == n * other.d;
+      other is Rational && other.n * d == n * other.d;
 
   @override
   int get hashCode => Object.hash(n ~/ _gcd(n, d), d ~/ _gcd(n, d));
@@ -169,7 +170,8 @@ class FxRate {
       throw ArgumentError('汇率 $from->$to 无法处理币种 ${src.code}');
     }
     // minor_out = minor_in × rate × (factor_to / factor_from)
-    final scaled = Rational._(money.amountMinor, BigInt.one) *
+    final scaled =
+        Rational._(money.amountMinor, BigInt.one) *
         r *
         Rational._(
           BigInt.from(10).pow(dst.minorUnitDigits),
@@ -179,5 +181,10 @@ class FxRate {
   }
 
   FxRate inverse() => FxRate(
-      from: to, to: from, rate: Rational.one / rate, asOf: asOf, source: source);
+    from: to,
+    to: from,
+    rate: Rational.one / rate,
+    asOf: asOf,
+    source: source,
+  );
 }

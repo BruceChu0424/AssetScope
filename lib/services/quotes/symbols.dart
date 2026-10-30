@@ -45,10 +45,11 @@ class SymbolResolver {
     final cnPrefix = RegExp(r'^(sh|sz|bj)(\d{6})$').firstMatch(lower);
     if (cnPrefix != null) {
       return ResolvedSymbol(
-          raw: raw,
-          market: QuoteMarket.cn,
-          tencentSymbol: lower,
-          currencyCode: 'CNY');
+        raw: raw,
+        market: QuoteMarket.cn,
+        tencentSymbol: lower,
+        currencyCode: 'CNY',
+      );
     }
 
     // 6 位纯数字：按首位推断交易所。
@@ -60,10 +61,11 @@ class SymbolResolver {
         _ => 'bj', // 4/8/9：北交所
       };
       return ResolvedSymbol(
-          raw: raw,
-          market: QuoteMarket.cn,
-          tencentSymbol: '$prefix$raw',
-          currencyCode: 'CNY');
+        raw: raw,
+        market: QuoteMarket.cn,
+        tencentSymbol: '$prefix$raw',
+        currencyCode: 'CNY',
+      );
     }
 
     // 显式 hk 前缀或 1–5 位纯数字（港股）。
@@ -83,10 +85,11 @@ class SymbolResolver {
     if (raw.contains('.')) {
       final cur = lower.endsWith('.hk') ? 'HKD' : null;
       return ResolvedSymbol(
-          raw: raw,
-          market: QuoteMarket.intl,
-          stooqSymbol: lower,
-          currencyCode: cur);
+        raw: raw,
+        market: QuoteMarket.intl,
+        stooqSymbol: lower,
+        currencyCode: cur,
+      );
     }
 
     // 字母数字组合：按美股处理。
@@ -102,15 +105,17 @@ class SymbolResolver {
     final natural = digits.replaceFirst(RegExp(r'^0+'), '');
     final code = (natural.isEmpty ? '0' : natural).padLeft(4, '0');
     return ResolvedSymbol(
-        raw: raw,
-        market: QuoteMarket.hk,
-        stooqSymbol: '$code.hk',
-        currencyCode: 'HKD');
+      raw: raw,
+      market: QuoteMarket.hk,
+      stooqSymbol: '$code.hk',
+      currencyCode: 'HKD',
+    );
   }
 
   static ResolvedSymbol _intl(String code, String raw) => ResolvedSymbol(
-      raw: raw,
-      market: QuoteMarket.intl,
-      stooqSymbol: code.endsWith('.us') ? code : '$code.us',
-      currencyCode: 'USD');
+    raw: raw,
+    market: QuoteMarket.intl,
+    stooqSymbol: code.endsWith('.us') ? code : '$code.us',
+    currencyCode: 'USD',
+  );
 }

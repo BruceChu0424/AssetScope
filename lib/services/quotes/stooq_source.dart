@@ -8,11 +8,7 @@ import '../../domain/money/fx_rate.dart';
 /// 行格式：`Symbol,Date,Time,Open,High,Low,Close,Volume`；
 /// 无数据行值为 `N/D`。
 class StooqQuote {
-  const StooqQuote({
-    required this.symbol,
-    required this.price,
-    this.asOf,
-  });
+  const StooqQuote({required this.symbol, required this.price, this.asOf});
 
   final String symbol;
   final Rational price;
@@ -24,11 +20,13 @@ class StooqSource {
 
   static const baseUrl = 'https://stooq.com/q/l/';
 
-  static Uri buildUrl(List<String> stooqSymbols) => Uri.parse(
-      '$baseUrl?s=${stooqSymbols.join(',')}&f=sd2t2ohlcv&h&e=csv');
+  static Uri buildUrl(List<String> stooqSymbols) =>
+      Uri.parse('$baseUrl?s=${stooqSymbols.join(',')}&f=sd2t2ohlcv&h&e=csv');
 
   static (List<StooqQuote>, List<String>) parse(
-      String csv, List<String> expected) {
+    String csv,
+    List<String> expected,
+  ) {
     final lines = const LineSplitter().convert(csv);
     if (lines.isEmpty) return (const [], expected);
     final bySymbol = <String, List<String>>{};
@@ -47,11 +45,16 @@ class StooqSource {
         failed.add(sym);
         continue;
       }
-      out.add(StooqQuote(
-        symbol: sym,
-        price: close,
-        asOf: _parseDate(cols![1].trim(), cols.length > 2 ? cols[2].trim() : ''),
-      ));
+      out.add(
+        StooqQuote(
+          symbol: sym,
+          price: close,
+          asOf: _parseDate(
+            cols![1].trim(),
+            cols.length > 2 ? cols[2].trim() : '',
+          ),
+        ),
+      );
     }
     return (out, failed);
   }

@@ -57,6 +57,10 @@ vault*.key.bak
 # 安全扫描工作目录与本地工具痕迹
 .mimosa/
 .secrets/
+.zcode/
+
+# golden 测试失败产物（diff/master/test 图，运行时生成）
+test/**/failures/
 
 # 覆盖率与本地环境
 coverage/

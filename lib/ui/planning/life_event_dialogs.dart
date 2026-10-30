@@ -4,11 +4,14 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/life_planner.dart';
+import '../widgets/particle_interactive.dart';
 
 /// 人生规划事件的新建/编辑对话框 + 摘要文案。
 
-Future<LifeEvent?> showLifeEventDialog(BuildContext context,
-    {LifeEvent? initial}) async {
+Future<LifeEvent?> showLifeEventDialog(
+  BuildContext context, {
+  LifeEvent? initial,
+}) async {
   if (initial != null) {
     return showDialog<LifeEvent>(
       context: context,
@@ -48,11 +51,13 @@ class _EventTypeDialog extends StatelessWidget {
       children: [
         for (final (i, t) in _types.indexed)
           SimpleDialogOption(
-            child: Row(children: [
-              Icon(t.$1, size: 20),
-              const SizedBox(width: 12),
-              Text(t.$2),
-            ]),
+            child: Row(
+              children: [
+                Icon(t.$1, size: 20),
+                const SizedBox(width: 12),
+                Text(t.$2),
+              ],
+            ),
             onPressed: () => Navigator.pop(context, i),
           ),
       ],
@@ -132,18 +137,21 @@ class _EventFormDialogState extends State<_EventFormDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: _save, child: const Text('确定')),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(onPressed: _save, child: const Text('确定')),
       ],
     );
   }
 
-  Widget _num(String key, String label, {String init = ''}) => TextField(
+  Widget _num(String key, String label, {String init = ''}) =>
+      ParticleTextField(
         controller: _f(key, init),
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true, signed: true),
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: true,
+          signed: true,
+        ),
         decoration: InputDecoration(isDense: true, labelText: label),
       );
 
@@ -151,62 +159,157 @@ class _EventFormDialogState extends State<_EventFormDialog> {
     switch (_kind) {
       case 0:
         final e = widget.event as HomePurchase?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后', init: e == null ? '3' : (e.month / 12).round().toString()),
-          _num('price', '总价（元）', init: e?.priceMinor == null ? '' : _yuan(e!.priceMinor)),
-          _num('down', '首付（元）', init: e?.downPaymentMinor == null ? '' : _yuan(e!.downPaymentMinor)),
-          _num('rate', '年利率 %（如 3.6）', init: e == null ? '3.6' : (e.annualRate.asDouble() * 100).toString()),
-          DropdownButtonFormField<String>(
-            initialValue: e == null
-                ? '30'
-                : (e.termYears == 10 || e.termYears == 20 || e.termYears == 30)
-                    ? e.termYears.toString()
-                    : '30',
-            decoration: const InputDecoration(labelText: '贷款年限'),
-            items: const [
-              DropdownMenuItem(value: '10', child: Text('10 年')),
-              DropdownMenuItem(value: '20', child: Text('20 年')),
-              DropdownMenuItem(value: '30', child: Text('30 年')),
-            ],
-            onChanged: (v) => _termYears = v ?? '30',
-          ),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后',
+              init: e == null ? '3' : (e.month / 12).round().toString(),
+            ),
+            _num(
+              'price',
+              '总价（元）',
+              init: e?.priceMinor == null ? '' : _yuan(e!.priceMinor),
+            ),
+            _num(
+              'down',
+              '首付（元）',
+              init: e?.downPaymentMinor == null
+                  ? ''
+                  : _yuan(e!.downPaymentMinor),
+            ),
+            _num(
+              'rate',
+              '年利率 %（如 3.6）',
+              init: e == null
+                  ? '3.6'
+                  : (e.annualRate.asDouble() * 100).toString(),
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: e == null
+                  ? '30'
+                  : (e.termYears == 10 ||
+                        e.termYears == 20 ||
+                        e.termYears == 30)
+                  ? e.termYears.toString()
+                  : '30',
+              decoration: const InputDecoration(labelText: '贷款年限'),
+              items: const [
+                DropdownMenuItem(value: '10', child: Text('10 年')),
+                DropdownMenuItem(value: '20', child: Text('20 年')),
+                DropdownMenuItem(value: '30', child: Text('30 年')),
+              ],
+              onChanged: (v) => _termYears = v ?? '30',
+            ),
+          ],
+        );
       case 1:
         final e = widget.event as ChildRearing?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后出生', init: e == null ? '2' : (e.month / 12).round().toString()),
-          _num('m', '每月养育成本（元）', init: e?.monthlyCostMinor == null ? '3000' : _yuan(e!.monthlyCostMinor)),
-          _num('c', '大学阶段每月额外（元，可空）', init: e?.collegeExtraMinor == null ? '' : _yuan(e!.collegeExtraMinor!)),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后出生',
+              init: e == null ? '2' : (e.month / 12).round().toString(),
+            ),
+            _num(
+              'm',
+              '每月养育成本（元）',
+              init: e?.monthlyCostMinor == null
+                  ? '3000'
+                  : _yuan(e!.monthlyCostMinor),
+            ),
+            _num(
+              'c',
+              '大学阶段每月额外（元，可空）',
+              init: e?.collegeExtraMinor == null
+                  ? ''
+                  : _yuan(e!.collegeExtraMinor!),
+            ),
+          ],
+        );
       case 2:
         final e = widget.event as IncomeChange?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后', init: e == null ? '1' : (e.month / 12).round().toString()),
-          _num('p', '变化 %（+30 涨三成 / −100 归零）', init: e == null ? '+30' : ((e.factor - Rational.one) * Rational.fromInt(BigInt.from(100))).asDouble().toString()),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后',
+              init: e == null ? '1' : (e.month / 12).round().toString(),
+            ),
+            _num(
+              'p',
+              '变化 %（+30 涨三成 / −100 归零）',
+              init: e == null
+                  ? '+30'
+                  : ((e.factor - Rational.one) *
+                            Rational.fromInt(BigInt.from(100)))
+                        .asDouble()
+                        .toString(),
+            ),
+          ],
+        );
       case 3:
         final e = widget.event as Retirement?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后退休', init: e == null ? '30' : (e.month / 12).round().toString()),
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text('退休后：收入 ×0.4（养老金替代率）、支出 ×0.75',
-                style: TextStyle(fontSize: 12)),
-          ),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后退休',
+              init: e == null ? '30' : (e.month / 12).round().toString(),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                '退休后：收入 ×0.4（养老金替代率）、支出 ×0.75',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        );
       case 4:
         final e = widget.event as BigPurchase?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后', init: e == null ? '5' : (e.month / 12).round().toString()),
-          _num('cost', '购置支出（元）', init: e?.costMinor == null ? '' : _yuan(e!.costMinor)),
-          _num('r', '残值计入固定资产（元，可空）', init: e?.residualMinor == null ? '' : _yuan(e!.residualMinor!)),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后',
+              init: e == null ? '5' : (e.month / 12).round().toString(),
+            ),
+            _num(
+              'cost',
+              '购置支出（元）',
+              init: e?.costMinor == null ? '' : _yuan(e!.costMinor),
+            ),
+            _num(
+              'r',
+              '残值计入固定资产（元，可空）',
+              init: e?.residualMinor == null ? '' : _yuan(e!.residualMinor!),
+            ),
+          ],
+        );
       default:
         final e = widget.event as LumpSum?;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _num('y', '几年后', init: e == null ? '1' : (e.month / 12).round().toString()),
-          _num('a', '金额（元，负数 = 流出）', init: e?.amountMinor == null ? '' : _yuan(e!.amountMinor)),
-        ]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _num(
+              'y',
+              '几年后',
+              init: e == null ? '1' : (e.month / 12).round().toString(),
+            ),
+            _num(
+              'a',
+              '金额（元，负数 = 流出）',
+              init: e?.amountMinor == null ? '' : _yuan(e!.amountMinor),
+            ),
+          ],
+        );
     }
   }
 
@@ -224,26 +327,29 @@ class _EventFormDialogState extends State<_EventFormDialog> {
         final rate = _pct('rate');
         if (price != null && down != null && rate != null && down < price) {
           ev = HomePurchase(
-              month: month,
-              priceMinor: price,
-              downPaymentMinor: down,
-              annualRate: rate / Rational.fromInt(BigInt.from(100)),
-              termYears: int.parse(_termYears));
+            month: month,
+            priceMinor: price,
+            downPaymentMinor: down,
+            annualRate: rate / Rational.fromInt(BigInt.from(100)),
+            termYears: int.parse(_termYears),
+          );
         }
       case 1:
         final m = _minor('m');
         if (m != null) {
           ev = ChildRearing(
-              month: month,
-              monthlyCostMinor: m,
-              collegeExtraMinor: _minor('c'));
+            month: month,
+            monthlyCostMinor: m,
+            collegeExtraMinor: _minor('c'),
+          );
         }
       case 2:
         final p = _pct('p');
         if (p != null) {
           ev = IncomeChange(
-              month: month,
-              factor: Rational.one + p / Rational.fromInt(BigInt.from(100)));
+            month: month,
+            factor: Rational.one + p / Rational.fromInt(BigInt.from(100)),
+          );
         }
       case 3:
         ev = Retirement(month: month);
@@ -251,7 +357,10 @@ class _EventFormDialogState extends State<_EventFormDialog> {
         final cost = _minor('cost');
         if (cost != null) {
           ev = BigPurchase(
-              month: month, costMinor: cost, residualMinor: _minor('r'));
+            month: month,
+            costMinor: cost,
+            residualMinor: _minor('r'),
+          );
         }
       default:
         final a = _minor('a');
@@ -263,9 +372,9 @@ class _EventFormDialogState extends State<_EventFormDialog> {
 
 /// 事件列表摘要（弹层展示用）。
 String lifeEventSummary(LifeEvent e) {
-  String yuan(BigInt minor) => '${minor ~/ BigInt.from(1000000)} 万'; // 万 = 10^6 分
-  String inYears(int month) =>
-      month == 0 ? '现在' : '${(month / 12).round()} 年后';
+  String yuan(BigInt minor) =>
+      '${minor ~/ BigInt.from(1000000)} 万'; // 万 = 10^6 分
+  String inYears(int month) => month == 0 ? '现在' : '${(month / 12).round()} 年后';
   return switch (e) {
     HomePurchase h =>
       '${inYears(h.month)}买房 ${yuan(h.priceMinor)}（首付 ${yuan(h.downPaymentMinor)} · ${(h.annualRate.asDouble() * 100).toStringAsFixed(2)}% × ${h.termYears} 年）',

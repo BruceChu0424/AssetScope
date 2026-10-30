@@ -8,14 +8,15 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'allocation_target_sheet.dart';
 
-final allocationProvider =
-    FutureProvider.autoDispose<AllocationReport>((ref) async {
+final allocationProvider = FutureProvider.autoDispose<AllocationReport>((
+  ref,
+) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
   return s.portfolioAnalytics.allocationReport();
 });
 
-/// 配置类配色：统一取图表调色板（祖母绿-铜金体系，深色模式提亮）。
+/// 配置类配色：统一取图表调色板（青瓷-鎏金体系，深色模式提亮）。
 Color allocationColor(AllocationClass c, Brightness b) {
   const order = [
     AllocationClass.equity,
@@ -40,9 +41,13 @@ class AllocationCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return ref.watch(allocationProvider).when(
+    return ref
+        .watch(allocationProvider)
+        .when(
           loading: () => const SizedBox(
-              height: 60, child: Center(child: CircularProgressIndicator())),
+            height: 60,
+            child: Center(child: CircularProgressIndicator()),
+          ),
           error: (e, _) => ErrorPlaceholder('加载失败：$e'),
           data: (r) => SectionCard(
             title: '资产配置',
@@ -53,32 +58,37 @@ class AllocationCard extends ConsumerWidget {
                   showAllocationTargetSheet(context, ref, r.targets),
             ),
             child: r.slices.isEmpty
-                ? Text('还没有资产。记账后这里会展示你的资产结构。',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor))
+                ? Text(
+                    '还没有资产。记账后这里会展示你的资产结构。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  )
                 : Column(
                     children: [
                       _stackedBar(context, r),
                       const SizedBox(height: 4),
-                      for (final s in r.slices)
-                        _sliceTile(context, r, s),
+                      for (final s in r.slices) _sliceTile(context, r, s),
                       if (r.missingValuations > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 4, bottom: 4),
                           child: Text(
                             '⚠ ${r.missingValuations} 个账户估值缺失（按 0 计入占比）',
                             style: theme.textTheme.bodySmall?.copyWith(
-                                color:
-                                    AppColors.brassOf(theme.brightness)),
+                              color: AppColors.brassOf(theme.brightness),
+                            ),
                           ),
                         ),
                       if (r.hasAdvice) ...[
                         const Divider(height: 16),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: Text('再平衡建议（5/25 带宽法）',
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w600)),
+                          child: Text(
+                            '再平衡建议（5/25 带宽法）',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                         for (final a in r.advice)
                           if (a.needsAction) _adviceTile(context, r, a),
@@ -87,16 +97,20 @@ class AllocationCard extends ConsumerWidget {
                           child: Text(
                             '偏离超过 max(5 个百分点, 目标的 25%) 时提醒，交易回带边（非回到目标，降低换手）。',
                             style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.hintColor, fontSize: 11),
+                              color: theme.hintColor,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
                       ] else if (r.advice.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('配置均在目标带宽内 ✓',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                  color:
-                                      AppColors.positiveOf(theme.brightness))),
+                          child: Text(
+                            '配置均在目标带宽内 ✓',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.positiveOf(theme.brightness),
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -117,8 +131,7 @@ class AllocationCard extends ConsumerWidget {
                 flex: s.valueBaseMinor > BigInt.zero
                     ? s.valueBaseMinor.toInt()
                     : 1,
-                child:
-                    Container(color: allocationColor(s.allocationClass, b)),
+                child: Container(color: allocationColor(s.allocationClass, b)),
               ),
           ],
         ),
@@ -126,13 +139,15 @@ class AllocationCard extends ConsumerWidget {
     );
   }
 
-  Widget _sliceTile(BuildContext context, AllocationReport r, AllocationSlice s) {
+  Widget _sliceTile(
+    BuildContext context,
+    AllocationReport r,
+    AllocationSlice s,
+  ) {
     final theme = Theme.of(context);
     final target = r.targets[s.allocationClass];
     final sharePct = (s.share.asDouble() * 100);
-    final drift = target == null
-        ? null
-        : sharePct - target;
+    final drift = target == null ? null : sharePct - target;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
@@ -140,20 +155,27 @@ class AllocationCard extends ConsumerWidget {
         width: 10,
         height: 10,
         decoration: BoxDecoration(
-          color: allocationColor(s.allocationClass, Theme.of(context).brightness),
+          color: allocationColor(
+            s.allocationClass,
+            Theme.of(context).brightness,
+          ),
           shape: BoxShape.circle,
         ),
       ),
       title: Text(s.allocationClass.labelZh),
       subtitle: target == null
           ? null
-          : Text('目标 $target%',
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
+          : Text(
+              '目标 $target%',
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (drift != null && r.advice.any((a) =>
-              a.allocationClass == s.allocationClass && a.needsAction))
+          if (drift != null &&
+              r.advice.any(
+                (a) => a.allocationClass == s.allocationClass && a.needsAction,
+              ))
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
@@ -173,7 +195,8 @@ class AllocationCard extends ConsumerWidget {
               '${fmtMinor(s.valueBaseMinor, r.baseCurrencyCode)} · ${sharePct.toStringAsFixed(1)}%',
               textAlign: TextAlign.end,
               style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()]),
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
             ),
           ),
         ],
@@ -182,7 +205,10 @@ class AllocationCard extends ConsumerWidget {
   }
 
   Widget _adviceTile(
-      BuildContext context, AllocationReport r, RebalanceAdvice a) {
+    BuildContext context,
+    AllocationReport r,
+    RebalanceAdvice a,
+  ) {
     final theme = Theme.of(context);
     final isBuy = a.action == RebalanceAction.buy;
     return ListTile(
@@ -196,7 +222,8 @@ class AllocationCard extends ConsumerWidget {
             : AppColors.negativeOf(theme.brightness),
       ),
       title: Text(
-          '${isBuy ? '买入' : '卖出'}${a.allocationClass.labelZh} ≈ ${fmtMinor(a.tradeMinor, r.baseCurrencyCode)}'),
+        '${isBuy ? '买入' : '卖出'}${a.allocationClass.labelZh} ≈ ${fmtMinor(a.tradeMinor, r.baseCurrencyCode)}',
+      ),
       subtitle: Text(
         '当前 ${(a.currentShare.asDouble() * 100).toStringAsFixed(1)}% → 回到带宽边 '
         '${(a.targetShare.asDouble() * 100).toStringAsFixed(0)}%±带',

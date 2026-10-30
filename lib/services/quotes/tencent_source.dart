@@ -31,12 +31,13 @@ class TencentSource {
 
   /// 解析 GBK 字节流；无法解析的行跳过并返回于 [failed]。
   static (List<TencentQuote>, List<String>) parse(
-      List<int> gbkBytes, List<String> expected) {
+    List<int> gbkBytes,
+    List<String> expected,
+  ) {
     final text = gbk.decode(gbkBytes);
     final bySymbol = <String, List<String>>{};
     for (final line in text.split('\n')) {
-      final m =
-          RegExp(r'v_([a-z]{2}\d{6})="([^"]*)"').firstMatch(line.trim());
+      final m = RegExp(r'v_([a-z]{2}\d{6})="([^"]*)"').firstMatch(line.trim());
       if (m == null) continue;
       bySymbol[m.group(1)!] = m.group(2)!.split('~');
     }
@@ -55,12 +56,14 @@ class TencentSource {
         failed.add(sym);
         continue;
       }
-      out.add(TencentQuote(
-        symbol: sym,
-        name: f.length > 1 ? f[1] : sym,
-        price: effective,
-        asOf: _parseStamp(f[30]),
-      ));
+      out.add(
+        TencentQuote(
+          symbol: sym,
+          name: f.length > 1 ? f[1] : sym,
+          price: effective,
+          asOf: _parseStamp(f[30]),
+        ),
+      );
     }
     return (out, failed);
   }
@@ -78,8 +81,9 @@ class TencentSource {
 
   /// yyyymmdd[HHMMSS]（港股/美股格式不同，本源只用 A股）。
   static DateTime? _parseStamp(String s) {
-    final m = RegExp(r'^(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?(\d{2})?')
-        .firstMatch(s.trim());
+    final m = RegExp(
+      r'^(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?(\d{2})?',
+    ).firstMatch(s.trim());
     if (m == null) return null;
     return DateTime(
       int.parse(m.group(1)!),

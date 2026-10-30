@@ -30,19 +30,22 @@ Future<void> showTradeDialog(
 
   final accounts = await s.accounts.all();
   final cashAccounts = accounts
-      .where((a) =>
-          a.type == AccountType.asset &&
-          !a.isSystem &&
-          !a.isHolding &&
-          a.assetSubtype != AssetSubtype.receivable)
+      .where(
+        (a) =>
+            a.type == AccountType.asset &&
+            !a.isSystem &&
+            !a.isHolding &&
+            a.assetSubtype != AssetSubtype.receivable,
+      )
       .toList();
   if (cashAccounts.isNotEmpty) cashAccountId = cashAccounts.first.id;
 
   final holdings = isDividend
       ? const <HoldingSnapshot>[]
       : await s.portfolioService.holdings();
-  final snapshot =
-      holdings.where((h) => h.account.id == account.id).firstOrNull;
+  final snapshot = holdings
+      .where((h) => h.account.id == account.id)
+      .firstOrNull;
   if (!context.mounted) return;
 
   final ok = await showDialog<bool>(
@@ -63,14 +66,16 @@ Future<void> showTradeDialog(
                 Text(
                   '持有 ${snapshot.quantity.toDecimalString(6)} 份 · 成本 ${fmtMinor(snapshot.costMinor, account.currencyCode)}',
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(ctx).hintColor),
+                    color: Theme.of(ctx).hintColor,
+                  ),
                 ),
                 const SizedBox(height: 12),
               ],
               DropdownButtonFormField<String>(
                 initialValue: cashAccountId,
                 decoration: InputDecoration(
-                    labelText: isDividend ? '入账现金账户' : '现金账户'),
+                  labelText: isDividend ? '入账现金账户' : '现金账户',
+                ),
                 items: [
                   for (final a in cashAccounts)
                     DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -79,10 +84,11 @@ Future<void> showTradeDialog(
               ),
               const SizedBox(height: 12),
               if (!isDividend) ...[
-                TextField(
+                ParticleTextField(
                   controller: qtyCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: '数量（份）'),
                 ),
                 const SizedBox(height: 12),
@@ -99,7 +105,7 @@ Future<void> showTradeDialog(
               const SizedBox(height: 12),
               AppDateField(controller: dateCtrl),
               const SizedBox(height: 12),
-              TextField(
+              ParticleTextField(
                 controller: noteCtrl,
                 decoration: const InputDecoration(labelText: '备注（可选）'),
               ),
@@ -108,11 +114,13 @@ Future<void> showTradeDialog(
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dctx, false),
-              child: const Text('取消')),
-          FilledButton(
-              onPressed: () => Navigator.pop(dctx, true),
-              child: const Text('保存')),
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('取消'),
+          ),
+          ParticleFilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: const Text('保存'),
+          ),
         ],
       ),
     ),
@@ -152,12 +160,14 @@ Future<void> showTradeDialog(
     case TradeAction.dividend:
       final cash = await s.accounts.byId(cashAccountId!);
       if (cash == null) return;
-      await s.ledger.post(TxBuilders.dividend(
-        cashAccount: cash,
-        amountMinor: amount,
-        date: date,
-        note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
-      ));
+      await s.ledger.post(
+        TxBuilders.dividend(
+          cashAccount: cash,
+          amountMinor: amount,
+          date: date,
+          note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
+        ),
+      );
   }
   ref.invalidate(accountsViewProvider);
   ref.invalidate(holdingsProvider);
@@ -173,4 +183,3 @@ Rational? _parseRational(String text) {
     return null;
   }
 }
-

@@ -8,10 +8,9 @@ import 'package:assetscope/domain/ledger/transaction.dart';
 import 'package:assetscope/domain/money/fx_rate.dart';
 import 'package:assetscope/domain/planning/recurrence.dart';
 import 'package:assetscope/domain/utils/dates.dart';
-import 'package:assetscope/ui/accounts/accounts_page.dart';
 import 'package:assetscope/ui/budget/budgets_page.dart';
-import 'package:assetscope/ui/dashboard/dashboard_page.dart';
 import 'package:assetscope/ui/debts/debts_page.dart';
+import 'package:assetscope/ui/globe/globe_home_page.dart';
 import 'package:assetscope/ui/globe/globe_page.dart';
 import 'package:assetscope/ui/planning/plans_page.dart';
 import 'package:assetscope/ui/reports/report_page.dart';
@@ -48,15 +47,26 @@ void main() {
 
   Widget host(Widget child) => widgetHost(child, session);
 
-  testWidgets('仪表盘：净资产 hero 与洞察卡渲染', (tester) async {
+  /// 首页含常驻动画（地球自转/标记呼吸），不能 pumpAndSettle：
+  /// 定时泵帧等异步数据落定即可。
+  Future<void> pumpHome(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+  }
+
+  testWidgets('首页：净资产 hero 与洞察卡渲染', (tester) async {
     if (!dbAvailable) {
       markTestSkipped('宿主环境无可用 sqlite3，跳过');
       return;
     }
-    await tester.pumpWidget(host(const DashboardPage()));
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(host(const GlobeHomePage()));
+    await pumpHome(tester);
     expect(find.text('净资产'), findsOneWidget);
     expect(find.byType(SectionCard), findsWidgets);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   });
 
   testWidgets('流水页：渲染种子交易 + 记一笔对话框全流程', (tester) async {
@@ -157,7 +167,7 @@ void main() {
     }
     await tester.pumpWidget(host(const PlansPage()));
     await tester.pumpAndSettle();
-    expect(find.text('固定开销 / 计划'), findsOneWidget);
+    expect(find.text('计划'), findsOneWidget);
 
     await tester.tap(find.byTooltip('情景模拟 · 现金压力测试'));
     await tester.pumpAndSettle();
@@ -217,7 +227,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   });
 
-  testWidgets('仪表盘：共享账户显示我的份额行', (tester) async {
+  testWidgets('首页：共享账户显示我的份额行', (tester) async {
     if (!dbAvailable) {
       markTestSkipped('宿主环境无可用 sqlite3，跳过');
       return;
@@ -225,13 +235,13 @@ void main() {
     final bank = (await session.accounts.byId('bank'))!;
     await session.accounts.upsert(bank.copyWith(
         ownership: Rational.fromFrac(BigInt.one, BigInt.from(2))));
-    await tester.pumpWidget(host(const DashboardPage()));
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(host(const GlobeHomePage()));
+    await pumpHome(tester);
     // hero 上出现"我的份额"口径行（家庭总仍是主数字）。
     expect(find.textContaining('我的份额'), findsOneWidget);
-    FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   });
 
   testWidgets('计划页：到期计划一键全部记入 → 清单消失', (tester) async {
@@ -343,13 +353,12 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('账户 / 预算 / 负债页冒烟', (tester) async {
+  testWidgets('预算 / 负债页冒烟', (tester) async {
     if (!dbAvailable) {
       markTestSkipped('宿主环境无可用 sqlite3，跳过');
       return;
     }
     for (final (page, title) in const [
-      (AccountsPage(), '账户'),
       (BudgetsPage(), '预算'),
       (DebtsPage(), '负债'),
     ]) {
@@ -357,10 +366,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(title), findsWidgets, reason: '$page 应渲染标题 $title');
     }
-    // 账户页应列出种子账户。
-    await tester.pumpWidget(host(const AccountsPage()));
-    await tester.pumpAndSettle();
-    expect(find.text('招行'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });

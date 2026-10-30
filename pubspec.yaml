@@ -2,7 +2,7 @@ name: assetscope
 description: "资观 AssetScope —— 本地优先、端到端加密的个人资产、负债与财务规划系统。"
 publish_to: 'none'
 
-version: 0.15.0+15
+version: 0.23.0+25
 
 environment:
   sdk: ^3.12.2
@@ -48,6 +48,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   fast_gbk: ^1.0.0
   file_selector: ^1.1.0
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

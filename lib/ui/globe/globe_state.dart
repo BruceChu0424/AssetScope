@@ -1,13 +1,11 @@
 import 'dart:math' as math;
 import 'dart:ui' show Offset;
 
+import '../../domain/ledger/account.dart';
+
 /// 地球视图状态：中心经纬 + 缩放系数（纯数据，供 painter 与手势层共用）。
 class GlobeView {
-  GlobeView({
-    this.lambda = 116.4,
-    this.phi = 30.0,
-    this.zoom = 1.0,
-  });
+  GlobeView({this.lambda = 116.4, this.phi = 30.0, this.zoom = 1.0});
 
   /// 视野中心经度（东经为正）。中国居中默认北京。
   double lambda;
@@ -15,7 +13,8 @@ class GlobeView {
   /// 视野中心纬度（北纬为正），限制在 ±78° 避免翻转。
   double phi;
 
-  /// 半径缩放（0.75~1.6）。
+  /// 半径缩放（0.75~2.2）：1.6 以内球完整可见，更大用于"贴脸"
+  /// 端详某个区域（球缘超出画布是预期效果）。
   double zoom;
 
   static const _deg = math.pi / 180;
@@ -31,11 +30,12 @@ class GlobeView {
     final x0 = math.cos(lt) * math.sin(ln - la);
     final y0 = math.sin(lt);
     final z0 = math.cos(lt) * math.cos(ln - la);
-    // 绕 x 轴旋转 -phi：把中心纬度转到视野中心。
+    // 绕 x 轴旋转 phi：把中心纬度（lat = phi）转到视野正中。
+    // 符号曾写反导致南北镜像（屏幕中心实为 -phi 纬度，垂直拖拽方向颠倒）。
     final cosP = math.cos(ph);
     final sinP = math.sin(ph);
-    final y1 = y0 * cosP + z0 * sinP;
-    final z1 = -y0 * sinP + z0 * cosP;
+    final y1 = y0 * cosP - z0 * sinP;
+    final z1 = y0 * sinP + z0 * cosP;
     if (z1 <= 0) return null;
     return Offset3D(x0 * radius, -y1 * radius, z1);
   }
@@ -44,10 +44,10 @@ class GlobeView {
   (double, double) centerFor(double lat, double lon) => (lon, lat);
 
   GlobeView copyWith({double? lambda, double? phi, double? zoom}) => GlobeView(
-        lambda: lambda ?? this.lambda,
-        phi: (phi ?? this.phi).clamp(-78.0, 78.0),
-        zoom: (zoom ?? this.zoom).clamp(0.75, 1.6),
-      );
+    lambda: lambda ?? this.lambda,
+    phi: (phi ?? this.phi).clamp(-78.0, 78.0),
+    zoom: (zoom ?? this.zoom).clamp(0.75, 2.2),
+  );
 }
 
 /// 带深度的屏幕偏移。
@@ -57,6 +57,10 @@ class Offset3D {
   final double dy;
   final double z;
 }
+
+/// 资产标记类别：资金（现金/存款/理财/证券等可快速变现）与
+/// 固定资产（房产/车辆/股权/养老金等）。决定光点配色与弹窗徽标。
+enum MarkerKind { liquid, fixed }
 
 /// 地球上的资产标记。
 class GlobeMarker {
@@ -69,6 +73,9 @@ class GlobeMarker {
     required this.currencyCode,
     this.locationName,
     this.valuationMissing = false,
+    this.kind = MarkerKind.liquid,
+    this.institution,
+    this.subtypeLabel = '资产',
   });
 
   final String accountId;
@@ -82,6 +89,29 @@ class GlobeMarker {
   final String? locationName;
   final bool valuationMissing;
 
+  /// 资产类别（光点配色）。
+  final MarkerKind kind;
+
+  /// 开户行/机构（弹窗展示，如「招商银行·上海分行」）。
+  final String? institution;
+
+  /// 子类型中文名（弹窗展示，如「银行活期」「房产」）。
+  final String subtypeLabel;
+
+  String get kindLabel => kind == MarkerKind.fixed ? '固定资产' : '资金';
+
+  /// 资产子类型 → 光点类别。持仓/存款/现金都算资金，
+  /// 只有"搬不走的"才算固定资产。
+  static MarkerKind kindOf(AssetSubtype? st) => switch (st) {
+    AssetSubtype.realEstate ||
+    AssetSubtype.vehicle ||
+    AssetSubtype.equityOwnership ||
+    AssetSubtype.pension ||
+    AssetSubtype.providentFund ||
+    AssetSubtype.insuranceCashValue => MarkerKind.fixed,
+    _ => MarkerKind.liquid,
+  };
+
   /// 命中测试：屏幕点是否点中此标记（[screenPos] 为标记的屏幕坐标）。
   static bool hit(Offset3D projected, Offset point, double markerRadius) {
     if (projected.z <= 0) return false;
@@ -91,10 +121,14 @@ class GlobeMarker {
   }
 }
 
-/// 标记大小（按价值开方比例，4~20px）。
-double markerRadiusFor(BigInt value, BigInt maxValue) {
+/// 标记大小（按价值开方比例，5~20px，随缩放轻度放大）。
+double markerRadiusFor(BigInt value, BigInt maxValue, {double zoom = 1}) {
   if (maxValue <= BigInt.zero) return 8;
-  final ratio =
-      math.sqrt(value.toDouble() / maxValue.toDouble()).clamp(0.25, 1.0);
-  return 5 + ratio * 15;
+  final ratio = math
+      .sqrt(value.toDouble() / maxValue.toDouble())
+      .clamp(0.25, 1.0);
+  // 缩放耦合系数：zoom=1 时恰为 1，放大到 2.2 时约 1.36——
+  // 球变大的同时光点也稍大，但不至于糊成一片。
+  final z = (0.7 + 0.3 * zoom).clamp(0.85, 1.35);
+  return (5 + ratio * 15) * z;
 }

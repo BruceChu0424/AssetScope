@@ -33,10 +33,10 @@ class AiProviderPresets {
 
   static const glm = AiProviderPreset(
     id: 'glm',
-    label: '智谱 GLM（glm-4-flash 免费）',
+    label: '智谱 GLM（glm-4.7-flash 免费）',
     protocol: AiProtocol.openai,
     defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    defaultModel: 'glm-4-flash',
+    defaultModel: 'glm-4.7-flash',
     supportsWebSearch: true,
     note: '国内直连，web_search 工具联网',
   );
@@ -102,7 +102,13 @@ class AiProviderPresets {
   );
 
   static const List<AiProviderPreset> all = [
-    glm, moonshot, qwen, deepseek, openai, anthropic, custom,
+    glm,
+    moonshot,
+    qwen,
+    deepseek,
+    openai,
+    anthropic,
+    custom,
   ];
 
   static AiProviderPreset? byCode(String? id) {
@@ -135,12 +141,12 @@ class AiConfig {
   AiProtocol get protocol => preset?.protocol ?? AiProtocol.openai;
 
   Map<String, Object?> toJson() => {
-        'presetId': presetId,
-        'baseUrl': baseUrl,
-        'apiKey': apiKey,
-        'model': model,
-        'enableWebSearch': enableWebSearch,
-      };
+    'presetId': presetId,
+    'baseUrl': baseUrl,
+    'apiKey': apiKey,
+    'model': model,
+    'enableWebSearch': enableWebSearch,
+  };
 
   static AiConfig? fromJson(Map<String, Object?>? j) {
     if (j == null) return null;
@@ -164,23 +170,46 @@ class AiConfig {
   }
 }
 
+/// 一条对话消息（user / assistant）。
+class AiMessage {
+  const AiMessage.user(this.content) : role = 'user';
+  const AiMessage.assistant(this.content) : role = 'assistant';
+
+  AiMessage.fromMap(Map<String, Object?> m)
+    : role = m['role'] as String? ?? 'user',
+      content = m['content'] as String? ?? '';
+
+  final String role;
+  final String content;
+
+  Map<String, Object?> toMap() => {'role': role, 'content': content};
+}
+
 /// 聊天补全客户端：OpenAI 兼容与 Anthropic 两种协议。
 /// 请求构造与响应提取拆为纯静态方法便于测试；网络走 [GuardedHttp]。
 class AiChat {
   const AiChat();
 
   /// 单轮补全，返回模型文本。异常信息不含 API Key。
-  Future<String> complete(AiConfig cfg, String system, String user) async {
+  Future<String> complete(AiConfig cfg, String system, String user) =>
+      converse(cfg, system, [AiMessage.user(user)]);
+
+  /// 多轮对话：[messages] 为按时间序的 user/assistant 交替历史。
+  Future<String> converse(
+    AiConfig cfg,
+    String system,
+    List<AiMessage> messages,
+  ) async {
     final Map<String, String> headers;
     final Object body;
     final String url;
     if (cfg.protocol == AiProtocol.anthropic) {
-      final (u, h, b) = buildAnthropicRequest(cfg, system, user);
+      final (u, h, b) = buildAnthropicMessagesRequest(cfg, system, messages);
       headers = h;
       body = b;
       url = u.toString();
     } else {
-      final (u, h, b) = buildOpenAiRequest(cfg, system, user);
+      final (u, h, b) = buildOpenAiMessagesRequest(cfg, system, messages);
       headers = h;
       body = b;
       url = u.toString();
@@ -199,7 +228,18 @@ class AiChat {
   /// 联网搜索按预设注入：GLM web_search 工具 / Kimi builtin_function /
   /// 千问 enable_search / OpenAI web_search 工具。
   static (Uri, Map<String, String>, Map<String, Object?>) buildOpenAiRequest(
-      AiConfig cfg, String system, String user) {
+    AiConfig cfg,
+    String system,
+    String user,
+  ) => buildOpenAiMessagesRequest(cfg, system, [AiMessage.user(user)]);
+
+  /// 多轮版请求构造（消息体见 [AiMessage]）。
+  static (Uri, Map<String, String>, Map<String, Object?>)
+  buildOpenAiMessagesRequest(
+    AiConfig cfg,
+    String system,
+    List<AiMessage> messages,
+  ) {
     final tools = <Object?>[];
     final extra = <String, Object?>{};
     if (cfg.enableWebSearch) {
@@ -227,7 +267,7 @@ class AiChat {
       'model': cfg.model,
       'messages': [
         {'role': 'system', 'content': system},
-        {'role': 'user', 'content': user},
+        for (final m in messages) m.toMap(),
       ],
       'stream': false,
       ...extra,
@@ -244,15 +284,24 @@ class AiChat {
   }
 
   /// Anthropic Messages API：system 独立字段、x-api-key 鉴权。
+  static (Uri, Map<String, String>, Map<String, Object?>) buildAnthropicRequest(
+    AiConfig cfg,
+    String system,
+    String user,
+  ) => buildAnthropicMessagesRequest(cfg, system, [AiMessage.user(user)]);
+
+  /// 多轮版 Anthropic 请求构造。
   static (Uri, Map<String, String>, Map<String, Object?>)
-      buildAnthropicRequest(AiConfig cfg, String system, String user) {
+  buildAnthropicMessagesRequest(
+    AiConfig cfg,
+    String system,
+    List<AiMessage> messages,
+  ) {
     final body = <String, Object?>{
       'model': cfg.model,
       'max_tokens': 4096,
       'system': system,
-      'messages': [
-        {'role': 'user', 'content': user},
-      ],
+      'messages': [for (final m in messages) m.toMap()],
       'stream': false,
       if (cfg.enableWebSearch)
         'tools': [
@@ -281,7 +330,9 @@ class AiChat {
     if (content is List) {
       final sb = StringBuffer();
       for (final block in content) {
-        if (block is Map && block['type'] == 'text' && block['text'] is String) {
+        if (block is Map &&
+            block['type'] == 'text' &&
+            block['text'] is String) {
           sb.write(block['text'] as String);
         }
       }

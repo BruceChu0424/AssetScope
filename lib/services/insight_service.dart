@@ -54,7 +54,7 @@ class InsightBundle {
 /// 智慧分析服务：把仓储数据喂给纯算法层，产出首页/报表可用的结论。
 class InsightService {
   InsightService(this._accounts, this._ledger, this._planning, this._meta)
-      : stats = StatsService(_accounts, _ledger, _meta);
+    : stats = StatsService(_accounts, _ledger, _meta);
 
   final AccountsRepo _accounts;
   final LedgerRepo _ledger;
@@ -64,7 +64,9 @@ class InsightService {
 
   /// 商户分类规则：持久化在 settings 表（key: categoryRules）。
   Future<List<CategoryRule>> categoryRules() async =>
-      CategoryRulesEngine.decodeRules(await _meta.settingString('categoryRules'));
+      CategoryRulesEngine.decodeRules(
+        await _meta.settingString('categoryRules'),
+      );
 
   Future<void> saveCategoryRules(List<CategoryRule> rules) =>
       _meta.setSetting('categoryRules', CategoryRulesEngine.encodeRules(rules));
@@ -73,7 +75,9 @@ class InsightService {
   Future<CategoryRulesEngine> buildRulesEngine() async {
     final rules = await categoryRules();
     final txs = await _ledger.list(
-        from: DateTime(2000), to: DateTime.now().add(const Duration(days: 1)));
+      from: DateTime(2000),
+      to: DateTime.now().add(const Duration(days: 1)),
+    );
     final agg = <String, Map<String, int>>{};
     for (final tx in txs) {
       if (tx.status == TxStatus.voided) continue;
@@ -89,8 +93,11 @@ class InsightService {
     }
     final history = <CategoryHistoryEntry>[];
     agg.forEach((cp, m) {
-      m.forEach((cat, n) => history.add(CategoryHistoryEntry(
-          counterparty: cp, categoryId: cat, count: n)));
+      m.forEach(
+        (cat, n) => history.add(
+          CategoryHistoryEntry(counterparty: cp, categoryId: cat, count: n),
+        ),
+      );
     });
     return CategoryRulesEngine(rules: rules, history: history);
   }
@@ -99,8 +106,9 @@ class InsightService {
   Future<List<RecurringSuggestion>> recurringSuggestions() async {
     final now = DateTime.now();
     final txs = await _ledger.list(
-        from: DateTime(now.year, now.month - 18, now.day),
-        to: now.add(const Duration(days: 1)));
+      from: DateTime(now.year, now.month - 18, now.day),
+      to: now.add(const Duration(days: 1)),
+    );
     final candidates = <RecurringTx>[];
     for (final tx in txs) {
       if (tx.status == TxStatus.voided) continue;
@@ -111,12 +119,14 @@ class InsightService {
       if (label.isEmpty) continue;
       for (final p in tx.postings) {
         if (p.accountId == tx.categoryId && p.amountMinor != null) {
-          candidates.add(RecurringTx(
-            date: tx.date,
-            amountMinor: p.amountMinor!.abs(),
-            label: label,
-            direction: tx.kind == TxKind.income,
-          ));
+          candidates.add(
+            RecurringTx(
+              date: tx.date,
+              amountMinor: p.amountMinor!.abs(),
+              label: label,
+              direction: tx.kind == TxKind.income,
+            ),
+          );
           break;
         }
       }
@@ -131,9 +141,13 @@ class InsightService {
     // --- 本月与近月分类支出 ---
     final report = await stats.monthReport(now.year, now.month);
     final income = report.incomeByCategory.values.fold(
-        BigInt.zero, (a, b) => a + b);
+      BigInt.zero,
+      (a, b) => a + b,
+    );
     final expense = report.expenseByCategory.values.fold(
-        BigInt.zero, (a, b) => a + b);
+      BigInt.zero,
+      (a, b) => a + b,
+    );
 
     // 近 5 个月（不含本月）各分类月支出 → 基线。
     final historyByCategory = <String, List<BigInt>>{};
@@ -168,7 +182,9 @@ class InsightService {
       final d = DateTime(now.year, now.month - k);
       final r = await stats.monthReport(d.year, d.month);
       expense3m += r.expenseByCategory.values.fold(
-          BigInt.zero, (a, b) => a + b);
+        BigInt.zero,
+        (a, b) => a + b,
+      );
     }
     final avgExpense = expense3m ~/ BigInt.from(3);
 
@@ -226,66 +242,81 @@ class InsightService {
     final insights = <Insight>[];
     if (health.emergencyMonths != null) {
       final m = health.emergencyMonths!;
-      insights.add(Insight(
-        icon: m >= 6 ? '🛡️' : (m >= 3 ? '🛡️' : '⚠️'),
-        title: '应急准备金 ≈ ${m.toStringAsFixed(1)} 个月',
-        detail: m >= 6
-            ? '已超过 6 个月安全线，闲钱可以考虑做更长周期安排'
-            : m >= 3
-                ? '达到 3 个月基本线，继续向 6 个月目标积累'
-                : '低于 3 个月基本线，优先把流动资产补到月均消费的 3 倍',
-        severity: m >= 3 ? InsightSeverity.good : InsightSeverity.warn,
-      ));
+      insights.add(
+        Insight(
+          icon: m >= 6 ? '🛡️' : (m >= 3 ? '🛡️' : '⚠️'),
+          title: '应急准备金 ≈ ${m.toStringAsFixed(1)} 个月',
+          detail: m >= 6
+              ? '已超过 6 个月安全线，闲钱可以考虑做更长周期安排'
+              : m >= 3
+              ? '达到 3 个月基本线，继续向 6 个月目标积累'
+              : '低于 3 个月基本线，优先把流动资产补到月均消费的 3 倍',
+          severity: m >= 3 ? InsightSeverity.good : InsightSeverity.warn,
+        ),
+      );
     }
     if (health.savingsRate != null) {
       final r = health.savingsRate!;
-      insights.add(Insight(
-        icon: r >= 0.3 ? '💰' : (r >= 0.1 ? '💰' : '⚠️'),
-        title: '本月储蓄率 ${(r * 100).toStringAsFixed(0)}%',
-        detail: r >= 0.3
-            ? '高于 30%，保持这个节奏净资产会稳步爬升'
-            : r >= 0.1
-                ? '介于 10%–30%，还有优化空间'
-                : '本月入不敷出，看看消费构成里哪一项在拉动',
-        severity: r >= 0.1 ? InsightSeverity.good : InsightSeverity.warn,
-      ));
+      insights.add(
+        Insight(
+          icon: r >= 0.3 ? '💰' : (r >= 0.1 ? '💰' : '⚠️'),
+          title: '本月储蓄率 ${(r * 100).toStringAsFixed(0)}%',
+          detail: r >= 0.3
+              ? '高于 30%，保持这个节奏净资产会稳步爬升'
+              : r >= 0.1
+              ? '介于 10%–30%，还有优化空间'
+              : '本月入不敷出，看看消费构成里哪一项在拉动',
+          severity: r >= 0.1 ? InsightSeverity.good : InsightSeverity.warn,
+        ),
+      );
     }
     if (health.passiveCushion != null && health.passiveCushion! < 1) {
-      insights.add(Insight(
-        icon: '🧨',
-        title: '固定支出已超固定收入',
-        detail: '月度计划支出是固定收入的 ${(1 / health.passiveCushion!).toStringAsFixed(1)} 倍，依赖弹性收入或储蓄填补',
-        severity: InsightSeverity.warn,
-      ));
+      insights.add(
+        Insight(
+          icon: '🧨',
+          title: '固定支出已超固定收入',
+          detail:
+              '月度计划支出是固定收入的 ${(1 / health.passiveCushion!).toStringAsFixed(1)} 倍，依赖弹性收入或储蓄填补',
+          severity: InsightSeverity.warn,
+        ),
+      );
     }
     for (final a in anomalies.take(2)) {
       final pct = a.baselineMedianMinor == BigInt.zero
           ? '—'
           : '${((a.currentMinor - a.baselineMedianMinor).abs().toDouble() / a.baselineMedianMinor.toDouble() * 100).toStringAsFixed(0)}%';
-      insights.add(Insight(
-        icon: '📈',
-        title: '「${a.categoryName}」本月${a.spendUp ? '激增' : '骤降'} $pct',
-        detail: '基线（近月中位数）对照的稳健异常信号，确认是否为一次性大额',
-        severity: InsightSeverity.warn,
-      ));
+      insights.add(
+        Insight(
+          icon: '📈',
+          title: '「${a.categoryName}」本月${a.spendUp ? '激增' : '骤降'} $pct',
+          detail: '基线（近月中位数）对照的稳健异常信号，确认是否为一次性大额',
+          severity: InsightSeverity.warn,
+        ),
+      );
     }
     if (milestone != null) {
-      insights.add(Insight(
-        icon: '🏁',
-        title: '净资产关口预测',
-        detail: '按近 12 个月趋势（月均 +${(milestone.slopePerMonthMinor ~/ BigInt.from(100)).toString()} 元），'
-            '预计 ${milestone.targetDate.year} 年 ${milestone.targetDate.month} 月达到 ${_roundLabel(target)}',
-        severity: InsightSeverity.info,
-      ));
+      insights.add(
+        Insight(
+          icon: '🏁',
+          title: '净资产关口预测',
+          detail:
+              '按近 12 个月趋势（月均 +${(milestone.slopePerMonthMinor ~/ BigInt.from(100)).toString()} 元），'
+              '预计 ${milestone.targetDate.year} 年 ${milestone.targetDate.month} 月达到 ${_roundLabel(target)}',
+          severity: InsightSeverity.info,
+        ),
+      );
     }
     for (final r in recurring.take(2)) {
-      insights.add(Insight(
-        icon: r.direction ? '🔁' : '📅',
-        title: '发现周期性${r.direction ? '收入' : '支出'}：${r.label}',
-        detail: '${r.cadenceLabel} · ${r.occurrences} 次 · 置信 ${(r.confidence * 100).toStringAsFixed(0)}%，'
-            '可在计划页固化为固定开销',
-        severity: InsightSeverity.info,
-      ));
+      insights.add(
+        Insight(
+          icon: r.direction ? '🔁' : '📅',
+          title: '发现周期性${r.direction ? '收入' : '支出'}：${r.label}',
+          detail:
+              '${r.cadenceLabel} · ${r.occurrences} 次 · 置信 ${(r.confidence * 100).toStringAsFixed(0)}%，'
+              '可在计划页固化为固定开销',
+          severity: InsightSeverity.info,
+        ),
+      );
     }
 
     // --- 备份提醒：距上次加密备份超过 30 天（或有账无备份）时提示 ---
@@ -301,6 +332,7 @@ class InsightService {
       insights: insights,
     );
   }
+
   /// 备份提醒洞察：从未备份（且有交易）或距上次备份 > 30 天时返回。
   Future<Insight?> _backupReminder(DateTime now) async {
     final lastMs = await _meta.settingInt('lastBackupAtMs');
@@ -310,13 +342,14 @@ class InsightService {
       return Insight(
         icon: '💾',
         title: '还没有备份过',
-        detail: '数据只存在本机（Android 卸载即清空）。到 设置 → 导出加密备份，'
+        detail:
+            '数据只存在本机（Android 卸载即清空）。到 设置 → 导出加密备份，'
             '生成 .asbk 离线保存一份',
         severity: InsightSeverity.warn,
       );
     }
-    final days = now.difference(
-            DateTime.fromMillisecondsSinceEpoch(lastMs))
+    final days = now
+        .difference(DateTime.fromMillisecondsSinceEpoch(lastMs))
         .inDays;
     if (days >= 30) {
       return Insight(
@@ -329,14 +362,15 @@ class InsightService {
     return null;
   }
 
-
   /// 下一个"整数关口"：10 万级 → 最近的 10 万倍数；百万以上 → 100 万倍数。
   BigInt _nextRoundNumber(Iterable<BigInt> values) {
     var max = BigInt.zero;
     for (final v in values) {
       if (v > max) max = v;
     }
-    if (max <= BigInt.zero) return BigInt.from(100000) * BigInt.from(100); // 10 万
+    if (max <= BigInt.zero) {
+      return BigInt.from(100000) * BigInt.from(100); // 10 万
+    }
     final yuan = max ~/ BigInt.from(100);
     final BigInt step;
     if (yuan < BigInt.from(1000000)) {
@@ -361,8 +395,9 @@ class InsightService {
   }) async {
     final accounts = await _accounts.all();
     final contracts = await _planning.debtContracts();
-    final balances =
-        await _ledger.moneyBalancesAt(DateTime.now().add(const Duration(days: 1)));
+    final balances = await _ledger.moneyBalancesAt(
+      DateTime.now().add(const Duration(days: 1)),
+    );
     final positions = <DebtPosition>[];
     for (final a in accounts) {
       if (a.type != AccountType.liability || a.isSystem) continue;
@@ -378,21 +413,27 @@ class InsightService {
           break;
         }
       }
-      positions.add(DebtPosition(
-        name: a.name,
-        remainingPrincipalMinor: owed,
-        aprPercent: c?.aprPercent ?? Rational.zero(),
-        minMonthlyPaymentMinor: minPay,
-      ));
+      positions.add(
+        DebtPosition(
+          name: a.name,
+          remainingPrincipalMinor: owed,
+          aprPercent: c?.aprPercent ?? Rational.zero(),
+          minMonthlyPaymentMinor: minPay,
+        ),
+      );
     }
     return DebtStrategyCompare(
       positions: positions,
       avalanche: DebtPayoffPlanner.simulate(
-          positions, PayoffStrategy.avalanche,
-          extraMonthlyMinor: extraMonthlyMinor),
+        positions,
+        PayoffStrategy.avalanche,
+        extraMonthlyMinor: extraMonthlyMinor,
+      ),
       snowball: DebtPayoffPlanner.simulate(
-          positions, PayoffStrategy.snowball,
-          extraMonthlyMinor: extraMonthlyMinor),
+        positions,
+        PayoffStrategy.snowball,
+        extraMonthlyMinor: extraMonthlyMinor,
+      ),
     );
   }
 }

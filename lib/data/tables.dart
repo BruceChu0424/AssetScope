@@ -24,7 +24,9 @@ class RationalText extends TypeConverter<RationalStore, String> {
       return RationalStore(BigInt.parse(fromDb), BigInt.one);
     }
     return RationalStore(
-        BigInt.parse(fromDb.substring(0, i)), BigInt.parse(fromDb.substring(i + 1)));
+      BigInt.parse(fromDb.substring(0, i)),
+      BigInt.parse(fromDb.substring(i + 1)),
+    );
   }
 
   @override
@@ -51,8 +53,10 @@ class Accounts extends Table {
   TextColumn get currencyCode => text()();
   TextColumn get ownershipN => text().nullable()();
   TextColumn get ownershipD => text().nullable()();
-  BoolColumn get includeInNetWorth => boolean().withDefault(const Constant(true))();
-  TextColumn get creditLimitMinor => text().nullable().map(const BigIntText())();
+  BoolColumn get includeInNetWorth =>
+      boolean().withDefault(const Constant(true))();
+  TextColumn get creditLimitMinor =>
+      text().nullable().map(const BigIntText())();
   IntColumn get statementDay => integer().nullable()();
   IntColumn get dueDay => integer().nullable()();
   BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
@@ -66,8 +70,16 @@ class Accounts extends Table {
   RealColumn get locationLat => real().nullable()();
   RealColumn get locationLon => real().nullable()();
   TextColumn get locationName => text().nullable()();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+
+  /// AI 每日自动估值（房产/车辆等 manualValue 类）：启用后解锁时
+  /// 联网检索最新市价并写入估值记录（source=ai:…），用户可随时手动
+  /// 纠正（当日手动估值优先，AI 不再覆盖）。
+  BoolColumn get aiValuationEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// AI 估值检索线索（小区/栋/室、年款型号等）；null = 由名称+位置推导。
+  TextColumn get aiValuationQuery => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -103,10 +115,8 @@ class Transactions extends Table {
   TextColumn get source => text().withDefault(const Constant('manual'))();
   TextColumn get importBatchId => text().nullable()();
   BoolColumn get isAdjustment => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -138,7 +148,8 @@ class Budgets extends Table {
   TextColumn get endMonth => text().nullable()();
   TextColumn get categoryId => text().nullable()();
   TextColumn get rollover => text().withDefault(const Constant('none'))();
-  TextColumn get rolloverCapMinor => text().nullable().map(const BigIntText())();
+  TextColumn get rolloverCapMinor =>
+      text().nullable().map(const BigIntText())();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
 
   @override
@@ -165,9 +176,11 @@ class ScheduledEvents extends Table {
   BoolColumn get autoPost => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
-  TextColumn get skippedMonthsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get skippedMonthsJson =>
+      text().withDefault(const Constant('[]'))();
   TextColumn get skippedDatesJson => text().withDefault(const Constant('[]'))();
-  TextColumn get amountOverridesJson => text().withDefault(const Constant('{}'))();
+  TextColumn get amountOverridesJson =>
+      text().withDefault(const Constant('{}'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -248,8 +261,7 @@ class FxRates extends Table {
 class Snapshots extends Table {
   TextColumn get month => text()();
   TextColumn get payloadJson => text()();
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {month};
@@ -260,8 +272,7 @@ class ImportBatches extends Table {
   TextColumn get id => text()();
   TextColumn get source => text()();
   TextColumn get filename => text()();
-  DateTimeColumn get importedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get importedAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get parserVersion => text()();
   TextColumn get status => text().withDefault(const Constant('pending'))();
   TextColumn get countsJson => text().withDefault(const Constant('{}'))();

@@ -44,8 +44,7 @@ class YearMonthCell {
 
   BigInt get surplusMinor => incomeMinor - expenseMinor;
 
-  bool get hasData =>
-      incomeMinor != BigInt.zero || expenseMinor != BigInt.zero;
+  bool get hasData => incomeMinor != BigInt.zero || expenseMinor != BigInt.zero;
 }
 
 /// 年度最大单笔消费。
@@ -130,7 +129,7 @@ class YearReport {
   List<CategoryTotal> get topExpenseCategories {
     final list = [
       for (final e in expenseByCategory.entries)
-        CategoryTotal(e.key, categoryNames[e.key] ?? e.key, e.value)
+        CategoryTotal(e.key, categoryNames[e.key] ?? e.key, e.value),
     ]..sort((a, b) => b.totalMinor.compareTo(a.totalMinor));
     return list;
   }
@@ -138,7 +137,7 @@ class YearReport {
   List<CategoryTotal> get topIncomeCategories {
     final list = [
       for (final e in incomeByCategory.entries)
-        CategoryTotal(e.key, categoryNames[e.key] ?? e.key, e.value)
+        CategoryTotal(e.key, categoryNames[e.key] ?? e.key, e.value),
     ]..sort((a, b) => b.totalMinor.compareTo(a.totalMinor));
     return list;
   }
@@ -170,10 +169,14 @@ class YearReportBuilder {
     var realizedPnl = BigInt.zero;
     var dividend = BigInt.zero;
     for (final m in monthLites) {
-      m.expenseByCategory.forEach((k, v) =>
-          expenseByCategory[k] = (expenseByCategory[k] ?? BigInt.zero) + v);
-      m.incomeByCategory.forEach((k, v) =>
-          incomeByCategory[k] = (incomeByCategory[k] ?? BigInt.zero) + v);
+      m.expenseByCategory.forEach(
+        (k, v) =>
+            expenseByCategory[k] = (expenseByCategory[k] ?? BigInt.zero) + v,
+      );
+      m.incomeByCategory.forEach(
+        (k, v) =>
+            incomeByCategory[k] = (incomeByCategory[k] ?? BigInt.zero) + v,
+      );
       principal += m.debtPrincipalRepaidMinor;
       interest += m.debtInterestPaidMinor;
       realizedPnl += m.realizedPnlMinor;

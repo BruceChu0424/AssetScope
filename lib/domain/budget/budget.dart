@@ -1,5 +1,7 @@
 /// 预算：月度总额度或分类额度。
-enum BudgetScope { total('总预算'), category('分类预算');
+enum BudgetScope {
+  total('总预算'),
+  category('分类预算');
 
   const BudgetScope(this.labelZh);
   final String labelZh;
@@ -8,8 +10,7 @@ enum BudgetScope { total('总预算'), category('分类预算');
 enum RolloverPolicy {
   none('不结转'),
   all('全额结转'),
-  capTo('结转并设上限'),
-  ;
+  capTo('结转并设上限');
 
   const RolloverPolicy(this.labelZh);
   final String labelZh;
@@ -87,7 +88,8 @@ class BudgetEnvelope {
   /// 历史超支待分摊（v1 只展示，不自动扣减）。
   final BigInt overspentCarryMinor;
 
-  BigInt get availableMinor => limitMinor + carriedInMinor - overspentCarryMinor;
+  BigInt get availableMinor =>
+      limitMinor + carriedInMinor - overspentCarryMinor;
 
   BigInt get remainingMinor =>
       availableMinor - spentMinor - plannedMinor - reservedMinor;
@@ -117,10 +119,7 @@ BigInt carriedIn({
 }
 
 /// 纯函数：本月剩余结转到下月（负数=超支不结转的口径下取 0）。
-BigInt carryOut({
-  required Budget budget,
-  required BigInt remainingMinor,
-}) {
+BigInt carryOut({required Budget budget, required BigInt remainingMinor}) {
   switch (budget.rollover) {
     case RolloverPolicy.none:
       return BigInt.zero;

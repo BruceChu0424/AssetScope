@@ -98,7 +98,8 @@ class MonthAttributor {
     final incomeExpense = i.regularIncomeMinor - i.regularExpenseMinor;
     final unrealizedDelta = i.unrealizedEndMinor - i.unrealizedStartMinor;
     final actual = i.nwEndBaseMinor - i.nwStartBaseMinor;
-    final explained = incomeExpense +
+    final explained =
+        incomeExpense +
         i.realizedPnlMinor +
         i.dividendMinor +
         unrealizedDelta +
@@ -133,8 +134,8 @@ BigInt fxEffectMinor({
   var total = BigInt.zero;
   for (final a in foreignAccounts) {
     // startBal × (fxEnd − fxStart)
-    total +=
-        (Rational.fromInt(a.balanceStartMinor) * (a.fxEnd - a.fxStart)).rounded();
+    total += (Rational.fromInt(a.balanceStartMinor) * (a.fxEnd - a.fxStart))
+        .rounded();
   }
   for (final h in foreignHoldings) {
     // qtyStart × priceEnd × (fxEnd − fxStart)

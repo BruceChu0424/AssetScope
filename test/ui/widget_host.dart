@@ -13,7 +13,9 @@ import 'package:assetscope/domain/ledger/transaction.dart';
 import 'package:assetscope/domain/planning/recurrence.dart';
 import 'package:assetscope/security/dart_crypto_suite.dart';
 import 'package:assetscope/security/key_manager.dart';
-import 'package:assetscope/services/ai/ai_chat.dart';
+import 'package:assetscope/services/ai/ai_usage.dart';
+import 'package:assetscope/services/ai/ai_valuation_service.dart';
+import 'package:assetscope/services/ai/assistant_service.dart';
 import 'package:assetscope/services/ai/quote_fetch_service.dart';
 import 'package:assetscope/services/export_service.dart';
 import 'package:assetscope/services/import_service.dart';
@@ -45,8 +47,10 @@ Future<VaultUnlocked> buildWidgetSession(AppDatabase db) async {
   final stats = StatsService(accounts, ledger, meta);
   final portfolio = PortfolioService(accounts, ledger, meta, stats);
   final projection = ProjectionService(accounts, ledger, planning, meta);
-  final quoteFetch =
-      QuoteFetchService(accounts, ledger, meta, const AiChat());
+  final aiUsage = AiUsageStore(meta);
+  final chat = CountingAiChat(onCall: aiUsage.record);
+  final aiValuation = AiValuationService(accounts, meta, chat);
+  final quoteFetch = QuoteFetchService(accounts, ledger, meta, chat);
   return VaultUnlocked(
     db: db,
     keyManager: KeyManager(suite: DartCryptoSuite.instance),
@@ -68,6 +72,9 @@ Future<VaultUnlocked> buildWidgetSession(AppDatabase db) async {
     directQuotes: DirectQuoteService(accounts, quoteFetch),
     scenarios: ScenarioService(projection, stats),
     planExecution: PlanExecutionService(accounts, ledger, planning),
+    aiValuation: aiValuation,
+    assistant: AssistantService(stats, meta, chat),
+    aiUsage: aiUsage,
   );
 }
 

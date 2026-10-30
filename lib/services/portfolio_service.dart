@@ -113,18 +113,34 @@ class PortfolioService {
       final r = ValuationResolver.resolve(byAccount[a.id] ?? const [], end);
       final price = r.record?.unitPrice;
       if (price == null) {
-        out.add(HoldingSnapshot(
-            account: a, quantity: qty, costMinor: cost,
-            unitPrice: null, marketValueMinor: null, priceMissing: true));
+        out.add(
+          HoldingSnapshot(
+            account: a,
+            quantity: qty,
+            costMinor: cost,
+            unitPrice: null,
+            marketValueMinor: null,
+            priceMissing: true,
+          ),
+        );
       } else {
-        out.add(HoldingSnapshot(
-            account: a, quantity: qty, costMinor: cost,
-            unitPrice: price, marketValueMinor: (qty * price).rounded(),
-            priceMissing: false));
+        out.add(
+          HoldingSnapshot(
+            account: a,
+            quantity: qty,
+            costMinor: cost,
+            unitPrice: price,
+            marketValueMinor: (qty * price).rounded(),
+            priceMissing: false,
+          ),
+        );
       }
     }
-    out.sort((x, y) =>
-        (y.marketValueMinor ?? BigInt.zero).compareTo(x.marketValueMinor ?? BigInt.zero));
+    out.sort(
+      (x, y) => (y.marketValueMinor ?? BigInt.zero).compareTo(
+        x.marketValueMinor ?? BigInt.zero,
+      ),
+    );
     return out;
   }
 
@@ -132,8 +148,7 @@ class PortfolioService {
   Future<Set<String>> portfolioAccountIds() async {
     final accounts = await _accounts.all();
     return accounts
-        .where((a) =>
-            a.assetSubtype == AssetSubtype.brokerCash || a.isHolding)
+        .where((a) => a.assetSubtype == AssetSubtype.brokerCash || a.isHolding)
         .map((a) => a.id)
         .toSet();
   }
@@ -149,7 +164,9 @@ class PortfolioService {
     final byId = {for (final a in accounts) a.id: a};
 
     final txs = await _ledger.list(
-        from: DateTime(2000), to: now.add(const Duration(days: 1)));
+      from: DateTime(2000),
+      to: now.add(const Duration(days: 1)),
+    );
     final byDate = <DateTime, BigInt>{};
     var skipped = 0;
     for (final tx in txs) {
@@ -172,8 +189,11 @@ class PortfolioService {
         if (ccy == base) {
           b = amt;
         } else {
-          final rate =
-              await _meta.toBaseRate(ccy: ccy, base: base, onOrBefore: tx.date);
+          final rate = await _meta.toBaseRate(
+            ccy: ccy,
+            base: base,
+            onOrBefore: tx.date,
+          );
           if (rate == null) {
             hasForeignGap = true;
             continue;
@@ -212,8 +232,7 @@ class PortfolioService {
       final d = k == 0
           ? now
           : DateTime(now.year, now.month - k + 1, 0, 23, 59, 59); // 月末
-      final money =
-          await _ledger.moneyBalancesAt(d, accountIds: portfolioIds);
+      final money = await _ledger.moneyBalancesAt(d, accountIds: portfolioIds);
       final qtys = await _ledger.quantityBalancesAt(d);
       var pointValue = BigInt.zero;
       var valid = true;
@@ -225,7 +244,10 @@ class PortfolioService {
             pointValue += b;
           } else {
             final rate = await _meta.toBaseRate(
-                ccy: a.currencyCode, base: base, onOrBefore: d);
+              ccy: a.currencyCode,
+              base: base,
+              onOrBefore: d,
+            );
             if (rate == null) {
               valid = false;
               break;
@@ -235,10 +257,10 @@ class PortfolioService {
         } else if (a.isHolding) {
           final qty = qtys[a.id] ?? Rational.zero();
           if (qty.isZero) continue;
-          final price =
-              ValuationResolver.resolve(byAccount[a.id] ?? const [], d)
-                  .record
-                  ?.unitPrice;
+          final price = ValuationResolver.resolve(
+            byAccount[a.id] ?? const [],
+            d,
+          ).record?.unitPrice;
           if (price == null) {
             valid = false; // 当时持仓缺价：该估值点不可用
             break;
@@ -248,7 +270,10 @@ class PortfolioService {
             pointValue += ccyValue;
           } else {
             final rate = await _meta.toBaseRate(
-                ccy: a.currencyCode, base: base, onOrBefore: d);
+              ccy: a.currencyCode,
+              base: base,
+              onOrBefore: d,
+            );
             if (rate == null) {
               valid = false;
               break;
@@ -270,12 +295,13 @@ class PortfolioService {
     final portfolioIds = await portfolioAccountIds();
     if (portfolioIds.isEmpty) {
       return PortfolioReturn(
-          xirr: null,
-          twr: null,
-          twrValuationPoints: 0,
-          currentValueMinor: BigInt.zero,
-          investedMinor: BigInt.zero,
-          skippedFlows: 0);
+        xirr: null,
+        twr: null,
+        twrValuationPoints: 0,
+        currentValueMinor: BigInt.zero,
+        investedMinor: BigInt.zero,
+        skippedFlows: 0,
+      );
     }
 
     // 期末组合市值（含券商现金）。
@@ -291,9 +317,7 @@ class PortfolioService {
     final points = await twrValuationPoints(months: 13);
     final twr = TwrCalculator.twr(
       valuations: points,
-      flows: [
-        for (final e in flows.byDay.entries) TwrFlow(e.key, e.value),
-      ],
+      flows: [for (final e in flows.byDay.entries) TwrFlow(e.key, e.value)],
       annualizeDays: 365,
     );
     return PortfolioReturn(

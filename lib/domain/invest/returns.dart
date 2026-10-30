@@ -61,8 +61,13 @@ class TwrCalculator {
         fi++;
       }
       final v1 = vs[k].valueBaseMinor - flowInPeriod;
-      out.add(PeriodReturn(
-          vs[k - 1].date, vs[k].date, v1.toDouble() / v0.toDouble() - 1));
+      out.add(
+        PeriodReturn(
+          vs[k - 1].date,
+          vs[k].date,
+          v1.toDouble() / v0.toDouble() - 1,
+        ),
+      );
     }
     return out;
   }

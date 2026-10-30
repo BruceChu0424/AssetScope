@@ -30,7 +30,11 @@ enum AssetSubtype {
   insuranceCashValue('保险现金价值', liquidityDays: 9999),
   otherAsset('其他资产', liquidityDays: 90);
 
-  const AssetSubtype(this.labelZh, {required this.liquidityDays, this.isHolding = false});
+  const AssetSubtype(
+    this.labelZh, {
+    required this.liquidityDays,
+    this.isHolding = false,
+  });
 
   final String labelZh;
   final int liquidityDays;
@@ -57,8 +61,10 @@ enum LiabilitySubtype {
 enum ValuationMethod {
   /// 现金类：账本余额即价值。
   ledger,
+
   /// 持仓类：数量 × 市场价格（估值记录提供单价）。
   marketPrice,
+
   /// 手工估值（房产、车辆等）：估值记录提供总价值。
   manualValue,
 }
@@ -87,6 +93,8 @@ class Account {
     this.locationLat,
     this.locationLon,
     this.locationName,
+    this.aiValuationEnabled = false,
+    this.aiValuationQuery,
   });
 
   final String id;
@@ -103,8 +111,7 @@ class Account {
   final Rational? ownership;
 
   /// 有效归属比例（1 = 全部归本人）。
-  Rational get effectiveOwnership =>
-      ownership ?? (Rational.one);
+  Rational get effectiveOwnership => ownership ?? (Rational.one);
 
   final bool includeInNetWorth;
 
@@ -128,15 +135,30 @@ class Account {
   /// 位置名（城市/小区名，如"上海·前滩"）。
   final String? locationName;
 
+  /// 是否启用 AI 每日自动估值（房产/车辆等 manualValue 类资产）。
+  final bool aiValuationEnabled;
+
+  /// AI 估值检索线索（小区/栋/室、年款型号）；null = 由名称+位置推导。
+  final String? aiValuationQuery;
+
+  /// AI 估值有效检索词：用户线索优先，否则 名称 + 位置 拼接。
+  String get effectiveAiValuationQuery {
+    final q = aiValuationQuery?.trim();
+    if (q != null && q.isNotEmpty) return q;
+    final loc = locationName?.trim();
+    if (loc == null || loc.isEmpty) return name;
+    return '$name（$loc）';
+  }
+
   /// 是否已设置位置（地球标记用）。
-  bool get hasLocation =>
-      locationLat != null && locationLon != null;
+  bool get hasLocation => locationLat != null && locationLon != null;
 
   bool get isHolding => assetSubtype?.isHolding ?? false;
 
-  ValuationMethod get valuationMethod {
-    if (isHolding) return ValuationMethod.marketPrice;
-    return switch (assetSubtype) {
+  /// 按子类型判断估值方式（静态版，建表单在账户落库前就需要知道口径）。
+  static ValuationMethod valuationMethodOf(AssetSubtype? subtype) {
+    if (subtype?.isHolding ?? false) return ValuationMethod.marketPrice;
+    return switch (subtype) {
       AssetSubtype.realEstate ||
       AssetSubtype.vehicle ||
       AssetSubtype.pension ||
@@ -146,11 +168,12 @@ class Account {
       AssetSubtype.otherAsset ||
       AssetSubtype.timeDeposit ||
       AssetSubtype.wealthMgmt ||
-      AssetSubtype.depositPaid =>
-        ValuationMethod.manualValue,
+      AssetSubtype.depositPaid => ValuationMethod.manualValue,
       _ => ValuationMethod.ledger,
     };
   }
+
+  ValuationMethod get valuationMethod => valuationMethodOf(assetSubtype);
 
   /// 变现速度（天）。0=即时可用。
   int get liquidityDays => assetSubtype?.liquidityDays ?? 0;
@@ -169,30 +192,36 @@ class Account {
     double? locationLat,
     double? locationLon,
     String? locationName,
-  }) =>
-      Account(
-        id: id,
-        name: name ?? this.name,
-        type: type,
-        assetSubtype: assetSubtype,
-        liabilitySubtype: liabilitySubtype,
-        institution: institution ?? this.institution,
-        currencyCode: currencyCode,
-        ownership: ownership ?? this.ownership,
-        includeInNetWorth: includeInNetWorth ?? this.includeInNetWorth,
-        creditLimitMinor: creditLimitMinor ?? this.creditLimitMinor,
-        statementDay: statementDay ?? this.statementDay,
-        dueDay: dueDay ?? this.dueDay,
-        isSystem: isSystem,
-        archived: archived ?? this.archived,
-        sortOrder: sortOrder ?? this.sortOrder,
-        notes: notes ?? this.notes,
-        costBasisAccountId: costBasisAccountId,
-        securityId: securityId,
-        locationLat: locationLat ?? this.locationLat,
-        locationLon: locationLon ?? this.locationLon,
-        locationName: locationName ?? this.locationName,
-      );
+    bool? aiValuationEnabled,
+    String? aiValuationQuery,
+    bool clearAiValuationQuery = false,
+  }) => Account(
+    id: id,
+    name: name ?? this.name,
+    type: type,
+    assetSubtype: assetSubtype,
+    liabilitySubtype: liabilitySubtype,
+    institution: institution ?? this.institution,
+    currencyCode: currencyCode,
+    ownership: ownership ?? this.ownership,
+    includeInNetWorth: includeInNetWorth ?? this.includeInNetWorth,
+    creditLimitMinor: creditLimitMinor ?? this.creditLimitMinor,
+    statementDay: statementDay ?? this.statementDay,
+    dueDay: dueDay ?? this.dueDay,
+    isSystem: isSystem,
+    archived: archived ?? this.archived,
+    sortOrder: sortOrder ?? this.sortOrder,
+    notes: notes ?? this.notes,
+    costBasisAccountId: costBasisAccountId,
+    securityId: securityId,
+    locationLat: locationLat ?? this.locationLat,
+    locationLon: locationLon ?? this.locationLon,
+    locationName: locationName ?? this.locationName,
+    aiValuationEnabled: aiValuationEnabled ?? this.aiValuationEnabled,
+    aiValuationQuery: clearAiValuationQuery
+        ? null
+        : (aiValuationQuery ?? this.aiValuationQuery),
+  );
 
   /// 系统账户 id 常量（唯一实例）。
   static const sysEquityOpening = 'sys:equity:opening';
@@ -203,41 +232,47 @@ class Account {
   static const sysIncomeDividend = 'sys:income:dividend';
 
   static List<Account> systemAccounts() => const [
-        Account(
-            id: sysEquityOpening,
-            name: '期初余额权益',
-            type: AccountType.equity,
-            currencyCode: 'CNY',
-            isSystem: true),
-        Account(
-            id: sysEquityAdjustment,
-            name: '对账调整',
-            type: AccountType.equity,
-            currencyCode: 'CNY',
-            isSystem: true),
-        Account(
-            id: sysExpenseFx,
-            name: '汇兑损益',
-            type: AccountType.expense,
-            currencyCode: 'CNY',
-            isSystem: true),
-        Account(
-            id: sysExpenseRounding,
-            name: '尾差',
-            type: AccountType.expense,
-            currencyCode: 'CNY',
-            isSystem: true),
-        Account(
-            id: sysIncomeRealizedPnl,
-            name: '已实现投资损益',
-            type: AccountType.income,
-            currencyCode: 'CNY',
-            isSystem: true),
-        Account(
-            id: sysIncomeDividend,
-            name: '股息与分红',
-            type: AccountType.income,
-            currencyCode: 'CNY',
-            isSystem: true),
-      ];
+    Account(
+      id: sysEquityOpening,
+      name: '期初余额权益',
+      type: AccountType.equity,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+    Account(
+      id: sysEquityAdjustment,
+      name: '对账调整',
+      type: AccountType.equity,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+    Account(
+      id: sysExpenseFx,
+      name: '汇兑损益',
+      type: AccountType.expense,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+    Account(
+      id: sysExpenseRounding,
+      name: '尾差',
+      type: AccountType.expense,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+    Account(
+      id: sysIncomeRealizedPnl,
+      name: '已实现投资损益',
+      type: AccountType.income,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+    Account(
+      id: sysIncomeDividend,
+      name: '股息与分红',
+      type: AccountType.income,
+      currencyCode: 'CNY',
+      isSystem: true,
+    ),
+  ];
 }

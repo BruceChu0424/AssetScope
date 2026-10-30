@@ -92,20 +92,23 @@ FinancialHealth computeHealth({
 }) {
   double? savingsRate;
   if (incomeMinor > BigInt.zero) {
-    savingsRate = (incomeMinor - expenseMinor).toDouble() / incomeMinor.toDouble();
+    savingsRate =
+        (incomeMinor - expenseMinor).toDouble() / incomeMinor.toDouble();
   }
   double? emergencyMonths;
   if (avgMonthlyEssentialMinor > BigInt.zero) {
-    emergencyMonths = liquidAssetsMinor.toDouble() /
-        avgMonthlyEssentialMinor.toDouble();
+    emergencyMonths =
+        liquidAssetsMinor.toDouble() / avgMonthlyEssentialMinor.toDouble();
   }
   double? debtToAsset;
   if (totalAssetsMinor > BigInt.zero) {
-    debtToAsset = totalLiabilitiesMinor.toDouble() / totalAssetsMinor.toDouble();
+    debtToAsset =
+        totalLiabilitiesMinor.toDouble() / totalAssetsMinor.toDouble();
   }
   double? passiveCushion;
   if (fixedExpenseMonthlyMinor > BigInt.zero) {
-    passiveCushion = fixedIncomeMonthlyMinor.toDouble() /
+    passiveCushion =
+        fixedIncomeMonthlyMinor.toDouble() /
         fixedExpenseMonthlyMinor.toDouble();
   }
   return FinancialHealth(

@@ -16,7 +16,10 @@ import 'plan_fields.dart';
 ///
 /// 返回 true 表示发生了变化（已入账或已跳过），调用方刷新清单。
 Future<bool> showPlanPostSheet(
-    BuildContext context, WidgetRef ref, DueOccurrence d) async {
+  BuildContext context,
+  WidgetRef ref,
+  DueOccurrence d,
+) async {
   final changed = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -37,9 +40,11 @@ class _PlanPostSheet extends ConsumerStatefulWidget {
 
 class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
   late final TextEditingController _amount = TextEditingController(
-      text: Money.fromMinor(
-              widget.d.occurrence.amountMinor.abs(), CurrencyInfo.cny)
-          .format());
+    text: Money.fromMinor(
+      widget.d.occurrence.amountMinor.abs(),
+      CurrencyInfo.cny,
+    ).format(),
+  );
   String? _payAccountId;
   String? _categoryId;
   bool _saving = false;
@@ -58,16 +63,19 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
     if (amountText.isEmpty) return;
     setState(() => _saving = true);
     try {
-      await s.planExecution.postOne(widget.d,
-          amountMinor: Money.parse(amountText, CurrencyInfo.cny).amountMinor,
-          payAccountId: _payAccountId,
-          categoryId: _categoryId);
+      await s.planExecution.postOne(
+        widget.d,
+        amountMinor: Money.parse(amountText, CurrencyInfo.cny).amountMinor,
+        payAccountId: _payAccountId,
+        categoryId: _categoryId,
+      );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('入账失败：$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('入账失败：$e')));
       }
     }
   }
@@ -86,8 +94,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
     final theme = Theme.of(context);
     final accountsAsync = ref.watch(txAccountsProvider);
     return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -97,16 +104,21 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
             children: [
               Row(
                 children: [
-                  Icon(isIncome ? Icons.arrow_downward : Icons.arrow_outward,
-                      size: 18,
-                      color: isIncome
-                          ? AppColors.positiveOf(theme.brightness)
-                          : AppColors.negativeOf(theme.brightness)),
+                  Icon(
+                    isIncome ? Icons.arrow_downward : Icons.arrow_outward,
+                    size: 18,
+                    color: isIncome
+                        ? AppColors.positiveOf(theme.brightness)
+                        : AppColors.negativeOf(theme.brightness),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('记入账本 · ${e.name}',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    child: Text(
+                      '记入账本 · ${e.name}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -114,28 +126,34 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
               Text(
                 '落账日 ${dateKey(widget.d.occurrence.date)}（发生日）'
                 '${widget.d.occurrence.isEstimate ? ' · 估算金额取中位数，可修改' : ''}',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.hintColor),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
               ),
               const SizedBox(height: 16),
               accountsAsync.when(
                 loading: () => const SizedBox(
-                    height: 120,
-                    child: Center(child: CircularProgressIndicator())),
+                  height: 120,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
                 error: (err, _) => Text('账户加载失败：$err'),
                 data: (accounts) {
                   // 下拉显示的初始值同步到状态：不改选择直接确认也能入账。
-                  final payOptions =
-                      payableFor(accounts, e.direction, e.currencyCode);
+                  final payOptions = payableFor(
+                    accounts,
+                    e.direction,
+                    e.currencyCode,
+                  );
                   if (_payAccountId == null ||
                       !payOptions.any((a) => a.id == _payAccountId)) {
                     _payAccountId = payOptions.isEmpty
                         ? null
                         : (e.paymentAccountId != null &&
-                                payOptions.any(
-                                    (a) => a.id == e.paymentAccountId)
-                            ? e.paymentAccountId
-                            : payOptions.first.id);
+                                  payOptions.any(
+                                    (a) => a.id == e.paymentAccountId,
+                                  )
+                              ? e.paymentAccountId
+                              : payOptions.first.id);
                   }
                   final catOptions = categoriesFor(accounts, e.direction);
                   if (_categoryId == null ||
@@ -143,9 +161,9 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
                     _categoryId = catOptions.isEmpty
                         ? null
                         : (e.categoryId != null &&
-                                catOptions.any((a) => a.id == e.categoryId)
-                            ? e.categoryId
-                            : catOptions.first.id);
+                                  catOptions.any((a) => a.id == e.categoryId)
+                              ? e.categoryId
+                              : catOptions.first.id);
                   }
                   return Column(
                     mainAxisSize: MainAxisSize.min,
@@ -174,17 +192,14 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  TextButton(
-                    onPressed: _skip,
-                    child: const Text('这次不记'),
-                  ),
+                  TextButton(onPressed: _skip, child: const Text('这次不记')),
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
                     child: const Text('取消'),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton(
+                  ParticleFilledButton(
                     onPressed: _post,
                     child: Text(_saving ? '入账中…' : '记入账本'),
                   ),

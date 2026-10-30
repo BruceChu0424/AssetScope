@@ -100,8 +100,7 @@ class FirePlan {
   /// 逐年曲线（含起点与终点；达标月之后不再延伸）。
   final List<FirePoint> curve;
 
-  int? get yearsToFi =>
-      monthsToFi < 0 ? null : (monthsToFi / 12).ceil();
+  int? get yearsToFi => monthsToFi < 0 ? null : (monthsToFi / 12).ceil();
 }
 
 /// 敏感性网格单元：收益平移 × 支出缩放 → 达标月数。
@@ -140,21 +139,21 @@ class FirePlanner {
       // 无支出目标或提取率非法：无可达门槛，仅输出曲线。
       target = Rational.zero();
     }
-    final fiNumber = target.isZero
-        ? BigInt.zero
-        : target.rounded();
+    final fiNumber = target.isZero ? BigInt.zero : target.rounded();
 
     var p = Rational.fromInt(input.portfolioMinor);
-    final sMonthly = Rational.fromInt(input.annualSavingsMinor) /
+    final sMonthly =
+        Rational.fromInt(input.annualSavingsMinor) /
         Rational.fromInt(BigInt.from(12));
     final g = input.monthlyGrowth;
     final x = input.monthlyInflation;
 
     final curve = <FirePoint>[
       FirePoint(
-          monthsFromNow: 0,
-          portfolioMinor: p.rounded(),
-          targetMinor: target.rounded()),
+        monthsFromNow: 0,
+        portfolioMinor: p.rounded(),
+        targetMinor: target.rounded(),
+      ),
     ];
 
     // 已达标 / 无门槛。
@@ -185,10 +184,13 @@ class FirePlanner {
       p = p * g + sMonthly;
       target *= x;
       if (t % 12 == 0 || (!target.isZero && p >= target)) {
-        curve.add(FirePoint(
+        curve.add(
+          FirePoint(
             monthsFromNow: t,
             portfolioMinor: p.rounded(),
-            targetMinor: target.rounded()));
+            targetMinor: target.rounded(),
+          ),
+        );
       }
       if (!target.isZero && p >= target) {
         months = t;
@@ -242,21 +244,25 @@ class FirePlanner {
         final shifted = FireInput(
           portfolioMinor: input.portfolioMinor,
           annualSavingsMinor: input.annualSavingsMinor,
-          annualSpendMinor: (Rational.fromInt(input.annualSpendMinor) *
-                  Rational.parseDecimal(f.toString()))
-              .rounded(),
+          annualSpendMinor:
+              (Rational.fromInt(input.annualSpendMinor) *
+                      Rational.parseDecimal(f.toString()))
+                  .rounded(),
           // 平移单位是百分点：±1pp = ±0.01。
-          nominalReturnAnnual: input.nominalReturnAnnual +
+          nominalReturnAnnual:
+              input.nominalReturnAnnual +
               Rational.fromFrac(BigInt.from(shift), BigInt.from(100)),
           inflationAnnual: input.inflationAnnual,
           withdrawalRate: input.withdrawalRate,
           maxYears: input.maxYears,
         );
-        cells.add(FireSensitivityCell(
-          returnShiftPercentPoint: shift,
-          spendFactor: f,
-          monthsToFi: plan(shifted).monthsToFi,
-        ));
+        cells.add(
+          FireSensitivityCell(
+            returnShiftPercentPoint: shift,
+            spendFactor: f,
+            monthsToFi: plan(shifted).monthsToFi,
+          ),
+        );
       }
     }
     return cells;
@@ -291,7 +297,12 @@ class FireMonteCarlo {
   }) {
     if (years <= 0 || paths <= 0 || initialMultiple <= 0) {
       return const FireMcResult(
-          successRate: 1, p10: 0, p50: 0, p90: 0, paths: 0);
+        successRate: 1,
+        p10: 0,
+        p50: 0,
+        p90: 0,
+        paths: 0,
+      );
     }
     final rng = math.Random(seed);
     var ok = 0;
@@ -315,7 +326,10 @@ class FireMonteCarlo {
     }
     terminals.sort();
     double pct(double q) =>
-        terminals[(q * (terminals.length - 1)).floor().clamp(0, terminals.length - 1)];
+        terminals[(q * (terminals.length - 1)).floor().clamp(
+          0,
+          terminals.length - 1,
+        )];
     return FireMcResult(
       successRate: ok / paths,
       p10: pct(0.10),

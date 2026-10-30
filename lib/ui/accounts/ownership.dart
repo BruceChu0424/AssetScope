@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
+import '../widgets/particle_interactive.dart';
 
 /// "50"、"33.3" → 有理数份额（1/2、333/1000）；非法或不在 (0,1] 返回 null。
 Rational? parseOwnership(String percentText) {
@@ -41,10 +42,15 @@ String fmtOwnership(Rational share) {
 }
 
 /// 编辑账户归属份额；返回 true 表示已保存。
-Future<bool> showOwnershipDialog(BuildContext context, WidgetRef ref,
-    VaultUnlocked s, Account account) async {
+Future<bool> showOwnershipDialog(
+  BuildContext context,
+  WidgetRef ref,
+  VaultUnlocked s,
+  Account account,
+) async {
   final ctrl = TextEditingController(
-      text: fmtOwnership(account.effectiveOwnership));
+    text: fmtOwnership(account.effectiveOwnership),
+  );
   final ok = await showDialog<bool>(
     context: context,
     builder: (dialogCtx) => AlertDialog(
@@ -52,14 +58,14 @@ Future<bool> showOwnershipDialog(BuildContext context, WidgetRef ref,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          ParticleTextField(
             controller: ctrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: '本人份额（%）',
               suffixText: '%',
-              helperText: '100 = 全额本人；夫妻共同账户各填 50。'
+              helperText:
+                  '100 = 全额本人；夫妻共同账户各填 50。'
                   '只影响净资产/我的份额统计，不改流水。',
             ),
           ),
@@ -67,11 +73,13 @@ Future<bool> showOwnershipDialog(BuildContext context, WidgetRef ref,
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('保存')),
+          onPressed: () => Navigator.pop(dialogCtx, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
+          onPressed: () => Navigator.pop(dialogCtx, true),
+          child: const Text('保存'),
+        ),
       ],
     ),
   );
@@ -81,11 +89,13 @@ Future<bool> showOwnershipDialog(BuildContext context, WidgetRef ref,
   if (share == null) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('份额需在 0–100 之间（例如 50 或 33.3）')));
+        const SnackBar(content: Text('份额需在 0–100 之间（例如 50 或 33.3）')),
+      );
     }
     return false;
   }
-  await s.accounts.upsert(account.copyWith(
-      ownership: share == Rational.one ? null : share));
+  await s.accounts.upsert(
+    account.copyWith(ownership: share == Rational.one ? null : share),
+  );
   return true;
 }

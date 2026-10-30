@@ -23,7 +23,7 @@ class LotBuy extends LotEvent {
 
 class LotSell extends LotEvent {
   const LotSell(this.quantity, this.netProceedsMinor, DateTime date)
-      : super(date);
+    : super(date);
 
   final Rational quantity;
   final BigInt netProceedsMinor;
@@ -138,12 +138,17 @@ class LotEngine {
       switch (e) {
         case LotBuy(:var quantity, :var totalPaidMinor, :var date):
           if (quantity.isZero || quantity.isNegative) continue;
-          lots.add(_Lot(date, quantity,
-              Rational.fromInt(totalPaidMinor) / quantity, totalPaidMinor));
+          lots.add(
+            _Lot(
+              date,
+              quantity,
+              Rational.fromInt(totalPaidMinor) / quantity,
+              totalPaidMinor,
+            ),
+          );
         case LotSell(:var quantity, :var netProceedsMinor, :var date):
           if (quantity.isZero || quantity.isNegative) continue;
-          final proceedsPerUnit =
-              Rational.fromInt(netProceedsMinor) / quantity;
+          final proceedsPerUnit = Rational.fromInt(netProceedsMinor) / quantity;
           var remaining = quantity;
           var proceedsLeft = netProceedsMinor;
           while (remaining > Rational.zero() && lots.isNotEmpty) {
@@ -156,13 +161,15 @@ class LotEngine {
             // 批次耗尽 → Σ配对成本 = 批次成本。
             if (take == remaining) sliceProceeds = proceedsLeft;
             if (exhaustsLot) sliceCost = lot.cost;
-            realized.add(RealizedMatch(
-              sellDate: date,
-              acquiredDate: lot.acquiredDate,
-              quantity: take,
-              proceedsMinor: sliceProceeds,
-              costMinor: sliceCost,
-            ));
+            realized.add(
+              RealizedMatch(
+                sellDate: date,
+                acquiredDate: lot.acquiredDate,
+                quantity: take,
+                proceedsMinor: sliceProceeds,
+                costMinor: sliceCost,
+              ),
+            );
             proceedsLeft -= sliceProceeds;
             remaining = remaining - take;
             lot.cost -= sliceCost;
@@ -172,13 +179,15 @@ class LotEngine {
           if (remaining > Rational.zero()) {
             // 数据缺口：以零成本批次配对并披露。
             shortfall += remaining;
-            realized.add(RealizedMatch(
-              sellDate: date,
-              acquiredDate: date,
-              quantity: remaining,
-              proceedsMinor: proceedsLeft,
-              costMinor: BigInt.zero,
-            ));
+            realized.add(
+              RealizedMatch(
+                sellDate: date,
+                acquiredDate: date,
+                quantity: remaining,
+                proceedsMinor: proceedsLeft,
+                costMinor: BigInt.zero,
+              ),
+            );
           }
       }
     }
@@ -190,7 +199,7 @@ class LotEngine {
             remainingQuantity: l.qty,
             unitCost: l.unitCost,
             remainingCostMinor: l.cost,
-          )
+          ),
       ],
       realized: realized,
       shortfallQuantity: shortfall,

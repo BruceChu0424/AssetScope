@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// 品牌图形标：资观 A mark。
 ///
-/// 透明背景单色图形，按当前主题亮度自动选款：
-/// 浅色背景配绿色款（#087F6B），深色背景配白色款。
+/// 透明背景单色图形（白色款做源），按主题色重新着色：
+/// 浅色模式染墨蓝（AppColors.navy），深色模式保持白色。
+/// 品牌色随主题令牌走，换主色时 logo 自动跟随。
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 40});
 
@@ -14,9 +17,11 @@ class BrandMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Image.asset(
-      dark ? 'assets/logo/mark_dark.png' : 'assets/logo/mark_light.png',
+      'assets/logo/mark_dark.png',
       width: size,
       height: size,
+      color: dark ? null : AppColors.navy,
+      colorBlendMode: dark ? null : BlendMode.srcIn,
     );
   }
 }
@@ -35,8 +40,10 @@ class BrandLockup extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Image.asset(
-      dark ? 'assets/logo/lockup_dark.png' : 'assets/logo/lockup_light.png',
+      'assets/logo/lockup_dark.png',
       width: width,
+      color: dark ? null : AppColors.navy,
+      colorBlendMode: dark ? null : BlendMode.srcIn,
     );
   }
 }

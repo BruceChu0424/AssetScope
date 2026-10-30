@@ -7,8 +7,7 @@ import '../../services/portfolio_analytics_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
-final riskProvider =
-    FutureProvider.autoDispose<RiskReportResult>((ref) async {
+final riskProvider = FutureProvider.autoDispose<RiskReportResult>((ref) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
   return s.portfolioAnalytics.riskReport();
@@ -21,9 +20,13 @@ class RiskCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(riskProvider).when(
+    return ref
+        .watch(riskProvider)
+        .when(
           loading: () => const SizedBox(
-              height: 60, child: Center(child: CircularProgressIndicator())),
+            height: 60,
+            child: Center(child: CircularProgressIndicator()),
+          ),
           error: (e, _) => ErrorPlaceholder('加载失败：$e'),
           data: (result) => _card(context, ref, result),
         );
@@ -43,8 +46,10 @@ class RiskCard extends ConsumerWidget {
           ? Text(
               '需要至少 2 个有效月末估值点（当前 ${result.valuationPoints} 个）。\n'
               '每月给持仓更新一次价格，即可得到回撤、波动率等风险画像。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             )
           : Column(
               children: [
@@ -54,44 +59,68 @@ class RiskCard extends ConsumerWidget {
                     child: Text(
                       '⚠ 有效样本 ${r.periods} 个月（< 6），指标波动大，仅供参考',
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.brassOf(theme.brightness)),
+                        color: AppColors.brassOf(theme.brightness),
+                      ),
                     ),
                   ),
-                _row(context, '年化收益（TWR）', _pct(r.annualizedReturn),
-                    strong: true),
+                _row(
+                  context,
+                  '年化收益（TWR）',
+                  _pct(r.annualizedReturn),
+                  strong: true,
+                ),
                 _row(context, '年化波动率', _pct(r.annualizedVolatility)),
                 _maxDrawdownRow(context, r),
-                _row(context, 'Sharpe 比率', _num(r.sharpe),
-                    hint: '(年化收益 − 无风险) / 波动率'),
-                _row(context, 'Sortino 比率', _num(r.sortino),
-                    hint: '下行偏差版 Sharpe'),
-                _row(context, '最佳 / 最差月',
-                    '${_pct(r.bestMonth)} / ${_pct(r.worstMonth)}'),
+                _row(
+                  context,
+                  'Sharpe 比率',
+                  _num(r.sharpe),
+                  hint: '(年化收益 − 无风险) / 波动率',
+                ),
+                _row(
+                  context,
+                  'Sortino 比率',
+                  _num(r.sortino),
+                  hint: '下行偏差版 Sharpe',
+                ),
+                _row(
+                  context,
+                  '最佳 / 最差月',
+                  '${_pct(r.bestMonth)} / ${_pct(r.worstMonth)}',
+                ),
                 _row(context, '月胜率', _pct(r.positiveMonthsRatio)),
                 const Divider(height: 12),
                 Text(
                   '基于 ${r.periods} 个月度子期间（近 36 个月中 ${result.valuationPoints} 个有效月末估值点）· 无风险利率 ${(r.riskFreeAnnual * 100).toStringAsFixed(1)}%',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor, fontSize: 11),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
     );
   }
 
-  Widget _row(BuildContext context, String label, String value,
-      {String? hint, bool strong = false}) {
+  Widget _row(
+    BuildContext context,
+    String label,
+    String value, {
+    String? hint,
+    bool strong = false,
+  }) {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       title: Text(label),
       subtitle: hint == null
           ? null
-          : Text(hint,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontSize: 10)),
+          : Text(
+              hint,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
       trailing: Text(
         value,
         style: TextStyle(
@@ -105,7 +134,8 @@ class RiskCard extends ConsumerWidget {
   Widget _maxDrawdownRow(BuildContext context, RiskReport r) {
     final mdd = r.maxDrawdown;
     final theme = Theme.of(context);
-    final span = (mdd != null &&
+    final span =
+        (mdd != null &&
             r.drawdownPeakDate != null &&
             r.drawdownTroughDate != null)
         ? '${r.drawdownPeakDate!.year}.${r.drawdownPeakDate!.month} 峰 → ${r.drawdownTroughDate!.year}.${r.drawdownTroughDate!.month} 谷'
@@ -116,15 +146,14 @@ class RiskCard extends ConsumerWidget {
       title: const Text('最大回撤'),
       subtitle: span == null
           ? null
-          : Text(span,
-              style:
-                  theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
+          : Text(
+              span,
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
       trailing: Text(
         mdd == null ? '—' : _pct(mdd),
         style: TextStyle(
-          color: mdd == null
-              ? null
-              : AppColors.negativeOf(theme.brightness),
+          color: mdd == null ? null : AppColors.negativeOf(theme.brightness),
           fontWeight: FontWeight.w600,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -138,7 +167,10 @@ class RiskCard extends ConsumerWidget {
   String _num(double? v) => v == null ? '—' : v.toStringAsFixed(2);
 
   Future<void> _editRiskFreeRate(
-      BuildContext context, WidgetRef ref, RiskReport? r) async {
+    BuildContext context,
+    WidgetRef ref,
+    RiskReport? r,
+  ) async {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || !context.mounted) return;
     final currentPercent = r?.riskFreeAnnual != null
@@ -146,10 +178,12 @@ class RiskCard extends ConsumerWidget {
         : await s.portfolioAnalytics.riskFreeRatePercent();
     if (!context.mounted) return;
     final ctrl = TextEditingController(
-        text: (r?.riskFreeAnnual != null
-                ? r!.riskFreeAnnual * 100
-                : currentPercent!)
-            .toStringAsFixed(1));
+      text:
+          (r?.riskFreeAnnual != null
+                  ? r!.riskFreeAnnual * 100
+                  : currentPercent!)
+              .toStringAsFixed(1),
+    );
     final ok = await showDialog<bool>(
       context: context,
       builder: (dctx) => AlertDialog(
@@ -157,22 +191,24 @@ class RiskCard extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            ParticleTextField(
               controller: ctrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                  hintText: '如 2.0（十年期国债收益率附近）'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(hintText: '如 2.0（十年期国债收益率附近）'),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dctx, false),
-              child: const Text('取消')),
-          FilledButton(
-              onPressed: () => Navigator.pop(dctx, true),
-              child: const Text('保存')),
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('取消'),
+          ),
+          ParticleFilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            child: const Text('保存'),
+          ),
         ],
       ),
     );

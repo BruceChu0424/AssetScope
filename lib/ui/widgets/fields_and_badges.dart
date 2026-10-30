@@ -4,6 +4,7 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../theme/app_theme.dart';
 import 'money_text.dart' show fmtMinor;
+import '../widgets/particle_interactive.dart';
 
 /// 涨跌徽章：胶囊、箭头、语义色、等宽数字。
 class DeltaBadge extends StatelessWidget {
@@ -79,8 +80,7 @@ class EmptyState extends StatelessWidget {
                 color: theme.colorScheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child:
-                  Icon(icon, size: 30, color: theme.colorScheme.primary),
+              child: Icon(icon, size: 30, color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 16),
             Text(title, style: theme.textTheme.titleMedium),
@@ -90,8 +90,10 @@ class EmptyState extends StatelessWidget {
               child: Text(
                 message,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.hintColor, height: 1.5),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.hintColor,
+                  height: 1.5,
+                ),
               ),
             ),
             if (action != null) ...[const SizedBox(height: 16), action!],
@@ -109,11 +111,11 @@ class ErrorPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(message, textAlign: TextAlign.center),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(message, textAlign: TextAlign.center),
+    ),
+  );
 }
 
 /// 今日日期字符串（表单默认值）。
@@ -140,14 +142,13 @@ class AppAmountField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ccy = CurrencyInfo.parse(currencyCode);
-    return TextField(
+    return ParticleTextField(
       controller: controller,
       keyboardType: TextInputType.numberWithOptions(
-          decimal: true, signed: allowNegative),
-      decoration: InputDecoration(
-        labelText: label,
-        suffixText: ccy.code,
+        decimal: true,
+        signed: allowNegative,
       ),
+      decoration: InputDecoration(labelText: label, suffixText: ccy.code),
     );
   }
 
@@ -172,7 +173,7 @@ class AppDateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return ParticleTextField(
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
@@ -210,12 +211,14 @@ Future<bool> confirmDialog(
       content: Text(message),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
           style: destructive
               ? FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error)
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                )
               : null,
           onPressed: () => Navigator.pop(context, true),
           child: Text(confirmLabel),

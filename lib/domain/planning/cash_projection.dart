@@ -155,10 +155,11 @@ class CashProjector {
 
   static CashProjection project(ProjectionInput input) {
     final start = input.accounts.fold(
-        BigInt.zero, (s, a) => s + a.balanceBaseMinor);
+      BigInt.zero,
+      (s, a) => s + a.balanceBaseMinor,
+    );
 
-    final through =
-        input.fromDate.add(Duration(days: input.horizonDays));
+    final through = input.fromDate.add(Duration(days: input.horizonDays));
 
     // 事件按日聚合；同日内顺序不明时，支出先于收入（保守情景）。
     final eventsByDay = <String, List<CashEvent>>{};
@@ -192,7 +193,8 @@ class CashProjector {
       final evs = eventsByDay[dateKey(d)];
       if (evs != null) {
         // 先扣流出再计流入（日内顺序未知时的保守处理）。
-        final sorted = [...evs]..sort((a, b) => a.amountBaseMinor.compareTo(b.amountBaseMinor));
+        final sorted = [...evs]
+          ..sort((a, b) => a.amountBaseMinor.compareTo(b.amountBaseMinor));
         for (final e in sorted) {
           balance += e.amountBaseMinor;
         }
@@ -206,8 +208,7 @@ class CashProjector {
       if (f < minFloor) minFloor = f;
     }
 
-    final discretionary =
-        minFloor > BigInt.zero ? minFloor : BigInt.zero;
+    final discretionary = minFloor > BigInt.zero ? minFloor : BigInt.zero;
 
     // 缺口检测：总体低于（准备金+底线）视为缺口；负余额为严重缺口。
     // 逐日重放（含释放）以复现每日占用。
@@ -216,8 +217,7 @@ class CashProjector {
     var reserve = input.reserveBaseMinor;
     var ri = 0;
     final cushionAt = <DateTime, BigInt>{};
-    cushionAt[input.fromDate] =
-        bal - reserve - input.baselineMinCashBaseMinor;
+    cushionAt[input.fromDate] = bal - reserve - input.baselineMinCashBaseMinor;
     for (var i = 1; i <= days; i++) {
       final d = input.fromDate.add(Duration(days: i));
       while (ri < releases.length && !releases[ri].date.isAfter(d)) {
@@ -226,7 +226,8 @@ class CashProjector {
       }
       final evs = eventsByDay[dateKey(d)];
       if (evs != null) {
-        final sorted = [...evs]..sort((a, b) => a.amountBaseMinor.compareTo(b.amountBaseMinor));
+        final sorted = [...evs]
+          ..sort((a, b) => a.amountBaseMinor.compareTo(b.amountBaseMinor));
         for (final e in sorted) {
           bal += e.amountBaseMinor;
         }
@@ -235,11 +236,13 @@ class CashProjector {
     }
     for (final e in cushionAt.entries) {
       if (e.value < BigInt.zero) {
-        shortfalls.add(CashShortfall(
-          date: e.key,
-          amountBaseMinor: e.value,
-          label: '低于准备金与现金底线',
-        ));
+        shortfalls.add(
+          CashShortfall(
+            date: e.key,
+            amountBaseMinor: e.value,
+            label: '低于准备金与现金底线',
+          ),
+        );
       }
     }
 
@@ -259,12 +262,14 @@ class CashProjector {
       for (final e in accEvents) {
         bal += e.amountBaseMinor;
         if (bal < BigInt.zero) {
-          shortfalls.add(CashShortfall(
-            date: e.date,
-            amountBaseMinor: e.amountBaseMinor,
-            label: '账户 ${acc.name} 可能余额不足',
-            accountId: acc.accountId,
-          ));
+          shortfalls.add(
+            CashShortfall(
+              date: e.date,
+              amountBaseMinor: e.amountBaseMinor,
+              label: '账户 ${acc.name} 可能余额不足',
+              accountId: acc.accountId,
+            ),
+          );
           break; // 每账户只报首个缺口
         }
       }
@@ -284,7 +289,11 @@ class CashProjector {
 }
 
 /// 便利：把 [Money] 折算成本位币最小单位（服务层构造事件时用）。
-BigInt toBaseMinor(Money amount, Rational toBaseRate, CurrencyInfo baseCurrency) {
+BigInt toBaseMinor(
+  Money amount,
+  Rational toBaseRate,
+  CurrencyInfo baseCurrency,
+) {
   if (amount.currency.code == baseCurrency.code) return amount.amountMinor;
   return (Rational.fromInt(amount.amountMinor) * toBaseRate).rounded();
 }

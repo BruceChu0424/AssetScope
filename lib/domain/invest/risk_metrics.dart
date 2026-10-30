@@ -83,8 +83,7 @@ class RiskMetrics {
     for (final r in rs) {
       growth *= 1 + r;
     }
-    final annualized =
-        math.pow(growth, 365.0 / days).toDouble() - 1;
+    final annualized = math.pow(growth, 365.0 / days).toDouble() - 1;
 
     // 年化波动率：样本标准差（n−1）× √12。
     // 浮点上"常数序列"的方差可能是 1e-20 级噪声，视为 0。
@@ -96,8 +95,10 @@ class RiskMetrics {
 
     // 下行偏差（MAR = 月度无风险利率），除以 n（总体口径，行业标准）。
     final mar = math.pow(1 + riskFreeAnnual, 1 / 12).toDouble() - 1;
-    final downsideSq =
-        rs.fold(0.0, (a, r) => a + math.pow(math.min(r - mar, 0.0), 2));
+    final downsideSq = rs.fold(
+      0.0,
+      (a, r) => a + math.pow(math.min(r - mar, 0.0), 2),
+    );
     final ddAnnual = math.sqrt(downsideSq / rs.length) * math.sqrt(12);
 
     // 最大回撤：TWR 指数（1 起步复利）峰谷最大跌幅，记录峰/谷日期。

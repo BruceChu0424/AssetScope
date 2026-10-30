@@ -10,6 +10,7 @@ import '../../domain/money/currency.dart';
 import '../../security/dart_crypto_suite.dart';
 import '../../services/backup_service.dart';
 import '../../services/merge_service.dart';
+import '../widgets/particle_interactive.dart';
 
 /// 设置页的全部对话框流程（安全/备份/本位币），与页面骨架分离。
 ///
@@ -17,7 +18,9 @@ import '../../services/merge_service.dart';
 /// 前必须 mounted 检查。
 
 Future<void> showChangePassphraseDialog(
-    BuildContext context, WidgetRef ref) async {
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final old = TextEditingController();
   final neu = TextEditingController();
   final ok = await showDialog<bool>(
@@ -27,32 +30,34 @@ Future<void> showChangePassphraseDialog(
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-              controller: old,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: '当前主口令')),
+          ParticleTextField(
+            controller: old,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: '当前主口令'),
+          ),
           const SizedBox(height: 10),
-          TextField(
-              controller: neu,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: '新主口令（≥12位更安全）')),
+          ParticleTextField(
+            controller: neu,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: '新主口令（≥12位更安全）'),
+          ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('确认')),
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('确认'),
+        ),
       ],
     ),
   );
   if (ok != true || !context.mounted) return;
   try {
-    await ref
-        .read(vaultProvider.notifier)
-        .changePassphrase(old.text, neu.text);
+    await ref.read(vaultProvider.notifier).changePassphrase(old.text, neu.text);
     if (!context.mounted) return;
     _snack(context, '主口令已更新');
   } catch (e) {
@@ -62,9 +67,13 @@ Future<void> showChangePassphraseDialog(
 }
 
 Future<void> showNewRecoveryCodeDialog(
-    BuildContext context, WidgetRef ref) async {
+  BuildContext context,
+  WidgetRef ref,
+) async {
   try {
-    final code = await ref.read(vaultProvider.notifier).regenerateRecoveryCode();
+    final code = await ref
+        .read(vaultProvider.notifier)
+        .regenerateRecoveryCode();
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
@@ -72,9 +81,10 @@ Future<void> showNewRecoveryCodeDialog(
         title: const Text('新恢复码（离线保存）'),
         content: SelectableText(code),
         actions: [
-          FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('知道了')),
+          ParticleFilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('知道了'),
+          ),
         ],
       ),
     );
@@ -86,24 +96,29 @@ Future<void> showNewRecoveryCodeDialog(
 
 /// 导出加密备份：口令 ≥8 位（与主口令规则一致，建议 12 位以上）。
 Future<void> showBackupExportDialog(
-    BuildContext context, WidgetRef ref, VaultUnlocked s) async {
+  BuildContext context,
+  WidgetRef ref,
+  VaultUnlocked s,
+) async {
   final pass = TextEditingController();
   final ok = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
       title: const Text('备份口令'),
-      content: TextField(
-          controller: pass,
-          obscureText: true,
-          decoration:
-              const InputDecoration(labelText: '备份文件口令（≥8 位，建议 12 位以上）')),
+      content: ParticleTextField(
+        controller: pass,
+        obscureText: true,
+        decoration: const InputDecoration(labelText: '备份文件口令（≥8 位，建议 12 位以上）'),
+      ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('导出')),
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('导出'),
+        ),
       ],
     ),
   );
@@ -118,12 +133,15 @@ Future<void> showBackupExportDialog(
     await service.exportTo(
       target: File(file.path),
       passphrase: pass.text,
-      vaultFingerprint:
-          MergeService.vaultFingerprint(s.keyManager.databaseKeyHex()),
+      vaultFingerprint: MergeService.vaultFingerprint(
+        s.keyManager.databaseKeyHex(),
+      ),
     );
     // 记录备份时间（仪表盘备份提醒的依据）。
-    await s.meta
-        .setSetting('lastBackupAtMs', DateTime.now().millisecondsSinceEpoch);
+    await s.meta.setSetting(
+      'lastBackupAtMs',
+      DateTime.now().millisecondsSinceEpoch,
+    );
     if (!context.mounted) return;
     _snack(context, '已导出：${file.path}');
   } catch (e) {
@@ -133,24 +151,31 @@ Future<void> showBackupExportDialog(
 }
 
 Future<void> showBackupRestoreDialog(
-    BuildContext context, WidgetRef ref, VaultUnlocked s) async {
-  final picked = await openFile(acceptedTypeGroups: [
-    const XTypeGroup(label: '备份', extensions: ['asbk']),
-  ]);
+  BuildContext context,
+  WidgetRef ref,
+  VaultUnlocked s,
+) async {
+  final picked = await openFile(
+    acceptedTypeGroups: [
+      const XTypeGroup(label: '备份', extensions: ['asbk']),
+    ],
+  );
   if (picked == null || !context.mounted) return;
   final pass = TextEditingController();
   final ok = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
       title: const Text('输入备份口令'),
-      content: TextField(controller: pass, obscureText: true),
+      content: ParticleTextField(controller: pass, obscureText: true),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('校验并恢复')),
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('校验并恢复'),
+        ),
       ],
     ),
   );
@@ -176,7 +201,10 @@ Future<void> showBackupRestoreDialog(
 }
 
 Future<void> showBaseCurrencyDialog(
-    BuildContext context, WidgetRef ref, VaultUnlocked s) async {
+  BuildContext context,
+  WidgetRef ref,
+  VaultUnlocked s,
+) async {
   final options = CurrencyInfo.builtin.map((c) => c.code).toList();
   final picked = await showDialog<String>(
     context: context,
@@ -185,7 +213,9 @@ Future<void> showBaseCurrencyDialog(
       children: [
         for (final c in options)
           SimpleDialogOption(
-              child: Text(c), onPressed: () => Navigator.pop(context, c)),
+            child: Text(c),
+            onPressed: () => Navigator.pop(context, c),
+          ),
       ],
     ),
   );

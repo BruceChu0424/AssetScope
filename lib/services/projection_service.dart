@@ -31,10 +31,11 @@ class ProjectionService {
     int cashLiquidityDays = 1,
   }) async {
     final input = await buildInput(
-        now: now,
-        horizonDays: horizonDays,
-        includeBudgetBaseline: includeBudgetBaseline,
-        cashLiquidityDays: cashLiquidityDays);
+      now: now,
+      horizonDays: horizonDays,
+      includeBudgetBaseline: includeBudgetBaseline,
+      cashLiquidityDays: cashLiquidityDays,
+    );
     return CashProjector.project(input);
   }
 
@@ -68,16 +69,20 @@ class ProjectionService {
       final rate = a.currencyCode == base
           ? Rational.one
           : (await _meta.toBaseRate(
-                  ccy: a.currencyCode, base: base, onOrBefore: from))
-              ?.rate ??
-              Rational.one;
-      snapshots.add(CashAccountSnapshot(
-        accountId: a.id,
-        name: a.name,
-        currencyCode: a.currencyCode,
-        balanceMinor: bal,
-        toBaseRate: rate,
-      ));
+                  ccy: a.currencyCode,
+                  base: base,
+                  onOrBefore: from,
+                ))?.rate ??
+                Rational.one;
+      snapshots.add(
+        CashAccountSnapshot(
+          accountId: a.id,
+          name: a.name,
+          currencyCode: a.currencyCode,
+          balanceMinor: bal,
+          toBaseRate: rate,
+        ),
+      );
     }
 
     // 2) 计划事件（已落地的发生剔除：余额已含当天交易，不再重复扣减。
@@ -93,18 +98,20 @@ class ProjectionService {
     for (final e in await _planning.scheduledEvents()) {
       for (final occ in e.expand(from, through)) {
         if (postedExtIds.contains(planExternalId(e.id, occ.date))) continue;
-        events.add(CashEvent(
-          date: occ.date,
-          amountBaseMinor:
-              await toBaseMinorV(occ.amountMinor.abs(), e.currencyCode) *
-                  (occ.amountMinor.isNegative ? -BigInt.one : BigInt.one),
-          label: occ.eventName,
-          accountId: occ.paymentAccountId,
-          isEstimate: occ.isEstimate,
-          kind: occ.amountMinor.isNegative
-              ? CashEventKind.planned
-              : CashEventKind.incomeExpected,
-        ));
+        events.add(
+          CashEvent(
+            date: occ.date,
+            amountBaseMinor:
+                await toBaseMinorV(occ.amountMinor.abs(), e.currencyCode) *
+                (occ.amountMinor.isNegative ? -BigInt.one : BigInt.one),
+            label: occ.eventName,
+            accountId: occ.paymentAccountId,
+            isEstimate: occ.isEstimate,
+            kind: occ.amountMinor.isNegative
+                ? CashEventKind.planned
+                : CashEventKind.incomeExpected,
+          ),
+        );
       }
     }
 
@@ -117,23 +124,27 @@ class ProjectionService {
       if (schedule.isEmpty) continue;
       // 已发生还款笔数 → 视为已付期数（近似，见 docs/05）。
       final paidTxs = await _ledger.list(
-          from: schedule.first.dueDate,
-          to: through,
-          accountId: c.key);
-      final paidCount =
-          paidTxs.where((t) => t.kind.name == 'loanRepay').length;
+        from: schedule.first.dueDate,
+        to: through,
+        accountId: c.key,
+      );
+      final paidCount = paidTxs.where((t) => t.kind.name == 'loanRepay').length;
       for (var i = paidCount; i < schedule.length; i++) {
         final e = schedule[i];
         if (e.dueDate.isBefore(from)) continue;
         if (e.dueDate.isAfter(through)) break;
-        events.add(CashEvent(
-          date: e.dueDate,
-          amountBaseMinor:
-              -await toBaseMinorV(e.totalMinor, acc.currencyCode),
-          label: '${acc.name} 第${e.seq}期',
-          accountId: null,
-          kind: CashEventKind.debtRepay,
-        ));
+        events.add(
+          CashEvent(
+            date: e.dueDate,
+            amountBaseMinor: -await toBaseMinorV(
+              e.totalMinor,
+              acc.currencyCode,
+            ),
+            label: '${acc.name} 第${e.seq}期',
+            accountId: null,
+            kind: CashEventKind.debtRepay,
+          ),
+        );
       }
     }
 
@@ -144,17 +155,23 @@ class ProjectionService {
     BigInt reserve = BigInt.zero;
     final releases = <ReserveRelease>[];
     for (final g in await _planning.goals()) {
-      if (g.status == GoalStatus.active && g.reservedAmountMinor > BigInt.zero) {
+      if (g.status == GoalStatus.active &&
+          g.reservedAmountMinor > BigInt.zero) {
         reserve += await toBaseMinorV(g.reservedAmountMinor, base);
         if (!g.targetDate.isAfter(through)) {
-          releases.add(ReserveRelease(
+          releases.add(
+            ReserveRelease(
               date: g.targetDate,
-              amountBaseMinor: await toBaseMinorV(g.reservedAmountMinor, base)));
+              amountBaseMinor: await toBaseMinorV(g.reservedAmountMinor, base),
+            ),
+          );
         }
       }
     }
     final baselineStr = await _meta.settingString('baselineMinCashMinor');
-    final baseline = baselineStr == null ? BigInt.zero : BigInt.parse(baselineStr);
+    final baseline = baselineStr == null
+        ? BigInt.zero
+        : BigInt.parse(baselineStr);
 
     return ProjectionInput(
       baseCurrencyCode: base,

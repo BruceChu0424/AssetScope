@@ -36,11 +36,13 @@ class BackupService {
     final dir = target.parent;
     await dir.create(recursive: true);
     final plainTmp = File(
-        '${dir.path}${Platform.pathSeparator}assetscope-export-tmp.db');
+      '${dir.path}${Platform.pathSeparator}assetscope-export-tmp.db',
+    );
     if (await plainTmp.exists()) await plainTmp.delete();
     try {
-      await _db.customStatement(
-          "ATTACH DATABASE ? AS exp_plain KEY ''", [plainTmp.path]);
+      await _db.customStatement("ATTACH DATABASE ? AS exp_plain KEY ''", [
+        plainTmp.path,
+      ]);
       await _db.customStatement("SELECT sqlcipher_export('exp_plain')");
       await _db.customStatement('DETACH DATABASE exp_plain');
       final bytes = await plainTmp.readAsBytes();
@@ -71,8 +73,12 @@ class BackupService {
     String? passphrase,
     CryptoSuite? suite,
   }) async {
-    final payload = await BackupContainer.open(container,
-        dek: dek, passphrase: passphrase, suite: suite);
+    final payload = await BackupContainer.open(
+      container,
+      dek: dek,
+      passphrase: passphrase,
+      suite: suite,
+    );
     return payload.meta;
   }
 
@@ -87,14 +93,20 @@ class BackupService {
     CryptoSuite? suite,
   }) async {
     final s = suite ?? DartCryptoSuite.instance;
-    final payload = await BackupContainer.open(container,
-        dek: dek, passphrase: passphrase, suite: s);
+    final payload = await BackupContainer.open(
+      container,
+      dek: dek,
+      passphrase: passphrase,
+      suite: s,
+    );
     final dir = target.parent;
     await dir.create(recursive: true);
     final plainTmp = File(
-        '${dir.path}${Platform.pathSeparator}assetscope-restore-tmp.db');
+      '${dir.path}${Platform.pathSeparator}assetscope-restore-tmp.db',
+    );
     final encTmp = File(
-        '${dir.path}${Platform.pathSeparator}assetscope-restore-enc.db');
+      '${dir.path}${Platform.pathSeparator}assetscope-restore-enc.db',
+    );
     for (final f in [plainTmp, encTmp]) {
       if (await f.exists()) await f.delete();
     }
@@ -105,12 +117,15 @@ class BackupService {
       final probe = AppDatabase(NativeDatabase(plainTmp));
       try {
         await probe.customStatement('PRAGMA integrity_check');
-        await probe.customSelect('SELECT COUNT(*) c FROM transactions').getSingle();
+        await probe
+            .customSelect('SELECT COUNT(*) c FROM transactions')
+            .getSingle();
         final meta = payload.meta;
         if (meta['schemaVersion'] != null &&
             (meta['schemaVersion'] as num).toInt() != probe.schemaVersion) {
           throw BackupException(
-              '备份 schema 版本 ${meta['schemaVersion']} 与当前 ${probe.schemaVersion} 不一致，需要迁移');
+            '备份 schema 版本 ${meta['schemaVersion']} 与当前 ${probe.schemaVersion} 不一致，需要迁移',
+          );
         }
       } finally {
         await probe.close();
@@ -119,8 +134,10 @@ class BackupService {
       // 以新密钥重新加密：从明文库 sqlcipher_export 到加密目标。
       final encDb = AppDatabase(NativeDatabase(plainTmp));
       try {
-        await encDb.customStatement(
-            'ATTACH DATABASE ? AS enc KEY ?', [encTmp.path, "x'$newDbKeyHex'"]);
+        await encDb.customStatement('ATTACH DATABASE ? AS enc KEY ?', [
+          encTmp.path,
+          "x'$newDbKeyHex'",
+        ]);
         await encDb.customStatement("SELECT sqlcipher_export('enc')");
         await encDb.customStatement('DETACH DATABASE enc');
       } finally {

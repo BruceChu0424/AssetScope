@@ -133,4 +133,25 @@ void main() {
     final c = await suite.kdf.derive(passphrase: 'q', salt: salt);
     expect(a.length == 32 && c.length == 32 && !listEquals(a, c), isTrue);
   });
+
+  // 恢复码形态门控（providers.unlockCheck 快排依赖）：不符形态的输入
+  // 不可能等于任何恢复码，主口令失败后跳过第二轮慢哈希。
+  test('looksLikeRecoveryCode：8 组 4 位 hex、大小写、连字符', () {
+    expect(
+      looksLikeRecoveryCode('A1B2-C3D4-E5F6-0718-9ABC-DEF0-1234-5678'),
+      isTrue,
+    );
+    expect(
+      looksLikeRecoveryCode('a1b2-c3d4-e5f6-0718-9abc-def0-1234-5678'),
+      isTrue,
+      reason: '用户可能粘贴小写',
+    );
+    // 非形态：普通口令、位数不足、非 hex、错误分隔。
+    expect(looksLikeRecoveryCode('correct horse'), isFalse);
+    expect(looksLikeRecoveryCode('A1B2-C3D4'), isFalse);
+    expect(looksLikeRecoveryCode('G1B2-C3D4-E5F6-0718-9ABC-DEF0-1234-5678'),
+        isFalse);
+    expect(looksLikeRecoveryCode('A1B2 C3D4 E5F6 0718 9ABC DEF0 1234 5678'),
+        isFalse);
+  });
 }

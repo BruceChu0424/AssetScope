@@ -36,20 +36,28 @@ class LotSection extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text('成本批次（FIFO）',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    '成本批次（FIFO）',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                _pnlChip(context, '累计已实现 ${fmtMinor(r.totalRealizedPnlMinor, ccy, sign: true)}',
-                    r.totalRealizedPnlMinor),
+                _pnlChip(
+                  context,
+                  '累计已实现 ${fmtMinor(r.totalRealizedPnlMinor, ccy, sign: true)}',
+                  r.totalRealizedPnlMinor,
+                ),
               ],
             ),
             if (thisYear != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: _pnlChip(context,
-                    '${DateTime.now().year} 年已实现 ${fmtMinor(thisYear, ccy, sign: true)}',
-                    thisYear),
+                child: _pnlChip(
+                  context,
+                  '${DateTime.now().year} 年已实现 ${fmtMinor(thisYear, ccy, sign: true)}',
+                  thisYear,
+                ),
               ),
             const SizedBox(height: 4),
             for (final lot in r.openLots)
@@ -59,9 +67,11 @@ class LotSection extends ConsumerWidget {
                 leading: SizedBox(
                   width: 92,
                   child: Text(
-                      '${lot.acquiredDate.year}-${lot.acquiredDate.month.toString().padLeft(2, '0')}-${lot.acquiredDate.day.toString().padLeft(2, '0')}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.hintColor)),
+                    '${lot.acquiredDate.year}-${lot.acquiredDate.month.toString().padLeft(2, '0')}-${lot.acquiredDate.day.toString().padLeft(2, '0')}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
                 ),
                 title: Text(
                   '${lot.remainingQuantity.toDecimalString(4)} 份 × 单价 ${lot.unitCost.toDecimalString(6)}',
@@ -70,7 +80,8 @@ class LotSection extends ConsumerWidget {
                 trailing: Text(
                   fmtMinor(lot.remainingCostMinor, ccy),
                   style: const TextStyle(
-                      fontFeatures: [FontFeature.tabularFigures()]),
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             if (r.shortfallQuantity > Rational.zero())
@@ -78,16 +89,19 @@ class LotSection extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '⚠ ${r.shortfallQuantity.toDecimalString(4)} 份卖出早于首笔买入（历史缺口，以零成本配对）',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: AppColors.brassOf(theme.brightness)),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.brassOf(theme.brightness),
+                  ),
                 ),
               ),
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 '口径：先买先卖逐批配对，与账面平均成本法并行披露（docs/05 §11）',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.hintColor, fontSize: 11),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],

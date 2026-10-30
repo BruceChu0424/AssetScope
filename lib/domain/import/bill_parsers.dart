@@ -37,8 +37,9 @@ class BillParseOutcome {
   int get skippedCount => skipped.fold(0, (a, s) => a + s.count);
 
   /// 跳过摘要（每原因一行，供预览界面展示）。
-  List<String> get skippedSummary =>
-      [for (final s in skipped) '${s.reason} ×${s.count}'];
+  List<String> get skippedSummary => [
+    for (final s in skipped) '${s.reason} ×${s.count}',
+  ];
 }
 
 /// 微信支付 / 支付宝原生导出账单解析器。
@@ -65,8 +66,10 @@ class BillParsers {
     return null;
   }
 
-  static BillParseOutcome? parseWeChat(String text,
-      {String currencyCode = 'CNY'}) {
+  static BillParseOutcome? parseWeChat(
+    String text, {
+    String currencyCode = 'CNY',
+  }) {
     final table = CsvTable.parse(text);
     final header = table.headerRowIndex(const {'交易时间', '收/支', '金额(元)', '交易单号'});
     if (header < 0) return null;
@@ -129,24 +132,30 @@ class BillParsers {
         skip('日期无法解析（${cell(r, dateI)}）');
         continue;
       }
-      final counterparty =
-          cell(r, cpartyI).isNotEmpty ? cell(r, cpartyI) : cell(r, goodsI);
+      final counterparty = cell(r, cpartyI).isNotEmpty
+          ? cell(r, cpartyI)
+          : cell(r, goodsI);
       final noteParts = [
-        if (cell(r, goodsI).isNotEmpty && cell(r, goodsI) != '/') cell(r, goodsI),
+        if (cell(r, goodsI).isNotEmpty && cell(r, goodsI) != '/')
+          cell(r, goodsI),
         if (cell(r, noteI).isNotEmpty) cell(r, noteI),
       ];
       final txId = cell(r, txIdI);
-      rows.add(NormalizedRow(
-        date: date,
-        direction: direction,
-        amountMinor: amountMinor,
-        currencyCode: currencyCode,
-        counterparty: counterparty,
-        note: noteParts.isEmpty ? (cell(r, typeI).isNotEmpty ? cell(r, typeI) : null) : noteParts.join(' · '),
-        rawRowJson: _rowJson(r),
-        rowKey: txId.isNotEmpty ? txId : null,
-        sourceTxId: txId.isNotEmpty ? txId : null,
-      ));
+      rows.add(
+        NormalizedRow(
+          date: date,
+          direction: direction,
+          amountMinor: amountMinor,
+          currencyCode: currencyCode,
+          counterparty: counterparty,
+          note: noteParts.isEmpty
+              ? (cell(r, typeI).isNotEmpty ? cell(r, typeI) : null)
+              : noteParts.join(' · '),
+          rawRowJson: _rowJson(r),
+          rowKey: txId.isNotEmpty ? txId : null,
+          sourceTxId: txId.isNotEmpty ? txId : null,
+        ),
+      );
     }
     return BillParseOutcome(
       format: BillFormat.wechat,
@@ -155,10 +164,17 @@ class BillParsers {
     );
   }
 
-  static BillParseOutcome? parseAlipay(String text,
-      {String currencyCode = 'CNY'}) {
+  static BillParseOutcome? parseAlipay(
+    String text, {
+    String currencyCode = 'CNY',
+  }) {
     final table = CsvTable.parse(text);
-    final header = table.headerRowIndex(const {'交易创建时间', '收/支', '金额(元)', '交易号'});
+    final header = table.headerRowIndex(const {
+      '交易创建时间',
+      '收/支',
+      '金额(元)',
+      '交易号',
+    });
     if (header < 0) return null;
     final txIdI = table.columnIndex(header, '交易号');
     final createdI = table.columnIndex(header, '交易创建时间');
@@ -223,24 +239,30 @@ class BillParsers {
         skip('日期无法解析（${cell(r, createdI)}）');
         continue;
       }
-      final counterparty =
-          cell(r, cpartyI).isNotEmpty ? cell(r, cpartyI) : cell(r, goodsI);
+      final counterparty = cell(r, cpartyI).isNotEmpty
+          ? cell(r, cpartyI)
+          : cell(r, goodsI);
       final noteParts = [
-        if (cell(r, goodsI).isNotEmpty && cell(r, goodsI) != '/') cell(r, goodsI),
+        if (cell(r, goodsI).isNotEmpty && cell(r, goodsI) != '/')
+          cell(r, goodsI),
         if (cell(r, noteI).isNotEmpty) cell(r, noteI),
       ];
       final txId = cell(r, txIdI);
-      rows.add(NormalizedRow(
-        date: date,
-        direction: direction,
-        amountMinor: amountMinor,
-        currencyCode: currencyCode,
-        counterparty: counterparty,
-        note: noteParts.isEmpty ? (cell(r, typeI).isNotEmpty ? cell(r, typeI) : null) : noteParts.join(' · '),
-        rawRowJson: _rowJson(r),
-        rowKey: txId.isNotEmpty ? txId : null,
-        sourceTxId: txId.isNotEmpty ? txId : null,
-      ));
+      rows.add(
+        NormalizedRow(
+          date: date,
+          direction: direction,
+          amountMinor: amountMinor,
+          currencyCode: currencyCode,
+          counterparty: counterparty,
+          note: noteParts.isEmpty
+              ? (cell(r, typeI).isNotEmpty ? cell(r, typeI) : null)
+              : noteParts.join(' · '),
+          rawRowJson: _rowJson(r),
+          rowKey: txId.isNotEmpty ? txId : null,
+          sourceTxId: txId.isNotEmpty ? txId : null,
+        ),
+      );
     }
     return BillParseOutcome(
       format: BillFormat.alipay,
@@ -264,8 +286,8 @@ class BillParsers {
   static DateTime parseDateTime(String s) {
     final t = s.trim();
     final m = RegExp(
-            r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$')
-        .firstMatch(t);
+      r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$',
+    ).firstMatch(t);
     if (m == null) throw FormatException('bad datetime: $s');
     return DateTime(
       int.parse(m.group(1)!),

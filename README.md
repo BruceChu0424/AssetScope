@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/BruceChu0424/AssetScope/actions/workflows/ci.yml/badge.svg)](https://github.com/BruceChu0424/AssetScope/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-1E5C45.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-81%20passing-2E7D5B.svg)](test)
+[![Tests](https://img.shields.io/badge/tests-337%20passing-2E7D5B.svg)](test)
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows-B08A2E.svg)](#)
 
 </div>
@@ -38,7 +38,7 @@
 ## 核心特性
 
 **正确的账本**
-- 复式记账 + 借贷守恒校验；转账不算消费、信用卡还款不重复记账、贷款本息拆分、浮盈卖出不重复计收益——236 个测试锁定这些硬规则。
+- 复式记账 + 借贷守恒校验；转账不算消费、信用卡还款不重复记账、贷款本息拆分、浮盈卖出不重复计收益——337 个测试锁定这些硬规则。
 - 金额全链路 `BigInt`（分）+ `Rational` 有理数，禁止 double；halfEven 舍入经有理数整体舍入。
 
 **全资产负债视图**
@@ -101,9 +101,14 @@
 
 **行情 / 汇率抓取（v0.4 AI + v0.6 直连官方源）**
 - **直连官方源（推荐）**：腾讯行情（A股/场内基金，GBK）、stooq（港股/美股）、frankfurter（欧央行汇率）——免费无 key、秒回、一手数据；A股 6 位代码自动判交易所，汇率经 EUR 有理数交叉精确换算。
-- **AI 联网搜索（兜底）**：配置主流 AI 服务（智谱 GLM——glm-4-flash 免费、Kimi、通义千问、DeepSeek、OpenAI、Anthropic、任意 OpenAI 兼容端点），API Key 加密存本地，直连查不到的再兜底。
+- **AI 联网搜索（兜底）**：配置主流 AI 服务（智谱 GLM——glm-4.7-flash 免费、Kimi、通义千问、DeepSeek、OpenAI、Anthropic、任意 OpenAI 兼容端点），API Key 加密存本地，直连查不到的再兜底。
 - 两种模式统一**逐条预览**（价格/日期/来源/币种核对）→ 确认才入账，来源标记 `direct` / `ai:模型` 可审计；持仓账户详情可改行情代码（不动任何账目）。
-- 出网安全守卫（仅 http/https，拒绝内网/环回地址）；无论哪种模式都只发送证券代码/名称与币种对，绝不发送余额与金额。
+- 出网安全守卫（仅 http/https，拒绝内网/环回地址；v0.22 攻防加固：IP 编码绕过全拦、重定向每一跳校验、跨主机跳转剥离 API Key、错误信息脱敏——12 条对抗测试钉死）；无论哪种模式都只发送证券代码/名称与币种对，绝不发送余额与金额。
+
+**🚀 全站重设计 + AI 能力（v0.22 / v0.23）**
+- **容器展开导航（v0.22）**：首页财务卡整卡可点，对应页面从卡片矩形平滑生长为全窗（返回时收缩回卡片）；大小屏两种布局形态——大屏标题带 + 内容收束居中的分栏网格，小屏单列。
+- **数值老虎机滚动（v0.22）**：净资产等读数变化时逐位滚动——0-9 循环数字条级联上滚，进位像机械计数器。
+- **每日 AI 资产估值 / 地址精确定位 / AI 助手（v0.23）**：房产车辆可开每日自动估值（来源可审计、人工纠正当日优先）；详细地址自动转经纬度点亮地球；AI 助手多轮对话可携带账本概况汇总（只发整数汇总，逐笔明细永不外发）。用户自己的 Key，零后端。
 
 **安全**
 - 数据库、备份全程加密；主口令 Argon2id/PBKDF2 派生 KEK 包裹随机 DEK，改口令不动数据；恢复码自救；自动锁定时长可设（1–60 分钟）；备份为认证加密容器 `.asbk`，错口令/损坏一律拒绝且不触碰原库。
@@ -119,7 +124,7 @@
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs   # 生成 drift 代码
 flutter analyze                                            # 零 issue（CI 门禁）
-flutter test                                               # 236 个测试
+flutter test                                               # 337 个测试
 flutter run -d windows                                     # 或 android/ios
 ```
 
@@ -143,7 +148,7 @@ lib/
 └── ui/           # 锁屏、仪表盘、账户、流水、导入、预算、计划、目标、负债、月报、设置、3D 地球
 assets/globe/     # 点阵大陆数据（Natural Earth，公有领域）
 docs/             # 完整文档（见下）
-test/             # 236 个验收测试
+test/             # 337 个验收测试
 ```
 
 ## 文档
@@ -162,6 +167,7 @@ test/             # 236 个验收测试
 | [10-路线图与开发指南](docs/10-路线图与开发指南.md) | 四阶段计划、开发规范 |
 | [11-智慧分析算法](docs/11-智慧分析算法.md) | 配速/周期识别/MAD 异常/Theil-Sen/规则引擎/XIRR 口径 |
 | [12-共享组件与工具库](docs/12-共享组件与工具库.md) | 设计令牌、组件索引、provider 复用地图、弹层速查 |
+| [13-AI集成](docs/13-AI集成.md) | AI 服务配置、行情抓取、每日估值、地理编码、AI 助手的隐私边界与实现 |
 
 另有 [CHANGELOG](CHANGELOG.md)、[贡献指南](CONTRIBUTING.md)、[安全策略](SECURITY.md)。
 

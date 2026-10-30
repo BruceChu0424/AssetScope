@@ -49,14 +49,13 @@ class SpendingPace {
   }
 
   /// 由"已花 + 日期 + 月长度"构造。
-  factory SpendingPace.of({
-    required DateTime now,
-    required BigInt spentMinor,
-  }) {
+  factory SpendingPace.of({required DateTime now, required BigInt spentMinor}) {
     final total = DateTime(now.year, now.month + 1, 0).day;
     final elapsed = now.day; // 首日即算 1 天
     final remaining = (total - elapsed).clamp(0, total);
-    final dailyAvg = elapsed > 0 ? spentMinor ~/ BigInt.from(elapsed) : BigInt.zero;
+    final dailyAvg = elapsed > 0
+        ? spentMinor ~/ BigInt.from(elapsed)
+        : BigInt.zero;
     final projected = spentMinor + dailyAvg * BigInt.from(remaining);
     return SpendingPace(
       monthKey: dates.monthKey(now),

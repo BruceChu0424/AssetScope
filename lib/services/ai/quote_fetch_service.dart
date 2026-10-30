@@ -9,7 +9,8 @@ import '../../domain/valuation/valuation.dart';
 import 'ai_chat.dart';
 import 'ai_quote.dart';
 
-const _kSystemPrompt = '你是一个严谨的金融数据查询助手。'
+const _kSystemPrompt =
+    '你是一个严谨的金融数据查询助手。'
     '你必须使用联网搜索获取真实、最新的行情数据，'
     '绝对不允许凭训练记忆编造数字。查不到的数据直接省略，不要输出猜测值。'
     '输出必须是且仅是一个 JSON 对象。';
@@ -50,18 +51,21 @@ class QuoteFetchService {
     final accounts = await _accounts.all();
     final qtys = await _ledger.quantityBalancesAt(DateTime.now());
     final holdings = accounts
-        .where((a) =>
-            a.isHolding &&
-            !a.archived &&
-            (qtys[a.id] ?? Rational.zero()) != Rational.zero())
+        .where(
+          (a) =>
+              a.isHolding &&
+              !a.archived &&
+              (qtys[a.id] ?? Rational.zero()) != Rational.zero(),
+        )
         .toList();
-    final currencies = accounts
-        .where((a) => !a.archived && a.includeInNetWorth)
-        .map((a) => a.currencyCode)
-        .where((c) => c != base)
-        .toSet()
-        .toList()
-      ..sort();
+    final currencies =
+        accounts
+            .where((a) => !a.archived && a.includeInNetWorth)
+            .map((a) => a.currencyCode)
+            .where((c) => c != base)
+            .toSet()
+            .toList()
+          ..sort();
     return (holdings, currencies, base);
   }
 
@@ -75,7 +79,10 @@ class QuoteFetchService {
     final (holdings, currencies, base) = await targets();
     if (holdings.isEmpty && currencies.isEmpty) {
       return const QuoteFetchResult(
-          prices: [], rates: [], warnings: ['没有需要抓取的持仓或外币汇率']);
+        prices: [],
+        rates: [],
+        warnings: ['没有需要抓取的持仓或外币汇率'],
+      );
     }
     final prompt = buildQuotePrompt(
       holdingNames: [for (final h in holdings) h.name],
@@ -95,27 +102,31 @@ class QuoteFetchService {
         prices.add(p);
         continue;
       }
-      final mismatch = p.currency.trim().toUpperCase().isNotEmpty &&
+      final mismatch =
+          p.currency.trim().toUpperCase().isNotEmpty &&
           p.currency.trim().toUpperCase() != acc.currencyCode.toUpperCase();
       if (mismatch) {
-        warnings.add('「${p.query}」AI 标注币种 ${p.currency} 与账户币种 '
-            '${acc.currencyCode} 不一致，请核对');
+        warnings.add(
+          '「${p.query}」AI 标注币种 ${p.currency} 与账户币种 '
+          '${acc.currencyCode} 不一致，请核对',
+        );
       }
-      prices.add(FetchedPrice(
-        query: p.query,
-        price: p.price,
-        currency: p.currency,
-        asOf: p.asOf,
-        source: p.source,
-        accountId: acc.id,
-        accountName: acc.name,
-        currencyMismatch: mismatch,
-      ));
+      prices.add(
+        FetchedPrice(
+          query: p.query,
+          price: p.price,
+          currency: p.currency,
+          asOf: p.asOf,
+          source: p.source,
+          accountId: acc.id,
+          accountName: acc.name,
+          currencyMismatch: mismatch,
+        ),
+      );
     }
     final rates = [
       for (final r in parsed.rates)
-        FetchedRate(
-            ccy: r.ccy, rate: r.rate, asOf: r.asOf, source: r.source)
+        FetchedRate(ccy: r.ccy, rate: r.rate, asOf: r.asOf, source: r.source),
     ];
     if (prices.isEmpty && rates.isEmpty && warnings.isEmpty) {
       warnings.add('AI 未返回任何可用数据');
@@ -132,21 +143,23 @@ class QuoteFetchService {
     String? sourcePrefix,
   }) async {
     final cfg = await config();
-    final source = sourcePrefix ??
-        'ai:${cfg?.presetId ?? "custom"}/${cfg?.model ?? "?"}';
+    final source =
+        sourcePrefix ?? 'ai:${cfg?.presetId ?? "custom"}/${cfg?.model ?? "?"}';
     final base = await _meta.settingString('baseCurrency') ?? 'CNY';
     final today = DateTime.now();
     var count = 0;
     for (final p in prices) {
       if (p.accountId == null) continue;
-      await _meta.saveValuation(ValuationRecord(
-        accountId: p.accountId!,
-        date: p.asOf ?? today,
-        kind: ValuationKind.unitPrice,
-        unitPrice: p.price,
-        source: source,
-        note: p.source,
-      ));
+      await _meta.saveValuation(
+        ValuationRecord(
+          accountId: p.accountId!,
+          date: p.asOf ?? today,
+          kind: ValuationKind.unitPrice,
+          unitPrice: p.price,
+          source: source,
+          note: p.source,
+        ),
+      );
       count++;
     }
     for (final r in rates) {

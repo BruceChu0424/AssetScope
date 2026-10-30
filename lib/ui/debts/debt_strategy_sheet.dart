@@ -5,8 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/debt/debt_contract.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
-import '../../services/insight_service.dart'
-    show DebtStrategyCompare;
+import '../../services/insight_service.dart' show DebtStrategyCompare;
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -14,8 +13,7 @@ import '../widgets/common.dart';
 ///
 /// 雪崩=高利率优先（总利息最少）；雪球=小额优先（心理激励快）。
 /// 用户输入"每月额外还款额"，展示两套计划的期数/总利息/还清顺序。
-Future<void> showDebtStrategySheet(
-    BuildContext context, WidgetRef ref) async {
+Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
   final s = sessionOf(ref.read(vaultProvider));
   if (s == null) return;
   final ctrl = TextEditingController(text: '1000');
@@ -26,7 +24,11 @@ Future<void> showDebtStrategySheet(
     isScrollControlled: true,
     builder: (sheetCtx) => Padding(
       padding: EdgeInsets.fromLTRB(
-          20, 0, 20, MediaQuery.of(sheetCtx).viewInsets.bottom + 24),
+        20,
+        0,
+        20,
+        MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
+      ),
       child: StatefulBuilder(
         builder: (ctx, setState) {
           Future<DebtStrategyCompare?> simulate() async {
@@ -34,8 +36,9 @@ Future<void> showDebtStrategySheet(
                 ? BigInt.zero
                 : Money.parse(ctrl.text.trim(), CurrencyInfo.cny).amountMinor;
             try {
-              return await s.insightService
-                  .debtStrategies(extraMonthlyMinor: amount);
+              return await s.insightService.debtStrategies(
+                extraMonthlyMinor: amount,
+              );
             } catch (_) {
               return null;
             }
@@ -45,17 +48,19 @@ Future<void> showDebtStrategySheet(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('还款策略对比',
-                  style: Theme.of(ctx)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                '还款策略对比',
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 4),
-              Text('在最低还款之外，每月额外拿出一笔钱优先还某一笔债',
-                  style: Theme.of(ctx)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Theme.of(ctx).hintColor)),
+              Text(
+                '在最低还款之外，每月额外拿出一笔钱优先还某一笔债',
+                style: Theme.of(
+                  ctx,
+                ).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).hintColor),
+              ),
               const SizedBox(height: 14),
               AppAmountField(
                 controller: ctrl,
@@ -63,7 +68,7 @@ Future<void> showDebtStrategySheet(
                 label: '每月额外还款额',
               ),
               const SizedBox(height: 12),
-              FilledButton(
+              ParticleFilledButton(
                 onPressed: () => setState(() {}),
                 child: const Text('重新模拟'),
               ),
@@ -151,28 +156,34 @@ Widget _planCard(
         Row(
           children: [
             Expanded(
-              child: Text(title,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              child: Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             if (highlight)
-              Icon(Icons.verified,
-                  size: 16, color: theme.colorScheme.primary),
+              Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
           ],
         ),
         const SizedBox(height: 6),
         StatRow(
-            label: '还清时间', value: '${plan.months ~/ 12} 年 ${plan.months % 12} 个月'),
+          label: '还清时间',
+          value: '${plan.months ~/ 12} 年 ${plan.months % 12} 个月',
+        ),
         StatRow(
-            label: '总利息',
-            value: fmtMinor(plan.totalInterestMinor, 'CNY'),
-            emphasized: true),
+          label: '总利息',
+          value: fmtMinor(plan.totalInterestMinor, 'CNY'),
+          emphasized: true,
+        ),
         StatRow(
-            label: '还清顺序',
-            value: [
-              for (final i in plan.order.take(4)) positions[i].name,
-              if (plan.order.length > 4) '…',
-            ].join(' → ')),
+          label: '还清顺序',
+          value: [
+            for (final i in plan.order.take(4)) positions[i].name,
+            if (plan.order.length > 4) '…',
+          ].join(' → '),
+        ),
       ],
     ),
   );

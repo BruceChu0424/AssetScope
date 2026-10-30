@@ -21,21 +21,27 @@ class PlanEditDialog extends ConsumerStatefulWidget {
 }
 
 class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.initial?.name ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.initial?.name ?? '',
+  );
   late final TextEditingController _amount = TextEditingController(
-      text: widget.initial?.amountMinor == null
-          ? ''
-          : Money.fromMinor(widget.initial!.amountMinor!, CurrencyInfo.cny)
-              .format());
+    text: widget.initial?.amountMinor == null
+        ? ''
+        : Money.fromMinor(
+            widget.initial!.amountMinor!,
+            CurrencyInfo.cny,
+          ).format(),
+  );
   late final TextEditingController _anchor = TextEditingController(
-      text: widget.initial == null
-          ? dateToday()
-          : dateKey(widget.initial!.anchorDate));
+    text: widget.initial == null
+        ? dateToday()
+        : dateKey(widget.initial!.anchorDate),
+  );
   late final TextEditingController _end = TextEditingController(
-      text: widget.initial?.endDate == null
-          ? ''
-          : dateKey(widget.initial!.endDate!));
+    text: widget.initial?.endDate == null
+        ? ''
+        : dateKey(widget.initial!.endDate!),
+  );
   late EventDirection _direction =
       widget.initial?.direction ?? EventDirection.outflow;
   late Cadence _cadence = widget.initial?.cadence ?? Cadence.monthly;
@@ -57,8 +63,7 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
     if (s == null || _name.text.isEmpty || _amount.text.isEmpty) return;
     final anchor = DateTime.tryParse(_anchor.text) ?? DateTime.now();
     final end = _end.text.isEmpty ? null : DateTime.tryParse(_end.text);
-    final amountMinor =
-        Money.parse(_amount.text, CurrencyInfo.cny).amountMinor;
+    final amountMinor = Money.parse(_amount.text, CurrencyInfo.cny).amountMinor;
     final editing = widget.initial;
     final saved = editing == null
         ? ScheduledEvent(
@@ -98,7 +103,9 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
       title: Text(initial == null ? '新建计划' : '编辑计划'),
       content: accountsAsync.when(
         loading: () => const SizedBox(
-            height: 320, child: Center(child: CircularProgressIndicator())),
+          height: 320,
+          child: Center(child: CircularProgressIndicator()),
+        ),
         error: (e, _) => SizedBox(height: 120, child: Text('$e')),
         data: (accounts) {
           // 与下拉显示一致的默认值：不改选择直接保存也带上账户/分类。
@@ -116,17 +123,21 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                    controller: _name,
-                    decoration: const InputDecoration(
-                        labelText: '名称（如 房租 / 工资）')),
+                ParticleTextField(
+                  controller: _name,
+                  decoration: const InputDecoration(labelText: '名称（如 房租 / 工资）'),
+                ),
                 const SizedBox(height: 8),
                 SegmentedButton<EventDirection>(
                   segments: const [
                     ButtonSegment(
-                        value: EventDirection.outflow, label: Text('支出')),
+                      value: EventDirection.outflow,
+                      label: Text('支出'),
+                    ),
                     ButtonSegment(
-                        value: EventDirection.inflow, label: Text('收入')),
+                      value: EventDirection.inflow,
+                      label: Text('收入'),
+                    ),
                   ],
                   selected: {_direction},
                   onSelectionChanged: (v) => setState(() {
@@ -161,12 +172,12 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
                   onChanged: (v) => setState(() => _categoryId = v),
                 ),
                 const SizedBox(height: 8),
-                AppAmountField(
-                    controller: _amount, currencyCode: 'CNY'),
+                AppAmountField(controller: _amount, currencyCode: 'CNY'),
                 const SizedBox(height: 8),
                 AppDateField(
-                    controller: _anchor,
-                    label: _cadence == Cadence.monthly ? '起始日（每月此日发生）' : '起始日'),
+                  controller: _anchor,
+                  label: _cadence == Cadence.monthly ? '起始日（每月此日发生）' : '起始日',
+                ),
                 const SizedBox(height: 8),
                 AppDateField(controller: _end, label: '结束日（可选）'),
                 const SizedBox(height: 4),
@@ -184,9 +195,10 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(onPressed: _save, child: const Text('保存')),
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
       ],
     );
   }

@@ -54,8 +54,7 @@ class ResolvedValuation {
   /// 估值过期阈值（天）——超过则 UI 显示“估值陈旧”。
   static const staleThresholdDays = 30;
 
-  bool get isStale =>
-      staleDays != null && staleDays! > staleThresholdDays;
+  bool get isStale => staleDays != null && staleDays! > staleThresholdDays;
 }
 
 class ValuationResolver {

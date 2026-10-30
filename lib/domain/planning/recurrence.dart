@@ -14,7 +14,10 @@ enum Cadence {
   final String labelZh;
 }
 
-enum EventDirection { inflow('收入'), outflow('支出');
+enum EventDirection {
+  inflow('收入'),
+  outflow('支出');
+
   const EventDirection(this.labelZh);
   final String labelZh;
 }
@@ -112,29 +115,28 @@ class ScheduledEvent {
     Set<String>? skippedMonthKeys,
     Set<String>? skippedDateKeys,
     Map<String, BigInt>? amountOverrides,
-  }) =>
-      ScheduledEvent(
-        id: id,
-        name: name ?? this.name,
-        direction: direction ?? this.direction,
-        currencyCode: currencyCode,
-        cadence: cadence ?? this.cadence,
-        anchorDate: anchorDate ?? this.anchorDate,
-        amountMinor: amountMinor ?? this.amountMinor,
-        amountLowMinor: amountLowMinor ?? this.amountLowMinor,
-        amountHighMinor: amountHighMinor ?? this.amountHighMinor,
-        intervalValue: intervalValue ?? this.intervalValue,
-        monthEndPolicy: monthEndPolicy ?? this.monthEndPolicy,
-        endDate: clearEndDate == true ? null : (endDate ?? this.endDate),
-        paymentAccountId: paymentAccountId ?? this.paymentAccountId,
-        categoryId: categoryId ?? this.categoryId,
-        autoPost: autoPost ?? this.autoPost,
-        notes: notes ?? this.notes,
-        status: status ?? this.status,
-        skippedMonthKeys: skippedMonthKeys ?? this.skippedMonthKeys,
-        skippedDateKeys: skippedDateKeys ?? this.skippedDateKeys,
-        amountOverrides: amountOverrides ?? this.amountOverrides,
-      );
+  }) => ScheduledEvent(
+    id: id,
+    name: name ?? this.name,
+    direction: direction ?? this.direction,
+    currencyCode: currencyCode,
+    cadence: cadence ?? this.cadence,
+    anchorDate: anchorDate ?? this.anchorDate,
+    amountMinor: amountMinor ?? this.amountMinor,
+    amountLowMinor: amountLowMinor ?? this.amountLowMinor,
+    amountHighMinor: amountHighMinor ?? this.amountHighMinor,
+    intervalValue: intervalValue ?? this.intervalValue,
+    monthEndPolicy: monthEndPolicy ?? this.monthEndPolicy,
+    endDate: clearEndDate == true ? null : (endDate ?? this.endDate),
+    paymentAccountId: paymentAccountId ?? this.paymentAccountId,
+    categoryId: categoryId ?? this.categoryId,
+    autoPost: autoPost ?? this.autoPost,
+    notes: notes ?? this.notes,
+    status: status ?? this.status,
+    skippedMonthKeys: skippedMonthKeys ?? this.skippedMonthKeys,
+    skippedDateKeys: skippedDateKeys ?? this.skippedDateKeys,
+    amountOverrides: amountOverrides ?? this.amountOverrides,
+  );
 
   /// 计划金额：固定值优先；区间取中位数（估算）。
   BigInt resolvedAmountMinor({String? monthKey}) {
@@ -152,7 +154,9 @@ class ScheduledEvent {
 
   /// 展开 [from, to]（含端点）内的所有预期发生日。
   List<Occurrence> expand(DateTime from, DateTime to) {
-    if (status == PlanStatus.paused || status == PlanStatus.cancelled) return const [];
+    if (status == PlanStatus.paused || status == PlanStatus.cancelled) {
+      return const [];
+    }
     final out = <Occurrence>[];
     switch (cadence) {
       case Cadence.once:
@@ -164,22 +168,44 @@ class ScheduledEvent {
       case Cadence.biweekly:
         _step(out, from, to, (d) => d.add(const Duration(days: 14)));
       case Cadence.monthly:
-        _step(out, from, to,
-            (d) => addMonthsClamped(d, intervalValue, policy: monthEndPolicy));
+        _step(
+          out,
+          from,
+          to,
+          (d) => addMonthsClamped(d, intervalValue, policy: monthEndPolicy),
+        );
       case Cadence.quarterly:
-        _step(out, from, to,
-            (d) => addMonthsClamped(d, 3 * intervalValue, policy: monthEndPolicy));
+        _step(
+          out,
+          from,
+          to,
+          (d) => addMonthsClamped(d, 3 * intervalValue, policy: monthEndPolicy),
+        );
       case Cadence.yearly:
-        _step(out, from, to,
-            (d) => addMonthsClamped(d, 12 * intervalValue, policy: monthEndPolicy));
+        _step(
+          out,
+          from,
+          to,
+          (d) =>
+              addMonthsClamped(d, 12 * intervalValue, policy: monthEndPolicy),
+        );
       case Cadence.customInterval:
-        _step(out, from, to,
-            (d) => addMonthsClamped(d, intervalValue, policy: monthEndPolicy));
+        _step(
+          out,
+          from,
+          to,
+          (d) => addMonthsClamped(d, intervalValue, policy: monthEndPolicy),
+        );
     }
     return out;
   }
 
-  void _step(List<Occurrence> out, DateTime from, DateTime to, DateTime Function(DateTime) advance) {
+  void _step(
+    List<Occurrence> out,
+    DateTime from,
+    DateTime to,
+    DateTime Function(DateTime) advance,
+  ) {
     var d = anchorDate;
     // 先推进到窗口内。
     var guard = 0;
@@ -200,15 +226,17 @@ class ScheduledEvent {
     if (skippedDateKeys.contains(dateKey(d))) return;
     final amount = resolvedAmountMinor(monthKey: mk);
     if (amount == BigInt.zero) return;
-    out.add(Occurrence(
-      eventId: id,
-      eventName: name,
-      date: d,
-      amountMinor: direction == EventDirection.outflow ? -amount : amount,
-      isEstimate: isEstimate,
-      paymentAccountId: paymentAccountId,
-      categoryId: categoryId,
-    ));
+    out.add(
+      Occurrence(
+        eventId: id,
+        eventName: name,
+        date: d,
+        amountMinor: direction == EventDirection.outflow ? -amount : amount,
+        isEstimate: isEstimate,
+        paymentAccountId: paymentAccountId,
+        categoryId: categoryId,
+      ),
+    );
   }
 
   bool _inRange(DateTime d, DateTime from, DateTime to) =>

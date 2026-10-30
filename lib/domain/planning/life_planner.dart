@@ -90,8 +90,7 @@ class ChildRearing extends LifeEvent {
   final BigInt? collegeExtraMinor;
   final int dependentMonths;
 
-  BigInt get collegeExtraOrDefault =>
-      collegeExtraMinor ?? BigInt.zero;
+  BigInt get collegeExtraOrDefault => collegeExtraMinor ?? BigInt.zero;
 
   static const collegeStartAgeMonths = 216; // 18 岁
 }
@@ -105,11 +104,7 @@ class IncomeChange extends LifeEvent {
 /// 退休：之后收入 × [incomeFactor]（养老金替代率，默认 0.4）、
 /// 支出 × [spendFactor]（默认 0.75）。
 class Retirement extends LifeEvent {
-  const Retirement({
-    required super.month,
-    this.incomeFactor,
-    this.spendFactor,
-  });
+  const Retirement({required super.month, this.incomeFactor, this.spendFactor});
 
   final Rational? incomeFactor;
   final Rational? spendFactor;
@@ -160,8 +155,7 @@ class LifePoint {
   /// 当月净现金流（收入 − 支出，含月供；事件一次性流不计入）。
   final BigInt cashFlowMinor;
 
-  BigInt get netWorthMinor =>
-      investMinor + fixedMinor - debtMinor;
+  BigInt get netWorthMinor => investMinor + fixedMinor - debtMinor;
 }
 
 /// 结论。
@@ -211,9 +205,17 @@ class _Loan {
     final i = h.annualRate / Rational.fromInt(BigInt.from(12));
     final payment = i.isZero
         ? p / Rational.fromInt(BigInt.from(n))
-        : p * i * _pow(Rational.one + i, n) /
-            (_pow(Rational.one + i, n) - Rational.one);
-    return _Loan(born: h.month, remaining: p, rate: i, payment: payment, left: n);
+        : p *
+              i *
+              _pow(Rational.one + i, n) /
+              (_pow(Rational.one + i, n) - Rational.one);
+    return _Loan(
+      born: h.month,
+      remaining: p,
+      rate: i,
+      payment: payment,
+      left: n,
+    );
   }
 }
 
@@ -310,8 +312,10 @@ class LifePlanner {
         invest = invest * g + lastCf;
       }
 
-      final debt =
-          loans.fold(Rational.zero(), (s, l) => s + (l.left > 0 ? l.remaining : Rational.zero()));
+      final debt = loans.fold(
+        Rational.zero(),
+        (s, l) => s + (l.left > 0 ? l.remaining : Rational.zero()),
+      );
       final nw = invest + fixed - debt;
       if (nw > peak) peak = nw;
       if (exhausted == null && invest.isNegative && t > 0) exhausted = t;
@@ -322,13 +326,15 @@ class LifePlanner {
           t % 12 == 0 ||
           eventMonths.contains(t) ||
           eventMonths.contains(t - 1)) {
-        curve.add(LifePoint(
-          month: t,
-          investMinor: invest.rounded(),
-          fixedMinor: fixed.rounded(),
-          debtMinor: debt.rounded(),
-          cashFlowMinor: t > 0 ? lastCf.rounded() : BigInt.zero,
-        ));
+        curve.add(
+          LifePoint(
+            month: t,
+            investMinor: invest.rounded(),
+            fixedMinor: fixed.rounded(),
+            debtMinor: debt.rounded(),
+            cashFlowMinor: t > 0 ? lastCf.rounded() : BigInt.zero,
+          ),
+        );
       }
     }
 

@@ -14,7 +14,8 @@ import 'personal_cpi_card.dart';
 import 'risk_card.dart';
 import 'year_view.dart';
 
-/// 报表：月报（归因/分类/构成）与年度报告切换。
+/// 报表页 · 杂志式双栏：大屏（≥760 内容宽）把卡片交替分流到左右两栏，
+/// 小屏单列。月报/年度切换与前后翻页在页头。
 class ReportPage extends ConsumerStatefulWidget {
   const ReportPage({super.key});
 
@@ -27,15 +28,17 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   int _year = DateTime.now().year;
   bool _yearMode = false;
 
-  late final _monthProvider =
-      FutureProvider.autoDispose<MonthReport>((ref) async {
+  late final _monthProvider = FutureProvider.autoDispose<MonthReport>((
+    ref,
+  ) async {
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) throw StateError('locked');
     return s.statsService.monthReport(_month.year, _month.month);
   });
 
-  late final _yearProvider =
-      FutureProvider.autoDispose<YearReport>((ref) async {
+  late final _yearProvider = FutureProvider.autoDispose<YearReport>((
+    ref,
+  ) async {
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) throw StateError('locked');
     return s.yearReportService.yearReport(_year);
@@ -57,89 +60,128 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   Widget build(BuildContext context) {
     final Widget body;
     if (_yearMode) {
-      body = ref.watch(_yearProvider).when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+      body = ref
+          .watch(_yearProvider)
+          .when(
+            loading: () => const Center(child: OrbitSpinner(size: 36)),
             error: (e, _) => ErrorPlaceholder('加载失败：$e'),
-            data: (r) => ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [_modeToggle(), YearView(report: r)],
-            ),
+            data: (r) => _magazine([YearView(report: r)]),
           );
     } else {
-      body = ref.watch(_monthProvider).when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+      body = ref
+          .watch(_monthProvider)
+          .when(
+            loading: () => const Center(child: OrbitSpinner(size: 36)),
             error: (e, _) => ErrorPlaceholder('加载失败：$e'),
-            data: (r) => ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                _modeToggle(),
-                _attributionCard(context, r),
-                _categoryCard(context, r, income: true),
-                _categoryCard(context, r, income: false),
-                const PersonalCpiCard(),
-                const InvestCard(),
-                const RiskCard(),
-                const AllocationCard(),
-                const FireCard(),
-                _compositionCard(context, r),
-              ],
-            ),
+            data: (r) => _magazine([
+              _attributionCard(context, r),
+              _categoryCard(context, r, income: true),
+              _categoryCard(context, r, income: false),
+              const PersonalCpiCard(),
+              const InvestCard(),
+              const RiskCard(),
+              const AllocationCard(),
+              const FireCard(),
+              _compositionCard(context, r),
+            ]),
           );
     }
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_yearMode ? '年度 · $_year 年' : '月报 · ${_month.year} 年 ${_month.month} 月'),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.chevron_left), onPressed: () => _shift(-1)),
-          IconButton(
-              icon: const Icon(Icons.chevron_right), onPressed: () => _shift(1)),
-        ],
+    return PageFrame(
+      title: _yearMode ? '年度 · $_year 年' : '月报 · ${_month.year} 年 ${_month.month} 月',
+      appBarBottom: _ToggleBar(
+        yearMode: _yearMode,
+        onMode: (v) => setState(() {
+          _yearMode = v;
+          if (_yearMode) {
+            _year = _month.year;
+            ref.invalidate(_yearProvider);
+          }
+        }),
       ),
-      body: body,
+      actions: [
+        ActionIcon(
+          tooltip: '上一期',
+          icon: Icons.chevron_left,
+          onTap: () => _shift(-1),
+        ),
+        const SizedBox(width: 6),
+        ActionIcon(
+          tooltip: '下一期',
+          icon: Icons.chevron_right,
+          onTap: () => _shift(1),
+        ),
+      ],
+      child: body,
     );
   }
 
-  Widget _modeToggle() => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, label: Text('月报')),
-            ButtonSegment(value: true, label: Text('年度')),
+  /// 双栏杂志：交替分流。首卡（归因分解）独占左栏顶位。
+  Widget _magazine(List<Widget> cards) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Row 的实际可用宽 = c.maxWidth − ListView 水平 padding(32)。
+        final avail = c.maxWidth - 32;
+        final twoCol = avail >= 728;
+        if (!twoCol) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              for (final k in cards)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: k,
+                ),
+            ],
+          );
+        }
+        final left = <Widget>[];
+        final right = <Widget>[];
+        for (var i = 0; i < cards.length; i++) {
+          (i.isEven ? left : right).add(
+            Padding(padding: const EdgeInsets.only(bottom: 16), child: cards[i]),
+          );
+        }
+        final colW = (avail - 16) / 2;
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: colW, child: Column(children: left)),
+                const SizedBox(width: 16),
+                SizedBox(width: colW, child: Column(children: right)),
+              ],
+            ),
           ],
-          selected: {_yearMode},
-          onSelectionChanged: (v) => setState(() {
-            _yearMode = v.first;
-            if (_yearMode) {
-              _year = _month.year;
-              ref.invalidate(_yearProvider);
-            }
-          }),
-        ),
-      );
+        );
+      },
+    );
+  }
 
   Widget _attributionCard(BuildContext context, MonthReport r) {
     final a = r.attribution;
     final base = r.baseCurrencyCode;
     Widget row(String label, BigInt v, {bool strong = false}) => ListTile(
-          dense: true,
-          title: Text(label),
-          trailing: Text(
-            fmtMinor(v, base, sign: !strong),
-            style: TextStyle(
-              fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: strong ? FontWeight.bold : null,
-            ),
-          ),
-        );
+      dense: true,
+      title: Text(label),
+      trailing: Text(
+        fmtMinor(v, base, sign: !strong),
+        style: TextStyle(
+          fontFeatures: const [FontFeature.tabularFigures()],
+          fontWeight: strong ? FontWeight.bold : null,
+        ),
+      ),
+    );
     return SectionCard(
       title: '净资产变化分解',
       trailing: a.hasResidual
           ? Tooltip(
               message: '差额非 0 通常意味着缺估值、漏记或导入重复',
               child: Chip(
-                  label: Text('待核对 ${fmtMinor(a.residual, base)}'),
-                  visualDensity: VisualDensity.compact),
+                label: Text('待核对 ${fmtMinor(a.residual, base)}'),
+                visualDensity: VisualDensity.compact,
+              ),
             )
           : null,
       child: Column(
@@ -160,8 +202,11 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     );
   }
 
-  Widget _categoryCard(BuildContext context, MonthReport r,
-      {required bool income}) {
+  Widget _categoryCard(
+    BuildContext context,
+    MonthReport r, {
+    required bool income,
+  }) {
     final base = r.baseCurrencyCode;
     final map = income ? r.incomeByCategory : r.expenseByCategory;
     final entries = map.entries.toList()
@@ -187,7 +232,9 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                       radius: 44,
                       color: palette[i % palette.length],
                       titleStyle: const TextStyle(
-                          fontSize: 10, color: Colors.white),
+                        fontSize: 10,
+                        color: Colors.white,
+                      ),
                     ),
                 ],
               ),
@@ -205,29 +252,61 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       id.replaceAll('cat:e:', '').replaceAll('cat:i:', '');
 
   Widget rowTile(String label, String value) => ListTile(
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        title: Text(label),
-        trailing: Text(value,
-            style:
-                const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
-      );
+    dense: true,
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    trailing: Text(
+      value,
+      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+    ),
+  );
 
   Widget _compositionCard(BuildContext context, MonthReport r) {
-    final items = r.nwEndBreakdown.items
-        .where((i) => i.valueBaseMinor != BigInt.zero)
-        .toList()
-      ..sort((a, b) => b.valueBaseMinor.compareTo(a.valueBaseMinor));
+    final items =
+        r.nwEndBreakdown.items
+            .where((i) => i.valueBaseMinor != BigInt.zero)
+            .toList()
+          ..sort((a, b) => b.valueBaseMinor.compareTo(a.valueBaseMinor));
     return SectionCard(
       title: '期末资产负债构成',
       child: Column(
         children: [
           for (final i in items.take(14))
             rowTile(
-              '${i.account.name}${i.valuationMissing ? '（缺估值）' : i.valuationStale ? '（估值过期）' : ''}',
+              '${i.account.name}${i.valuationMissing
+                  ? '（缺估值）'
+                  : i.valuationStale
+                  ? '（估值过期）'
+                  : ''}',
               fmtMinor(i.valueBaseMinor, i.account.currencyCode),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 月/年切换条（AppBar.bottom 兼容件）。
+class _ToggleBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ToggleBar({required this.yearMode, required this.onMode});
+
+  final bool yearMode;
+  final ValueChanged<bool> onMode;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(48);
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(value: false, label: Text('月报')),
+          ButtonSegment(value: true, label: Text('年度')),
+        ],
+        selected: {yearMode},
+        onSelectionChanged: (v) => onMode(v.first),
       ),
     );
   }

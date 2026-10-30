@@ -80,21 +80,20 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       _directMode = direct;
     });
     try {
-      final result =
-          direct ? await s.directQuotes.fetch() : await s.quoteFetch.fetch();
+      final result = direct
+          ? await s.directQuotes.fetch()
+          : await s.quoteFetch.fetch();
       _selectedPrices
         ..clear()
         ..addAll({
           for (var i = 0; i < result.prices.length; i++)
             if (result.prices[i].accountId != null &&
                 result.prices[i].currencyMismatch != true)
-              i
+              i,
         });
       _selectedRates
         ..clear()
-        ..addAll({
-          for (var i = 0; i < result.rates.length; i++) i,
-        });
+        ..addAll({for (var i = 0; i < result.rates.length; i++) i});
       setState(() {
         _result = result;
         _phase = _Phase.preview;
@@ -113,17 +112,14 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
     setState(() => _phase = _Phase.applying);
     try {
       final n = await s.quoteFetch.apply(
-        prices: [
-          for (final i in _selectedPrices) _result!.prices[i],
-        ],
-        rates: [
-          for (final i in _selectedRates) _result!.rates[i],
-        ],
+        prices: [for (final i in _selectedPrices) _result!.prices[i]],
+        rates: [for (final i in _selectedRates) _result!.rates[i]],
         sourcePrefix: _directMode ? 'direct' : null,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('已写入 $n 条行情/汇率')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已写入 $n 条行情/汇率')));
         Navigator.pop(context);
       }
     } catch (e) {
@@ -144,17 +140,22 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text('行情 / 汇率抓取',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '行情 / 汇率抓取',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Text(
               '直连官方行情源（免费无 key、秒回）；查不到的再试 AI 联网搜索。'
               '预览确认后才写入，来源可审计。无论哪种方式，都只发送证券代码与币种对。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             ),
           ),
           const Divider(height: 4),
@@ -202,32 +203,45 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
               ),
               child: Text(
                 '当前 AI 配置未开启联网搜索，模型可能返回记忆中的过时价格，请谨慎确认。',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.brass, height: 1.5),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.brass,
+                  height: 1.5,
+                ),
               ),
             ),
           ),
-        Text('本次将查询：',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          '本次将查询：',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         if (!hasTargets)
-          Text('没有在持的证券持仓，也没有需要折算的外币账户。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor))
+          Text(
+            '没有在持的证券持仓，也没有需要折算的外币账户。',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          )
         else ...[
           if (_holdingNames.isNotEmpty)
-            Text('· 持仓价格（${_holdingNames.length}）：${_holdingNames.join('、')}',
-                style: theme.textTheme.bodySmall?.copyWith(height: 1.6)),
+            Text(
+              '· 持仓价格（${_holdingNames.length}）：${_holdingNames.join('、')}',
+              style: theme.textTheme.bodySmall?.copyWith(height: 1.6),
+            ),
           if (_fxPairs.isNotEmpty)
-            Text('· 汇率（${_fxPairs.length}）：${_fxPairs.join('、')} → $_base',
-                style: theme.textTheme.bodySmall?.copyWith(height: 1.6)),
+            Text(
+              '· 汇率（${_fxPairs.length}）：${_fxPairs.join('、')} → $_base',
+              style: theme.textTheme.bodySmall?.copyWith(height: 1.6),
+            ),
           const SizedBox(height: 4),
           Text(
             '直连路由：A股/场内基金 → 腾讯行情；港股/美股 → stooq；汇率 → 欧央行。'
             '行情代码可在持仓账户详情设置（如 600519 / 00700 / AAPL）。',
             style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.hintColor, fontSize: 11, height: 1.5),
+              color: theme.hintColor,
+              fontSize: 11,
+              height: 1.5,
+            ),
           ),
         ],
         if (_error != null) ...[
@@ -235,7 +249,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           Text(_error!, style: const TextStyle(color: AppColors.negative)),
         ],
         const SizedBox(height: 16),
-        FilledButton.icon(
+        ParticleFilledButton.icon(
           onPressed: hasTargets ? () => _fetch(direct: true) : null,
           icon: const Icon(Icons.bolt),
           label: const Text('直连官方行情源（推荐 · 免费 · 秒回）'),
@@ -255,9 +269,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                 }
               : null,
           icon: const Icon(Icons.travel_explore),
-          label: Text(aiReady
-              ? 'AI 联网搜索（查不到时兜底）'
-              : 'AI 联网搜索（需先配置 AI 服务）'),
+          label: Text(aiReady ? 'AI 联网搜索（查不到时兜底）' : 'AI 联网搜索（需先配置 AI 服务）'),
         ),
       ],
     );
@@ -286,12 +298,15 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.warning_amber_rounded,
-                            size: 16, color: AppColors.brass),
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 16,
+                          color: AppColors.brass,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
-                            child:
-                                Text(w, style: theme.textTheme.bodySmall)),
+                          child: Text(w, style: theme.textTheme.bodySmall),
+                        ),
                       ],
                     ),
                   ),
@@ -307,17 +322,21 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
               Expanded(
                 child: Text(
                   '已选 ${_selectedPrices.length} 条价格 + ${_selectedRates.length} 条汇率',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
                 ),
               ),
               TextButton(
-                onPressed: applying ? null : () => setState(() => _phase = _Phase.ready),
+                onPressed: applying
+                    ? null
+                    : () => setState(() => _phase = _Phase.ready),
                 child: const Text('返回'),
               ),
               const SizedBox(width: 8),
-              FilledButton(
-                onPressed: applying ||
+              ParticleFilledButton(
+                onPressed:
+                    applying ||
                         (_selectedPrices.isEmpty && _selectedRates.isEmpty)
                     ? null
                     : _apply,
@@ -325,7 +344,8 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('确认写入'),
               ),
             ],
@@ -334,19 +354,22 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         if (_error != null && _phase == _Phase.preview)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text(_error!,
-                style: const TextStyle(color: AppColors.negative)),
+            child: Text(
+              _error!,
+              style: const TextStyle(color: AppColors.negative),
+            ),
           ),
       ],
     );
   }
 
   Widget _header(ThemeData theme, String label) => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
-        child: Text(label,
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: theme.hintColor)),
-      );
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+    child: Text(
+      label,
+      style: theme.textTheme.labelMedium?.copyWith(color: theme.hintColor),
+    ),
+  );
 
   Widget _priceTile(ThemeData theme, FetchedPrice p, int i) {
     final enabled = p.accountId != null;
@@ -355,8 +378,11 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       dense: true,
       value: _selectedPrices.contains(i),
       onChanged: enabled && !mismatch
-          ? (v) => setState(() =>
-              v == true ? _selectedPrices.add(i) : _selectedPrices.remove(i))
+          ? (v) => setState(
+              () => v == true
+                  ? _selectedPrices.add(i)
+                  : _selectedPrices.remove(i),
+            )
           : null,
       title: Text(p.accountName ?? p.query),
       subtitle: Text(
@@ -368,12 +394,14 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       secondary: !enabled
           ? Tooltip(
               message: '未匹配到在持仓账户，不入账',
-              child: Icon(Icons.link_off, color: theme.hintColor))
+              child: Icon(Icons.link_off, color: theme.hintColor),
+            )
           : mismatch
-              ? Tooltip(
-                  message: '币种与账户不一致（${p.currency} vs 账户币种），默认不勾选',
-                  child: const Icon(Icons.error_outline, color: AppColors.brass))
-              : null,
+          ? Tooltip(
+              message: '币种与账户不一致（${p.currency} vs 账户币种），默认不勾选',
+              child: const Icon(Icons.error_outline, color: AppColors.brass),
+            )
+          : null,
     );
   }
 
@@ -382,11 +410,13 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       dense: true,
       value: _selectedRates.contains(i),
       onChanged: (v) => setState(
-          () => v == true ? _selectedRates.add(i) : _selectedRates.remove(i)),
+        () => v == true ? _selectedRates.add(i) : _selectedRates.remove(i),
+      ),
       title: Text('1 ${r.ccy} = ${r.rate.toDecimalString(6)} $_base'),
       subtitle: Text(
-          '${r.asOf != null ? '${r.asOf!.month}/${r.asOf!.day}' : ''}'
-          '${r.source != null ? ' · ${_hostOf(r.source!)}' : ''}'),
+        '${r.asOf != null ? '${r.asOf!.month}/${r.asOf!.day}' : ''}'
+        '${r.source != null ? ' · ${_hostOf(r.source!)}' : ''}',
+      ),
     );
   }
 

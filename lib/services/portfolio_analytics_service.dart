@@ -51,7 +51,11 @@ class AllocationReport {
 /// [PortfolioService]，本服务只做衍生分析，两者共用其估值点/现金流。
 class PortfolioAnalyticsService {
   PortfolioAnalyticsService(
-      this._ledger, this._meta, this._stats, this._portfolio);
+    this._ledger,
+    this._meta,
+    this._stats,
+    this._portfolio,
+  );
 
   final LedgerRepo _ledger;
   final MetaRepo _meta;
@@ -65,8 +69,7 @@ class PortfolioAnalyticsService {
   // ---------- 风险指标 ----------
 
   Future<double> riskFreeRatePercent() async =>
-      await _meta.settingDouble(riskFreeRateKey) ??
-      defaultRiskFreeRatePercent;
+      await _meta.settingDouble(riskFreeRateKey) ?? defaultRiskFreeRatePercent;
 
   Future<void> setRiskFreeRatePercent(double v) =>
       _meta.setSetting(riskFreeRateKey, v);
@@ -78,17 +81,16 @@ class PortfolioAnalyticsService {
     final flows = await _portfolio.externalFlows();
     final subs = TwrCalculator.subPeriodReturns(
       valuations: points,
-      flows: [
-        for (final e in flows.byDay.entries) TwrFlow(e.key, e.value),
-      ],
+      flows: [for (final e in flows.byDay.entries) TwrFlow(e.key, e.value)],
     );
     if (subs == null) {
       return RiskReportResult(report: null, valuationPoints: points.length);
     }
     final rf = await riskFreeRatePercent();
     return RiskReportResult(
-        report: RiskMetrics.compute(subs, riskFreeAnnual: rf / 100),
-        valuationPoints: points.length);
+      report: RiskMetrics.compute(subs, riskFreeAnnual: rf / 100),
+      valuationPoints: points.length,
+    );
   }
 
   // ---------- 资产配置与再平衡 ----------
@@ -128,25 +130,32 @@ class PortfolioAnalyticsService {
     if (total > BigInt.zero) {
       for (final e in byClass.entries) {
         if (e.value == BigInt.zero) continue;
-        slices.add(AllocationSlice(
+        slices.add(
+          AllocationSlice(
             allocationClass: e.key,
             valueBaseMinor: e.value,
             share: e.value > BigInt.zero
                 ? Rational.fromInt(e.value) / Rational.fromInt(total)
-                : Rational.zero()));
+                : Rational.zero(),
+          ),
+        );
       }
       slices.sort((a, b) => b.valueBaseMinor.compareTo(a.valueBaseMinor));
     }
     final targets = await targetAllocation();
     final advice = RebalanceAdvisor.advise(
-        valuesBaseMinor: byClass, totalBaseMinor: total, targets: targets);
+      valuesBaseMinor: byClass,
+      totalBaseMinor: total,
+      targets: targets,
+    );
     return AllocationReport(
-        baseCurrencyCode: base,
-        slices: slices,
-        totalAssetsMinor: total,
-        missingValuations: missing,
-        targets: targets,
-        advice: advice);
+      baseCurrencyCode: base,
+      slices: slices,
+      totalAssetsMinor: total,
+      missingValuations: missing,
+      targets: targets,
+      advice: advice,
+    );
   }
 
   // ---------- FIFO 批次成本 ----------
@@ -154,7 +163,9 @@ class PortfolioAnalyticsService {
   /// 单持仓账户的批次明细（账户计价币种，分析视角；账面仍为平均成本法）。
   Future<LotLedgerResult?> lotDetail(String holdingAccountId) async {
     final txs = await _ledger.list(
-        from: DateTime(2000), to: DateTime.now().add(const Duration(days: 1)));
+      from: DateTime(2000),
+      to: DateTime.now().add(const Duration(days: 1)),
+    );
     final events = <LotEvent>[];
     for (final tx in txs) {
       if (tx.status == TxStatus.voided) continue;

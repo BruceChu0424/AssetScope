@@ -119,23 +119,22 @@ class LedgerTransaction {
     String? note,
     List<Posting>? postings,
     String? categoryId,
-  }) =>
-      LedgerTransaction(
-        id: id,
-        date: date,
-        kind: kind,
-        status: status ?? this.status,
-        note: note ?? this.note,
-        postings: postings ?? this.postings,
-        categoryId: categoryId ?? this.categoryId,
-        tags: tags,
-        externalId: externalId,
-        source: source,
-        importBatchId: importBatchId,
-        isAdjustment: isAdjustment,
-        createdAt: createdAt,
-        updatedAt: DateTime.now(),
-      );
+  }) => LedgerTransaction(
+    id: id,
+    date: date,
+    kind: kind,
+    status: status ?? this.status,
+    note: note ?? this.note,
+    postings: postings ?? this.postings,
+    categoryId: categoryId ?? this.categoryId,
+    tags: tags,
+    externalId: externalId,
+    source: source,
+    importBatchId: importBatchId,
+    isAdjustment: isAdjustment,
+    createdAt: createdAt,
+    updatedAt: DateTime.now(),
+  );
 }
 
 /// 各交易种类的分录构造器 —— 账务口径的唯一实现点。
@@ -165,11 +164,15 @@ class TxBuilders {
       note: note ?? '期初余额',
       postings: [
         Posting.money(
-            accountId: assetAccount.id, amountMinor: amountMinor, currencyCode: assetAccount.currencyCode),
+          accountId: assetAccount.id,
+          amountMinor: amountMinor,
+          currencyCode: assetAccount.currencyCode,
+        ),
         Posting.money(
-            accountId: Account.sysEquityOpening,
-            amountMinor: -amountMinor,
-            currencyCode: assetAccount.currencyCode),
+          accountId: Account.sysEquityOpening,
+          amountMinor: -amountMinor,
+          currencyCode: assetAccount.currencyCode,
+        ),
       ],
     );
   }
@@ -202,8 +205,16 @@ class TxBuilders {
       externalId: externalId,
       importBatchId: importBatchId,
       postings: [
-        Posting.money(accountId: destAsset.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: incomeCategory.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: destAsset.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: incomeCategory.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -221,8 +232,11 @@ class TxBuilders {
     String? externalId,
     String? importBatchId,
   }) {
-    _require(payFrom.type == AccountType.asset || payFrom.type == AccountType.liability,
-        '消费必须从资产或负债（信用卡）账户支付');
+    _require(
+      payFrom.type == AccountType.asset ||
+          payFrom.type == AccountType.liability,
+      '消费必须从资产或负债（信用卡）账户支付',
+    );
     _require(expenseCategory.type == AccountType.expense, '支出分类账户类型错误');
     _requirePositive(amountMinor);
     final c = payFrom.currencyCode;
@@ -237,8 +251,16 @@ class TxBuilders {
       externalId: externalId,
       importBatchId: importBatchId,
       postings: [
-        Posting.money(accountId: expenseCategory.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: payFrom.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: expenseCategory.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: payFrom.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -261,8 +283,16 @@ class TxBuilders {
       note: note,
       externalId: originalExternalId,
       postings: [
-        Posting.money(accountId: backTo.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: originalExpenseCategory.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: backTo.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: originalExpenseCategory.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -275,7 +305,10 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(from.type == AccountType.asset && to.type == AccountType.asset, '转账双方必须是资产账户');
+    _require(
+      from.type == AccountType.asset && to.type == AccountType.asset,
+      '转账双方必须是资产账户',
+    );
     _require(from.currencyCode == to.currencyCode, '跨币种请使用换汇');
     _requirePositive(amountMinor);
     final c = from.currencyCode;
@@ -284,8 +317,16 @@ class TxBuilders {
       kind: TxKind.transfer,
       note: note ?? '${from.name} → ${to.name}',
       postings: [
-        Posting.money(accountId: to.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: from.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: to.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: from.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -300,7 +341,10 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(from.type == AccountType.asset && to.type == AccountType.asset, '换汇双方必须是资产账户');
+    _require(
+      from.type == AccountType.asset && to.type == AccountType.asset,
+      '换汇双方必须是资产账户',
+    );
     _require(from.currencyCode != to.currencyCode, '同币种请使用转账');
     _requirePositive(fromAmountMinor);
     _requirePositive(toAmountMinor);
@@ -309,10 +353,26 @@ class TxBuilders {
       kind: TxKind.fxConversion,
       note: note,
       postings: [
-        Posting.money(accountId: from.id, amountMinor: -fromAmountMinor, currencyCode: from.currencyCode),
-        Posting.money(accountId: Account.sysExpenseFx, amountMinor: fromAmountMinor, currencyCode: from.currencyCode),
-        Posting.money(accountId: to.id, amountMinor: toAmountMinor, currencyCode: to.currencyCode),
-        Posting.money(accountId: Account.sysExpenseFx, amountMinor: -toAmountMinor, currencyCode: to.currencyCode),
+        Posting.money(
+          accountId: from.id,
+          amountMinor: -fromAmountMinor,
+          currencyCode: from.currencyCode,
+        ),
+        Posting.money(
+          accountId: Account.sysExpenseFx,
+          amountMinor: fromAmountMinor,
+          currencyCode: from.currencyCode,
+        ),
+        Posting.money(
+          accountId: to.id,
+          amountMinor: toAmountMinor,
+          currencyCode: to.currencyCode,
+        ),
+        Posting.money(
+          accountId: Account.sysExpenseFx,
+          amountMinor: -toAmountMinor,
+          currencyCode: to.currencyCode,
+        ),
       ],
     );
   }
@@ -334,8 +394,16 @@ class TxBuilders {
       kind: TxKind.creditCardRepay,
       note: note ?? '偿还 ${card.name}',
       postings: [
-        Posting.money(accountId: card.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: payFrom.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: card.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: payFrom.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -357,8 +425,16 @@ class TxBuilders {
       kind: TxKind.borrow,
       note: note,
       postings: [
-        Posting.money(accountId: toAsset.id, amountMinor: principalMinor, currencyCode: c),
-        Posting.money(accountId: loan.id, amountMinor: -principalMinor, currencyCode: c),
+        Posting.money(
+          accountId: toAsset.id,
+          amountMinor: principalMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: loan.id,
+          amountMinor: -principalMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -382,16 +458,34 @@ class TxBuilders {
     final c = payFrom.currencyCode;
     final fee = feeMinor ?? BigInt.zero;
     final postings = <Posting>[
-      Posting.money(accountId: loan.id, amountMinor: principalMinor, currencyCode: c),
-      Posting.money(accountId: payFrom.id, amountMinor: -(principalMinor + interestMinor + fee), currencyCode: c),
+      Posting.money(
+        accountId: loan.id,
+        amountMinor: principalMinor,
+        currencyCode: c,
+      ),
+      Posting.money(
+        accountId: payFrom.id,
+        amountMinor: -(principalMinor + interestMinor + fee),
+        currencyCode: c,
+      ),
     ];
     if (interestMinor > BigInt.zero) {
-      postings.add(Posting.money(
-          accountId: interestCategory.id, amountMinor: interestMinor, currencyCode: c));
+      postings.add(
+        Posting.money(
+          accountId: interestCategory.id,
+          amountMinor: interestMinor,
+          currencyCode: c,
+        ),
+      );
     }
     if (fee > BigInt.zero) {
-      postings.add(Posting.money(
-          accountId: (feeCategory ?? interestCategory).id, amountMinor: fee, currencyCode: c));
+      postings.add(
+        Posting.money(
+          accountId: (feeCategory ?? interestCategory).id,
+          amountMinor: fee,
+          currencyCode: c,
+        ),
+      );
     }
     return TransactionDraft(
       date: date,
@@ -420,8 +514,16 @@ class TxBuilders {
       counterparty: counterparty,
       note: note,
       postings: [
-        Posting.money(accountId: receivable.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: fromAsset.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: receivable.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: fromAsset.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -444,8 +546,16 @@ class TxBuilders {
       counterparty: counterparty,
       note: note,
       postings: [
-        Posting.money(accountId: toAsset.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: receivable.id, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: toAsset.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: receivable.id,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -469,14 +579,20 @@ class TxBuilders {
       note: note,
       postings: [
         Posting.money(
-            accountId: holdingAccount.costBasisAccountId!,
-            amountMinor: totalPaidMinor,
-            currencyCode: c),
-        Posting.money(accountId: cashAccount.id, amountMinor: -totalPaidMinor, currencyCode: c),
+          accountId: holdingAccount.costBasisAccountId!,
+          amountMinor: totalPaidMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: cashAccount.id,
+          amountMinor: -totalPaidMinor,
+          currencyCode: c,
+        ),
         Posting.quantity(
-            accountId: holdingAccount.id,
-            securityId: holdingAccount.securityId ?? holdingAccount.id,
-            quantity: quantity),
+          accountId: holdingAccount.id,
+          securityId: holdingAccount.securityId ?? holdingAccount.id,
+          quantity: quantity,
+        ),
       ],
     );
   }
@@ -501,16 +617,26 @@ class TxBuilders {
       kind: TxKind.sell,
       note: note,
       postings: [
-        Posting.money(accountId: cashAccount.id, amountMinor: netProceedsMinor, currencyCode: c),
         Posting.money(
-            accountId: holdingAccount.costBasisAccountId!,
-            amountMinor: -costBasisRemovedMinor,
-            currencyCode: c),
-        Posting.money(accountId: Account.sysIncomeRealizedPnl, amountMinor: -pnl, currencyCode: c),
+          accountId: cashAccount.id,
+          amountMinor: netProceedsMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: holdingAccount.costBasisAccountId!,
+          amountMinor: -costBasisRemovedMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: Account.sysIncomeRealizedPnl,
+          amountMinor: -pnl,
+          currencyCode: c,
+        ),
         Posting.quantity(
-            accountId: holdingAccount.id,
-            securityId: holdingAccount.securityId ?? holdingAccount.id,
-            quantity: -quantitySold),
+          accountId: holdingAccount.id,
+          securityId: holdingAccount.securityId ?? holdingAccount.id,
+          quantity: -quantitySold,
+        ),
       ],
     );
   }
@@ -529,8 +655,16 @@ class TxBuilders {
       kind: TxKind.dividend,
       note: note,
       postings: [
-        Posting.money(accountId: cashAccount.id, amountMinor: amountMinor, currencyCode: c),
-        Posting.money(accountId: Account.sysIncomeDividend, amountMinor: -amountMinor, currencyCode: c),
+        Posting.money(
+          accountId: cashAccount.id,
+          amountMinor: amountMinor,
+          currencyCode: c,
+        ),
+        Posting.money(
+          accountId: Account.sysIncomeDividend,
+          amountMinor: -amountMinor,
+          currencyCode: c,
+        ),
       ],
     );
   }
@@ -549,11 +683,16 @@ class TxBuilders {
       isAdjustment: true,
       note: note ?? '对账调整',
       postings: [
-        Posting.money(accountId: account.id, amountMinor: signedChangeMinor, currencyCode: account.currencyCode),
         Posting.money(
-            accountId: Account.sysEquityAdjustment,
-            amountMinor: -signedChangeMinor,
-            currencyCode: account.currencyCode),
+          accountId: account.id,
+          amountMinor: signedChangeMinor,
+          currencyCode: account.currencyCode,
+        ),
+        Posting.money(
+          accountId: Account.sysEquityAdjustment,
+          amountMinor: -signedChangeMinor,
+          currencyCode: account.currencyCode,
+        ),
       ],
     );
   }

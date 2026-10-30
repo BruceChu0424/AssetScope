@@ -62,21 +62,28 @@ class ScenarioService {
     int horizonDays = 180,
   }) async {
     final input = await _projection.buildInput(
-        now: now, horizonDays: horizonDays);
+      now: now,
+      horizonDays: horizonDays,
+    );
     final baseline = CashProjector.project(input);
     final events = ScenarioEngine.apply(input.events, spec, input.fromDate);
-    final scenario = CashProjector.project(ProjectionInput(
-      baseCurrencyCode: input.baseCurrencyCode,
-      accounts: input.accounts,
-      events: events,
-      reserveBaseMinor: input.reserveBaseMinor,
-      reserveReleases: input.reserveReleases,
-      baselineMinCashBaseMinor: input.baselineMinCashBaseMinor,
-      fromDate: input.fromDate,
-      horizonDays: input.horizonDays,
-    ));
+    final scenario = CashProjector.project(
+      ProjectionInput(
+        baseCurrencyCode: input.baseCurrencyCode,
+        accounts: input.accounts,
+        events: events,
+        reserveBaseMinor: input.reserveBaseMinor,
+        reserveReleases: input.reserveReleases,
+        baselineMinCashBaseMinor: input.baselineMinCashBaseMinor,
+        fromDate: input.fromDate,
+        horizonDays: input.horizonDays,
+      ),
+    );
     return ScenarioComparison(
-        baseline: baseline, scenario: scenario, fromDate: input.fromDate);
+      baseline: baseline,
+      scenario: scenario,
+      fromDate: input.fromDate,
+    );
   }
 
   /// 从账本提炼 FIRE 默认参数。
@@ -90,10 +97,8 @@ class ScenarioService {
     for (var k = 1; k <= 12; k++) {
       final d = DateTime(n.year, n.month - k);
       final r = await _stats.monthReport(d.year, d.month);
-      final inc =
-          r.incomeByCategory.values.fold(BigInt.zero, (a, b) => a + b);
-      final exp =
-          r.expenseByCategory.values.fold(BigInt.zero, (a, b) => a + b);
+      final inc = r.incomeByCategory.values.fold(BigInt.zero, (a, b) => a + b);
+      final exp = r.expenseByCategory.values.fold(BigInt.zero, (a, b) => a + b);
       if (inc != BigInt.zero || exp != BigInt.zero) months++;
       savings += inc - exp;
       spend += exp;
@@ -145,10 +150,9 @@ class ScenarioService {
     // 月基线 = TTM 合计 ÷ 12（不足 12 月历史时 UI 提示代表性有限）。
     final twelve = Rational.fromInt(BigInt.from(12));
     final income = f.ttmSavingsMinor + f.ttmSpendMinor;
-    final monthlyIncome =
-        (Rational.fromInt(income) / twelve).rounded();
-    final monthlyExpense =
-        (Rational.fromInt(f.ttmSpendMinor) / twelve).rounded();
+    final monthlyIncome = (Rational.fromInt(income) / twelve).rounded();
+    final monthlyExpense = (Rational.fromInt(f.ttmSpendMinor) / twelve)
+        .rounded();
 
     return LifeDefaults(
       investMinor: f.investableMinor,

@@ -34,11 +34,11 @@ class DueOccurrence {
 /// 口径（docs/05 §6）：
 /// - 支出计划 → 消费（支付账户可用资产或信用卡/负债）；收入计划 → 收入（入账资产）；
 /// - 落账日期 = 发生日（不是执行日），月报归属正确；
-  /// - 幂等：externalId 为 `plan:<事件id>:<yyyyMMdd>`，已存在（含作废）即视为已处理；
+/// - 幂等：externalId 为 `plan:<事件id>:<yyyyMMdd>`，已存在（含作废）即视为已处理；
 /// - 区间估算取中位数落账，用户可在确认弹层改金额；
-  /// - 单次跳过写入事件的 skippedDateKeys，预测同步剔除（口径一致）。
-  /// - [DueOccurrence.blockedReason] 对自动与手动计划都披露账户配置问题；
-  ///   自动过账（postAutoDue）只处理 autoPost 且配置齐全的。
+/// - 单次跳过写入事件的 skippedDateKeys，预测同步剔除（口径一致）。
+/// - [DueOccurrence.blockedReason] 对自动与手动计划都披露账户配置问题；
+///   自动过账（postAutoDue）只处理 autoPost 且配置齐全的。
 class PlanExecutionService {
   PlanExecutionService(this.accounts, this.ledger, this.planning);
 
@@ -53,12 +53,19 @@ class PlanExecutionService {
       planExternalId(eventId, date);
 
   /// 到期未落地清单（[from]..today，默认回溯一年）。
-  Future<List<DueOccurrence>> pendingDue({DateTime? now, int lookbackDays = defaultLookbackDays}) async {
+  Future<List<DueOccurrence>> pendingDue({
+    DateTime? now,
+    int lookbackDays = defaultLookbackDays,
+  }) async {
     final today = _today(now);
-    final from = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: lookbackDays));
-    final events =
-        (await planning.scheduledEvents()).where((e) => e.isActive).toList();
+    final from = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: lookbackDays));
+    final events = (await planning.scheduledEvents())
+        .where((e) => e.isActive)
+        .toList();
     if (events.isEmpty) return const [];
     final posted = await ledger.externalIds();
     final accountsById = {for (final a in await accounts.all()) a.id: a};
@@ -68,13 +75,15 @@ class PlanExecutionService {
         final id = externalIdFor(e.id, o.date);
         if (posted.contains(id)) continue;
         final (ready, reason) = _autoPostCheck(e, accountsById);
-        due.add(DueOccurrence(
-          occurrence: o,
-          event: e,
-          externalId: id,
-          autoReady: ready,
-          blockedReason: reason,
-        ));
+        due.add(
+          DueOccurrence(
+            occurrence: o,
+            event: e,
+            externalId: id,
+            autoReady: ready,
+            blockedReason: reason,
+          ),
+        );
       }
     }
     due.sort((a, b) {
@@ -111,18 +120,21 @@ class PlanExecutionService {
     }
     final all = await accounts.all();
     final byId = {for (final a in all) a.id: a};
-    return _post(d,
-        accountsById: byId,
-        amountOverrideMinor: amountMinor,
-        payAccountId: payAccountId,
-        categoryId: categoryId);
+    return _post(
+      d,
+      accountsById: byId,
+      amountOverrideMinor: amountMinor,
+      payAccountId: payAccountId,
+      categoryId: categoryId,
+    );
   }
 
   /// 跳过这一次：写入事件的 skippedDateKeys，预测与待落地同时剔除。
   Future<void> skip(DueOccurrence d) async {
     final key = dateKey(d.occurrence.date);
-    await planning.saveScheduledEvent(d.event.copyWith(
-        skippedDateKeys: {...d.event.skippedDateKeys, key}));
+    await planning.saveScheduledEvent(
+      d.event.copyWith(skippedDateKeys: {...d.event.skippedDateKeys, key}),
+    );
   }
 
   Future<LedgerTransaction> _post(
@@ -143,7 +155,10 @@ class PlanExecutionService {
     if (amount <= BigInt.zero) throw StateError('计划金额无效');
 
     final isIncome = e.direction == EventDirection.inflow;
-    final catId = categoryId ?? e.categoryId ?? (isIncome ? 'cat:i:other' : 'cat:e:other');
+    final catId =
+        categoryId ??
+        e.categoryId ??
+        (isIncome ? 'cat:i:other' : 'cat:e:other');
     final cat = all[catId];
     if (cat == null) throw StateError('分类不存在：$catId');
 
@@ -175,7 +190,9 @@ class PlanExecutionService {
   /// 分类缺省时自动落"其他"，因此不阻塞。
   /// 返回 (autoReady, 受阻原因)。账户问题对非自动计划同样披露（UI 提示）。
   (bool, String?) _autoPostCheck(
-      ScheduledEvent e, Map<String, Account> accountsById) {
+    ScheduledEvent e,
+    Map<String, Account> accountsById,
+  ) {
     final payId = e.paymentAccountId;
     if (payId == null) return (false, '未设置支付账户');
     final pay = accountsById[payId];
@@ -189,7 +206,9 @@ class PlanExecutionService {
     if (isIncome && pay.type != AccountType.asset) {
       return (false, '收入计划必须入账到资产账户');
     }
-    if (!isIncome && pay.type != AccountType.asset && pay.type != AccountType.liability) {
+    if (!isIncome &&
+        pay.type != AccountType.asset &&
+        pay.type != AccountType.liability) {
       return (false, '支出计划的支付账户须为资产或信用卡/负债');
     }
     return (e.autoPost, null);

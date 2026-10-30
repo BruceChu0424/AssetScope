@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/invest/allocation.dart';
 import 'allocation_card.dart';
+import '../widgets/particle_interactive.dart';
 
 /// 目标配置编辑：逐类整数百分比（0–100），合计 ≤ 100%，
 /// 未设目标的类不参与再平衡建议。
 Future<void> showAllocationTargetSheet(
-    BuildContext context, WidgetRef ref, TargetAllocation current) {
+  BuildContext context,
+  WidgetRef ref,
+  TargetAllocation current,
+) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -54,7 +58,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
   }
 
   bool get _valid =>
-      _parsed.length == _ctrls.entries.where((e) => e.value.text.trim().isNotEmpty).length &&
+      _parsed.length ==
+          _ctrls.entries.where((e) => e.value.text.trim().isNotEmpty).length &&
       _sum <= 100;
 
   @override
@@ -62,7 +67,11 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
     final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          20, 16, 20, 16 + MediaQuery.of(context).viewInsets.bottom),
+        20,
+        16,
+        20,
+        16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +95,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                         Expanded(child: Text(c.labelZh)),
                         SizedBox(
                           width: 110,
-                          child: TextField(
+                          child: ParticleTextField(
                             controller: _ctrls[c],
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.end,
@@ -109,7 +118,9 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
           Row(
             children: [
               Text(
-                _sum > 100 ? '合计 $_sum%（超过 100%）' : '合计 $_sum% · 未设目标/未分配 ${100 - _sum}%',
+                _sum > 100
+                    ? '合计 $_sum%（超过 100%）'
+                    : '合计 $_sum% · 未设目标/未分配 ${100 - _sum}%',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: _sum > 100 ? theme.colorScheme.error : theme.hintColor,
                 ),
@@ -119,13 +130,14 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                 onPressed: () => Navigator.pop(context),
                 child: const Text('取消'),
               ),
-              FilledButton(
+              ParticleFilledButton(
                 onPressed: _valid
                     ? () async {
                         final s = sessionOf(ref.read(vaultProvider));
                         if (s == null) return;
-                        await s.portfolioAnalytics
-                            .setTargetAllocation(TargetAllocation(_parsed));
+                        await s.portfolioAnalytics.setTargetAllocation(
+                          TargetAllocation(_parsed),
+                        );
                         if (context.mounted) Navigator.pop(context);
                       }
                     : null,

@@ -96,8 +96,10 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     if (amount != null) {
       // 保持分的精度（88.50 不得预填成 88）。
       final ccy = tx.postings
-          .firstWhere((p) => p.currencyCode != null && p.currencyCode!.isNotEmpty,
-              orElse: () => tx.postings.first)
+          .firstWhere(
+            (p) => p.currencyCode != null && p.currencyCode!.isNotEmpty,
+            orElse: () => tx.postings.first,
+          )
           .currencyCode;
       _amount.text = fmtMinor(amount, ccy ?? 'CNY');
     }
@@ -118,12 +120,16 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
       title: Text(widget.editing == null ? '记一笔' : '编辑交易'),
       content: accountsAsync.when(
         loading: () => const SizedBox(
-            height: 200, child: Center(child: CircularProgressIndicator())),
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        ),
         error: (e, _) => SizedBox(height: 100, child: Text('$e')),
         data: (accounts) {
           final userAssets = accounts
-              .where((a) =>
-                  a.type == AccountType.asset && !a.isSystem && !a.isHolding)
+              .where(
+                (a) =>
+                    a.type == AccountType.asset && !a.isSystem && !a.isHolding,
+              )
               .toList();
           final liabilities = accounts
               .where((a) => a.type == AccountType.liability && !a.isSystem)
@@ -139,8 +145,12 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
               .where((a) => a.assetSubtype == AssetSubtype.receivable)
               .toList();
 
-          _accountA ??=
-              _defaultA(payables, userAssets, liabilities, receivables);
+          _accountA ??= _defaultA(
+            payables,
+            userAssets,
+            liabilities,
+            receivables,
+          );
           _accountB ??= userAssets.isEmpty ? null : userAssets.first.id;
           _category ??= expenses.isEmpty ? null : expenses.first.id;
 
@@ -184,11 +194,24 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 DropdownButtonFormField<TxKind>(
                   initialValue: _kind,
                   decoration: const InputDecoration(labelText: '类型'),
-                  items: const [
-                    TxKind.expense, TxKind.income, TxKind.transfer,
-                    TxKind.creditCardRepay, TxKind.loanRepay, TxKind.borrow,
-                    TxKind.lend, TxKind.receiveBack,
-                  ].map((k) => DropdownMenuItem(value: k, child: Text(k.labelZh))).toList(),
+                  items:
+                      const [
+                            TxKind.expense,
+                            TxKind.income,
+                            TxKind.transfer,
+                            TxKind.creditCardRepay,
+                            TxKind.loanRepay,
+                            TxKind.borrow,
+                            TxKind.lend,
+                            TxKind.receiveBack,
+                          ]
+                          .map(
+                            (k) => DropdownMenuItem(
+                              value: k,
+                              child: Text(k.labelZh),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (v) => setState(() {
                     _kind = v!;
                     _accountA = null;
@@ -209,10 +232,11 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _accountB,
-                    decoration: InputDecoration(
-                        labelText: _labelB()),
+                    decoration: InputDecoration(labelText: _labelB()),
                     items: [
-                      for (final a in userAssets.where((x) => x.id != _accountA))
+                      for (final a in userAssets.where(
+                        (x) => x.id != _accountA,
+                      ))
                         DropdownMenuItem(value: a.id, child: Text(a.name)),
                     ],
                     onChanged: (v) => setState(() => _accountB = v),
@@ -244,12 +268,13 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 ],
                 const SizedBox(height: 12),
                 AppAmountField(
-                    controller: _amount,
-                    currencyCode: _currencyOf(accounts)),
+                  controller: _amount,
+                  currencyCode: _currencyOf(accounts),
+                ),
                 const SizedBox(height: 12),
                 AppDateField(controller: _date),
                 const SizedBox(height: 12),
-                TextField(
+                ParticleTextField(
                   controller: _note,
                   decoration: const InputDecoration(labelText: '备注（可选）'),
                 ),
@@ -260,9 +285,10 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消')),
-        FilledButton(onPressed: _save, child: const Text('保存')),
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
       ],
     );
   }
@@ -275,27 +301,30 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
   }
 
   bool _needB() => switch (_kind) {
-        TxKind.transfer ||
-        TxKind.fxConversion ||
-        TxKind.creditCardRepay ||
-        TxKind.loanRepay ||
-        TxKind.borrow ||
-        TxKind.lend ||
-        TxKind.receiveBack =>
-          true,
-        _ => false,
-      };
+    TxKind.transfer ||
+    TxKind.fxConversion ||
+    TxKind.creditCardRepay ||
+    TxKind.loanRepay ||
+    TxKind.borrow ||
+    TxKind.lend ||
+    TxKind.receiveBack => true,
+    _ => false,
+  };
 
   String _labelB() => switch (_kind) {
-        TxKind.transfer || TxKind.fxConversion => '转入账户',
-        TxKind.creditCardRepay || TxKind.loanRepay => '还款来源',
-        TxKind.borrow => '借入到账账户（资产）',
-        TxKind.lend || TxKind.receiveBack => '对方现金账户',
-        _ => '账户 B',
-      };
+    TxKind.transfer || TxKind.fxConversion => '转入账户',
+    TxKind.creditCardRepay || TxKind.loanRepay => '还款来源',
+    TxKind.borrow => '借入到账账户（资产）',
+    TxKind.lend || TxKind.receiveBack => '对方现金账户',
+    _ => '账户 B',
+  };
 
-  String? _defaultA(List<Account> payables, List<Account> assets,
-      List<Account> liabilities, List<Account> receivables) {
+  String? _defaultA(
+    List<Account> payables,
+    List<Account> assets,
+    List<Account> liabilities,
+    List<Account> receivables,
+  ) {
     switch (_kind) {
       case TxKind.expense:
         return payables.isEmpty ? null : payables.first.id;
@@ -323,52 +352,88 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     final date = DateTime.tryParse(_date.text) ?? DateTime.now();
     final amountText = _amount.text.trim();
     if (aA == null || amountText.isEmpty) return;
-    final amount =
-        Money.parse(amountText, CurrencyInfo.parse(aA.currencyCode)).amountMinor;
+    final amount = Money.parse(
+      amountText,
+      CurrencyInfo.parse(aA.currencyCode),
+    ).amountMinor;
     final note = _note.text.isEmpty ? null : _note.text;
 
     final draft = switch (_kind) {
       TxKind.expense => TxBuilders.expense(
-          payFrom: aA,
-          expenseCategory: cat ?? byId['cat:e:other']!,
-          amountMinor: amount,
-          date: date,
-          note: note),
+        payFrom: aA,
+        expenseCategory: cat ?? byId['cat:e:other']!,
+        amountMinor: amount,
+        date: date,
+        note: note,
+      ),
       TxKind.income => TxBuilders.income(
-          destAsset: aA,
-          incomeCategory: cat ?? byId['cat:i:other']!,
-          amountMinor: amount,
-          date: date,
-          note: note),
-      TxKind.transfer => aB == null
-          ? null
-          : TxBuilders.transfer(
-              from: aA, to: aB, amountMinor: amount, date: date, note: note),
-      TxKind.creditCardRepay => aB == null
-          ? null
-          : TxBuilders.creditCardRepay(
-              card: aA, payFrom: aB, amountMinor: amount, date: date, note: note),
-      TxKind.loanRepay => aB == null
-          ? null
-          : TxBuilders.loanRepay(
-              loan: aA,
-              payFrom: aB,
-              principalMinor: amount,
-              interestMinor: BigInt.zero,
-              interestCategory: cat ?? byId['cat:e:interest']!,
-              date: date),
-      TxKind.borrow => aB == null
-          ? null
-          : TxBuilders.borrow(
-              loan: aA, toAsset: aB, principalMinor: amount, date: date, note: note),
-      TxKind.lend => aB == null
-          ? null
-          : TxBuilders.lend(
-              receivable: aA, fromAsset: aB, amountMinor: amount, date: date, note: note),
-      TxKind.receiveBack => aB == null
-          ? null
-          : TxBuilders.receiveBack(
-              receivable: aA, toAsset: aB, amountMinor: amount, date: date, note: note),
+        destAsset: aA,
+        incomeCategory: cat ?? byId['cat:i:other']!,
+        amountMinor: amount,
+        date: date,
+        note: note,
+      ),
+      TxKind.transfer =>
+        aB == null
+            ? null
+            : TxBuilders.transfer(
+                from: aA,
+                to: aB,
+                amountMinor: amount,
+                date: date,
+                note: note,
+              ),
+      TxKind.creditCardRepay =>
+        aB == null
+            ? null
+            : TxBuilders.creditCardRepay(
+                card: aA,
+                payFrom: aB,
+                amountMinor: amount,
+                date: date,
+                note: note,
+              ),
+      TxKind.loanRepay =>
+        aB == null
+            ? null
+            : TxBuilders.loanRepay(
+                loan: aA,
+                payFrom: aB,
+                principalMinor: amount,
+                interestMinor: BigInt.zero,
+                interestCategory: cat ?? byId['cat:e:interest']!,
+                date: date,
+              ),
+      TxKind.borrow =>
+        aB == null
+            ? null
+            : TxBuilders.borrow(
+                loan: aA,
+                toAsset: aB,
+                principalMinor: amount,
+                date: date,
+                note: note,
+              ),
+      TxKind.lend =>
+        aB == null
+            ? null
+            : TxBuilders.lend(
+                receivable: aA,
+                fromAsset: aB,
+                amountMinor: amount,
+                date: date,
+                note: note,
+              ),
+      TxKind.receiveBack =>
+        aB == null
+            ? null
+            : TxBuilders.receiveBack(
+                receivable: aA,
+                toAsset: aB,
+                amountMinor: amount,
+                date: date,
+                note: note,
+              ),
       _ => null,
     };
     if (draft == null) return;
@@ -381,4 +446,3 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     if (mounted) Navigator.pop(context, true);
   }
 }
-

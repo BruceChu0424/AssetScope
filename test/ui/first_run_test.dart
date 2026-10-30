@@ -10,6 +10,7 @@ import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/security/crypto_suite.dart';
 import 'package:assetscope/security/key_manager.dart';
 import 'package:assetscope/ui/lock/lock_page.dart';
+import 'package:assetscope/ui/widgets/common.dart';
 
 /// 首启动回归（v0.15 修复）：干净机器（无 vault.key）上必须显示
 /// "创建加密账本"表单——此前 _init 会把状态误置为 Locked，新用户
@@ -45,13 +46,19 @@ void main() {
 
   testWidgets('干净首启动：显示创建表单（不是解锁死锁）', (tester) async {
     final container = await prewarm(tester);
-    await tester.pumpWidget(UncontrolledProviderScope(
-        container: container, child: const MaterialApp(home: LockPage())));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: LockPage()),
+      ),
+    );
     await tester.pump();
 
-    expect(find.text('创建加密账本'), findsOneWidget);
-    expect(find.text('重复主口令'), findsOneWidget);
-    expect(find.text('创建'), findsOneWidget);
+    // 粒子 logo + 两枚胶囊输入框（提示语承载语境，无标题），圆钮 check。
+    expect(find.byType(ParticleBrandMark), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.text('创建加密账本'), findsNothing, reason: '标题已并入输入框提示');
     expect(find.text('解锁'), findsNothing);
     expect(find.text('忘记主口令？使用恢复码'), findsNothing);
   });
@@ -66,22 +73,34 @@ void main() {
       salt: Uint8List(16),
       wrapAlgo: 'xchacha20-poly1305',
       wrappedDek: SealedBox(
-          nonce: Uint8List(24),
-          ciphertext: Uint8List(48),
-          algoId: 'xchacha20-poly1305'),
+        nonce: Uint8List(24),
+        ciphertext: Uint8List(48),
+        algoId: 'xchacha20-poly1305',
+      ),
     );
     final appDir = Directory('${tmp.path}/assetscope')
       ..createSync(recursive: true);
     File('${appDir.path}/vault.key').writeAsStringSync(header.encode());
 
     final container = await prewarm(tester);
-    await tester.pumpWidget(UncontrolledProviderScope(
-        container: container, child: const MaterialApp(home: LockPage())));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: LockPage()),
+      ),
+    );
     await tester.pump();
 
+    expect(find.byType(ParticleBrandMark), findsOneWidget);
     expect(find.text('资观 AssetScope'), findsOneWidget);
-    expect(find.text('解锁'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
     expect(find.text('创建加密账本'), findsNothing);
+
+    // 空口令直接点圆钮：不再内联错误文字，而是顶部通知条。
+    await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('请输入主口令或恢复码'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4)); // 通知自动收场
 
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpWidget(const SizedBox.shrink());

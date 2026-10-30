@@ -26,22 +26,36 @@ class _PresetItem {
 }
 
 final _presets = <_PresetItem>[
-  _PresetItem('失业 3 个月', '收入完全中断一个季度',
-      () => [IncomeShock(drop: Rational.one, months: 3)]),
-  _PresetItem('收入降三成 · 6 个月', '降薪/绩效缩水的软着陆',
-      () => [
-            IncomeShock(
-                drop: Rational.fromFrac(BigInt.from(3), BigInt.from(10)),
-                months: 6)
-          ]),
-  _PresetItem('工资延发 30 天 · 2 个月', '现金流错位，钱没少但迟到',
-      () => [IncomeDelay(delayDays: 30, months: 2)]),
-  _PresetItem('支出激增 20% · 3 个月', '固定开销全面上涨',
-      () => [
-            ExpenseSurge(
-                surge: Rational.fromFrac(BigInt.one, BigInt.from(5)),
-                months: 3)
-          ]),
+  _PresetItem(
+    '失业 3 个月',
+    '收入完全中断一个季度',
+    () => [IncomeShock(drop: Rational.one, months: 3)],
+  ),
+  _PresetItem(
+    '收入降三成 · 6 个月',
+    '降薪/绩效缩水的软着陆',
+    () => [
+      IncomeShock(
+        drop: Rational.fromFrac(BigInt.from(3), BigInt.from(10)),
+        months: 6,
+      ),
+    ],
+  ),
+  _PresetItem(
+    '工资延发 30 天 · 2 个月',
+    '现金流错位，钱没少但迟到',
+    () => [IncomeDelay(delayDays: 30, months: 2)],
+  ),
+  _PresetItem(
+    '支出激增 20% · 3 个月',
+    '固定开销全面上涨',
+    () => [
+      ExpenseSurge(
+        surge: Rational.fromFrac(BigInt.one, BigInt.from(5)),
+        months: 3,
+      ),
+    ],
+  ),
 ];
 
 class ScenarioSheet extends ConsumerStatefulWidget {
@@ -92,20 +106,27 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
       _base = await s.statsService.baseCurrency();
       final comps = <ScenarioComponent>[..._presets[_preset].build()];
       if (extra != null && extra > BigInt.zero) {
-        comps.add(ExtraMonthlyOutflow(
+        comps.add(
+          ExtraMonthlyOutflow(
             monthlyMinor: extra,
             months: _extraMonths,
-            label: '情景：额外月支出'));
+            label: '情景：额外月支出',
+          ),
+        );
       }
       if (oneOff != null && oneOff > BigInt.zero) {
-        comps.add(OneOffEvent(
+        comps.add(
+          OneOffEvent(
             afterDays: _oneOffAfterDays,
             amountBaseMinor: -oneOff,
-            label: '情景：一次性支出'));
+            label: '情景：一次性支出',
+          ),
+        );
       }
-      final r =
-          await s.scenarios.run(ScenarioSpec(name: _presets[_preset].label, components: comps),
-              horizonDays: 180);
+      final r = await s.scenarios.run(
+        ScenarioSpec(name: _presets[_preset].label, components: comps),
+        horizonDays: 180,
+      );
       setState(() {
         _result = r;
         _running = false;
@@ -128,17 +149,22 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text('情景模拟 · 现金压力测试',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '情景模拟 · 现金压力测试',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               '把"如果……会怎样"放进 180 天现金预测：计划、债务还款与准备金不变，'
               '只冲击收入/支出，看低谷多深、钱会不会断。不写账本。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             ),
           ),
           const Divider(height: 16),
@@ -162,28 +188,35 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(_presets[_preset].subtitle,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor)),
+                Text(
+                  _presets[_preset].subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _extrasCard(theme),
                 const SizedBox(height: 12),
-                FilledButton.icon(
+                ParticleFilledButton.icon(
                   onPressed: _running ? null : _run,
                   icon: _running
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.play_arrow),
                   label: Text(_running ? '模拟中…' : '运行模拟'),
                 ),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text(_error!,
-                        style: TextStyle(
-                            color: AppColors.negativeOf(theme.brightness))),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: AppColors.negativeOf(theme.brightness),
+                      ),
+                    ),
                   ),
                 if (_result != null) ...[
                   const SizedBox(height: 16),
@@ -204,20 +237,26 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('叠加自定义冲击（可选）',
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              '叠加自定义冲击（可选）',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   flex: 5,
-                  child: TextField(
+                  child: ParticleTextField(
                     controller: _extraMonthly,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
-                        isDense: true, labelText: '额外月支出（元/月）'),
+                      isDense: true,
+                      labelText: '额外月支出（元/月）',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -229,7 +268,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                     decoration: const InputDecoration(labelText: '月数'),
                     items: [
                       for (final m in const [3, 6, 12, 24])
-                        DropdownMenuItem(value: m, child: Text('$m 月'))
+                        DropdownMenuItem(value: m, child: Text('$m 月')),
                     ],
                     onChanged: (v) => setState(() => _extraMonths = v ?? 6),
                   ),
@@ -241,12 +280,15 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
               children: [
                 Expanded(
                   flex: 5,
-                  child: TextField(
+                  child: ParticleTextField(
                     controller: _oneOffAmount,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
-                        isDense: true, labelText: '一次性支出（元）'),
+                      isDense: true,
+                      labelText: '一次性支出（元）',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -258,7 +300,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                     decoration: const InputDecoration(labelText: '发生在'),
                     items: [
                       for (final d in const [0, 15, 30, 90])
-                        DropdownMenuItem(value: d, child: Text('$d 天后'))
+                        DropdownMenuItem(value: d, child: Text('$d 天后')),
                     ],
                     onChanged: (v) =>
                         setState(() => _oneOffAfterDays = v ?? 15),
@@ -284,41 +326,48 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
       child: Column(
         children: [
           StatRow(
-              label: '最低现金 · 基线',
-              value: fmtMinor(r.baseline.minBalanceBaseMinor, _base)),
+            label: '最低现金 · 基线',
+            value: fmtMinor(r.baseline.minBalanceBaseMinor, _base),
+          ),
           StatRow(
-              label: '最低现金 · 情景',
-              value: fmtMinor(r.scenario.minBalanceBaseMinor, _base),
-              emphasized: true,
-              valueColor: r.scenario.minBalanceBaseMinor < BigInt.zero
-                  ? neg
-                  : null),
+            label: '最低现金 · 情景',
+            value: fmtMinor(r.scenario.minBalanceBaseMinor, _base),
+            emphasized: true,
+            valueColor: r.scenario.minBalanceBaseMinor < BigInt.zero
+                ? neg
+                : null,
+          ),
           StatRow(
-              label: '低谷变化',
-              value: '${delta.isNegative ? '' : '+'}${fmtMinor(delta, _base)}',
-              valueColor: delta.isNegative ? neg : pos),
+            label: '低谷变化',
+            value: '${delta.isNegative ? '' : '+'}${fmtMinor(delta, _base)}',
+            valueColor: delta.isNegative ? neg : pos,
+          ),
           if (r.worstDailyDelta != delta) ...[
             StatRow(
-                label: '最难受的一天（相对基线）',
-                value:
-                    '${r.worstDailyDelta.isNegative ? '' : '+'}${fmtMinor(r.worstDailyDelta, _base)}',
-                valueColor: r.worstDailyDelta.isNegative ? neg : pos),
+              label: '最难受的一天（相对基线）',
+              value:
+                  '${r.worstDailyDelta.isNegative ? '' : '+'}${fmtMinor(r.worstDailyDelta, _base)}',
+              valueColor: r.worstDailyDelta.isNegative ? neg : pos,
+            ),
           ],
           if (cashOut != null)
             StatRow(
-                label: '现金耗尽日',
-                value:
-                    '${cashOut.year}-${cashOut.month.toString().padLeft(2, '0')}-${cashOut.day.toString().padLeft(2, '0')}（还剩 ${r.daysToCashOut} 天）',
-                valueColor: neg,
-                emphasized: true)
+              label: '现金耗尽日',
+              value:
+                  '${cashOut.year}-${cashOut.month.toString().padLeft(2, '0')}-${cashOut.day.toString().padLeft(2, '0')}（还剩 ${r.daysToCashOut} 天）',
+              valueColor: neg,
+              emphasized: true,
+            )
           else
-            StatRow(
-                label: '现金耗尽日', value: '预测期内未耗尽', valueColor: pos),
+            StatRow(label: '现金耗尽日', value: '预测期内未耗尽', valueColor: pos),
           if (newShort.isNotEmpty) ...[
             const Divider(height: 16),
-            Text('新增缺口（基线没有、情景触发的）',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.hintColor)),
+            Text(
+              '新增缺口（基线没有、情景触发的）',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
             for (final s in newShort.take(5))
               StatRow(
                 label:
@@ -327,15 +376,21 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                 valueColor: neg,
               ),
             if (newShort.length > 5)
-              Text('…共 ${newShort.length} 条',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor)),
+              Text(
+                '…共 ${newShort.length} 条',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
           ],
           const Divider(height: 16),
           Row(
             children: [
-              Icon(r.survives ? Icons.check_circle : Icons.warning_amber,
-                  size: 18, color: r.survives ? pos : brass),
+              Icon(
+                r.survives ? Icons.check_circle : Icons.warning_amber,
+                size: 18,
+                color: r.survives ? pos : brass,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -350,8 +405,10 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           const SizedBox(height: 8),
           Text(
             '口径：与现金预测同引擎重放（docs/05 §12）；准备金、债务还款与底线不变。',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.hintColor, fontSize: 11),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.hintColor,
+              fontSize: 11,
+            ),
           ),
         ],
       ),

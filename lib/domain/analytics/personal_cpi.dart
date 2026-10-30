@@ -11,6 +11,7 @@
 library;
 
 import 'dart:math' as math;
+
 class PersonalCpiResult {
   const PersonalCpiResult({
     required this.annualRate,
@@ -64,15 +65,13 @@ class PersonalCpi {
         byCat.forEach((c, v) => sum[c] = (sum[c] ?? BigInt.zero) + v);
       }
       return {
-        for (final e in sum.entries)
-          e.key: (e.value ~/ BigInt.from(ms.length)),
+        for (final e in sum.entries) e.key: (e.value ~/ BigInt.from(ms.length)),
       };
     }
 
     final base = avg(baseMonthsData);
     final recent = avg(recentMonthsData);
-    final baseTotal =
-        base.values.fold(BigInt.zero, (a, b) => a + b);
+    final baseTotal = base.values.fold(BigInt.zero, (a, b) => a + b);
     if (baseTotal == BigInt.zero) return null;
 
     var coveredWeight = 0.0;
@@ -96,8 +95,9 @@ class PersonalCpi {
         ? index - 1
         : math.pow(index, 12.0 / gap).toDouble() - 1;
 
-    contributions.sort((a, b) =>
-        (b.share * (b.ratio - 1)).compareTo(a.share * (a.ratio - 1)));
+    contributions.sort(
+      (a, b) => (b.share * (b.ratio - 1)).compareTo(a.share * (a.ratio - 1)),
+    );
 
     return PersonalCpiResult(
       annualRate: annual,

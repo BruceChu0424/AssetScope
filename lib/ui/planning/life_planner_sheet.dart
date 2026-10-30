@@ -14,8 +14,9 @@ import '../widgets/common.dart';
 import 'life_event_dialogs.dart';
 
 /// 人生规划预填值。
-final lifeDefaultsProvider =
-    FutureProvider.autoDispose<LifeDefaults>((ref) async {
+final lifeDefaultsProvider = FutureProvider.autoDispose<LifeDefaults>((
+  ref,
+) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
   return s.scenarios.lifeDefaults();
@@ -54,14 +55,7 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
 
   @override
   void dispose() {
-    for (final c in [
-      _invest,
-      _fixed,
-      _income,
-      _expense,
-      _ret,
-      _inf,
-    ]) {
+    for (final c in [_invest, _fixed, _income, _expense, _ret, _inf]) {
       c.dispose();
     }
     super.dispose();
@@ -75,16 +69,19 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
     s.statsService.baseCurrency().then((b) {
       if (mounted) setState(() => _base = b);
     });
-    ref.read(lifeDefaultsProvider.future).then((d) {
-      if (!mounted) return;
-      setState(() {
-        _invest.text = _yuan(d.investMinor);
-        _fixed.text = _yuan(d.fixedAssetsMinor);
-        _income.text = _yuan(d.monthlyIncomeMinor);
-        _expense.text = _yuan(d.monthlyExpenseMinor);
-      });
-      _run();
-    }).catchError((_) {});
+    ref
+        .read(lifeDefaultsProvider.future)
+        .then((d) {
+          if (!mounted) return;
+          setState(() {
+            _invest.text = _yuan(d.investMinor);
+            _fixed.text = _yuan(d.fixedAssetsMinor);
+            _income.text = _yuan(d.monthlyIncomeMinor);
+            _expense.text = _yuan(d.monthlyExpenseMinor);
+          });
+          _run();
+        })
+        .catchError((_) {});
   }
 
   String _yuan(BigInt minor) => (minor ~/ BigInt.from(100)).toString();
@@ -115,16 +112,18 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
     final inf = _pct(_inf);
     if (ret == null || inf == null) return;
     setState(() {
-      _result = LifePlanner.simulate(LifeInput(
-        investMinor: invest,
-        fixedAssetsMinor: fixed,
-        monthlyIncomeMinor: income,
-        monthlyExpenseMinor: expense,
-        nominalReturnAnnual: ret,
-        inflationAnnual: inf,
-        events: List.of(_events),
-        years: _years,
-      ));
+      _result = LifePlanner.simulate(
+        LifeInput(
+          investMinor: invest,
+          fixedAssetsMinor: fixed,
+          monthlyIncomeMinor: income,
+          monthlyExpenseMinor: expense,
+          nominalReturnAnnual: ret,
+          inflationAnnual: inf,
+          events: List.of(_events),
+          years: _years,
+        ),
+      );
     });
   }
 
@@ -138,17 +137,22 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text('人生规划 · 多年度推演',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '人生规划 · 多年度推演',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               '把买房、育儿、换车、退休等大事放进同一条时间线，逐月推演未来 $_years 年的'
               '现金流与净资产（名义口径，收入支出按通胀增长）。只读模拟，不写账本。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             ),
           ),
           const Divider(height: 16),
@@ -160,7 +164,7 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
                 const SizedBox(height: 12),
                 _eventsCard(theme),
                 const SizedBox(height: 12),
-                FilledButton.icon(
+                ParticleFilledButton.icon(
                   onPressed: _run,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('重新推演'),
@@ -181,35 +185,40 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
 
   Widget _inputCard(ThemeData theme) {
     Widget field(TextEditingController c, String label) => Expanded(
-          child: TextField(
-            controller: c,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(isDense: true, labelText: label),
-          ),
-        );
+      child: ParticleTextField(
+        controller: c,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(isDense: true, labelText: label),
+      ),
+    );
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Column(
           children: [
-            Row(children: [
-              field(_invest, '可投资净资产（元）'),
-              const SizedBox(width: 12),
-              field(_fixed, '固定资产等（元）'),
-            ]),
+            Row(
+              children: [
+                field(_invest, '可投资净资产（元）'),
+                const SizedBox(width: 12),
+                field(_fixed, '固定资产等（元）'),
+              ],
+            ),
             const SizedBox(height: 10),
-            Row(children: [
-              field(_income, '月收入（元）'),
-              const SizedBox(width: 12),
-              field(_expense, '月支出（元）'),
-            ]),
+            Row(
+              children: [
+                field(_income, '月收入（元）'),
+                const SizedBox(width: 12),
+                field(_expense, '月支出（元）'),
+              ],
+            ),
             const SizedBox(height: 10),
-            Row(children: [
-              field(_ret, '名义收益 %/年'),
-              const SizedBox(width: 12),
-              field(_inf, '通胀 %/年'),
-            ]),
+            Row(
+              children: [
+                field(_ret, '名义收益 %/年'),
+                const SizedBox(width: 12),
+                field(_inf, '通胀 %/年'),
+              ],
+            ),
             const SizedBox(height: 10),
             DropdownButtonFormField<int>(
               initialValue: _years,
@@ -248,9 +257,12 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
         },
       ),
       child: _events.isEmpty
-          ? Text('还没有事件。加一个试试：三年后买房、明年生孩子……',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor))
+          ? Text(
+              '还没有事件。加一个试试：三年后买房、明年生孩子……',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+              ),
+            )
           : Column(
               children: [
                 for (final (i, e) in _events.indexed)
@@ -267,8 +279,7 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
                       },
                     ),
                     onTap: () async {
-                      final ev = await showLifeEventDialog(context,
-                          initial: e);
+                      final ev = await showLifeEventDialog(context, initial: e);
                       if (ev != null) {
                         setState(() => _events[i] = ev);
                         _run();
@@ -337,9 +348,12 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
                 getTooltipItems: (touched) => [
                   for (final s in touched)
                     LineTooltipItem(
-                        '第 ${s.x.toStringAsFixed(0)} 年  ${fmtMinor(_curveAt(r, s.x), _base)}',
-                        const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
+                      '第 ${s.x.toStringAsFixed(0)} 年  ${fmtMinor(_curveAt(r, s.x), _base)}',
+                      const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -358,20 +372,26 @@ class _LifePlannerSheetState extends ConsumerState<LifePlannerSheet> {
             ],
             titlesData: FlTitlesData(
               leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
+                sideTitles: SideTitles(showTitles: false),
+              ),
               rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
+                sideTitles: SideTitles(showTitles: false),
+              ),
               topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
+                sideTitles: SideTitles(showTitles: false),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   interval: (_years / 5).ceilToDouble(),
                   getTitlesWidget: (v, _) => Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text('${v.toStringAsFixed(0)} 年',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.hintColor)),
+                    child: Text(
+                      '${v.toStringAsFixed(0)} 年',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
                   ),
                 ),
               ),

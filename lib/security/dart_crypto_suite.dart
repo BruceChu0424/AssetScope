@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart' as c;
@@ -14,8 +15,8 @@ import 'crypto_suite.dart';
 class DartCryptoSuite extends CryptoSuite {
   /// 迭代次数可注入以便测试提速；生产默认 600,000。
   DartCryptoSuite({int pbKdf2Iterations = 600000})
-      // ignore: prefer_initializing_formals
-      : _pbKdf2Iterations = pbKdf2Iterations;
+    // ignore: prefer_initializing_formals
+    : _pbKdf2Iterations = pbKdf2Iterations;
 
   // ignore: unused_field
   final int _pbKdf2Iterations;
@@ -70,11 +71,13 @@ class _XchachaAead extends AeadCipher {
     final ctPart = ciphertext.sublist(0, ciphertext.length - 16);
     final mac = ciphertext.sublist(ciphertext.length - 16);
     try {
-      return Uint8List.fromList(await _algo.decrypt(
-        c.SecretBox(ctPart, nonce: nonce, mac: c.Mac(mac)),
-        secretKey: c.SecretKeyData(key),
-        aad: aad ?? const [],
-      ));
+      return Uint8List.fromList(
+        await _algo.decrypt(
+          c.SecretBox(ctPart, nonce: nonce, mac: c.Mac(mac)),
+          secretKey: c.SecretKeyData(key),
+          aad: aad ?? const [],
+        ),
+      );
     } on c.SecretBoxAuthenticationError {
       throw CryptoException('认证失败：密钥错误或数据被篡改');
     }
@@ -97,16 +100,21 @@ class _Pbkdf2Kdf extends PassphraseKdf {
     required String passphrase,
     required Uint8List salt,
   }) async {
-    final kdf = c.Pbkdf2(
-      macAlgorithm: c.Hmac.sha512(),
-      iterations: iterations,
-      bits: 256,
-    );
-    final key = await kdf.deriveKey(
-      secretKey: c.SecretKeyData(utf8.encode(passphrase)),
-      nonce: salt,
-    );
-    return Uint8List.fromList(await key.extractBytes());
+    // 慢哈希整体挪后台 isolate：60 万轮在主 isolate 上即便每 2000 轮
+    // 让出 1ms，也足以让按钮粒子/烟雾舞台掉帧；后台算完一次性回传。
+    // 密钥材料只在 isolate 间单向流动（口令进、32 字节 KEK 出）。
+    return Isolate.run(() async {
+      final kdf = c.Pbkdf2(
+        macAlgorithm: c.Hmac.sha512(),
+        iterations: iterations,
+        bits: 256,
+      );
+      final key = await kdf.deriveKey(
+        secretKey: c.SecretKeyData(utf8.encode(passphrase)),
+        nonce: salt,
+      );
+      return Uint8List.fromList(await key.extractBytes());
+    });
   }
 }
 

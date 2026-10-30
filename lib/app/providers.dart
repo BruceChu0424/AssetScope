@@ -14,7 +14,9 @@ import '../data/repositories/planning_repo.dart';
 import '../security/crypto_suite.dart';
 import '../security/dart_crypto_suite.dart';
 import '../security/key_manager.dart';
-import '../services/ai/ai_chat.dart';
+import '../services/ai/ai_usage.dart';
+import '../services/ai/ai_valuation_service.dart';
+import '../services/ai/assistant_service.dart';
 import '../services/ai/quote_fetch_service.dart';
 import '../services/export_service.dart';
 import '../services/import_service.dart';
@@ -64,6 +66,9 @@ class VaultUnlocked extends VaultState {
     required this.directQuotes,
     required this.scenarios,
     required this.planExecution,
+    required this.aiValuation,
+    required this.assistant,
+    required this.aiUsage,
   });
 
   final AppDatabase db;
@@ -85,9 +90,16 @@ class VaultUnlocked extends VaultState {
   final DirectQuoteService directQuotes;
   final ScenarioService scenarios;
   final PlanExecutionService planExecution;
+  final AiValuationService aiValuation;
+  final AssistantService assistant;
+  final AiUsageStore aiUsage;
 
   /// 解锁后自动执行计划落地入账的笔数（UI 提示一次后清零）。
   int autoPostedCount = 0;
+
+  /// 解锁后 AI 自动估值成功的条数（UI 提示一次后清零；
+  /// -1 = 本轮有失败项，提示里带失败数）。
+  int aiValuationNotice = 0;
 
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
@@ -101,10 +113,8 @@ class FileKeyStore implements KeyStore {
 
   final Directory _dir;
 
-  File get _primary =>
-      File(p.join(_dir.path, 'vault.key'));
-  File get _recovery =>
-      File(p.join(_dir.path, 'vault.recovery.key'));
+  File get _primary => File(p.join(_dir.path, 'vault.key'));
+  File get _recovery => File(p.join(_dir.path, 'vault.recovery.key'));
 
   @override
   Future<void> savePrimary(VaultHeader header) =>
@@ -115,14 +125,14 @@ class FileKeyStore implements KeyStore {
       _recovery.writeAsString(header.encode(), flush: true);
 
   @override
-  Future<VaultHeader?> loadPrimary() async =>
-      await _primary.exists() ? VaultHeader.decode(await _primary.readAsString()) : null;
+  Future<VaultHeader?> loadPrimary() async => await _primary.exists()
+      ? VaultHeader.decode(await _primary.readAsString())
+      : null;
 
   @override
-  Future<VaultHeader?> loadRecovery() async =>
-      await _recovery.exists()
-          ? VaultHeader.decode(await _recovery.readAsString())
-          : null;
+  Future<VaultHeader?> loadRecovery() async => await _recovery.exists()
+      ? VaultHeader.decode(await _recovery.readAsString())
+      : null;
 
   @override
   Future<void> clear() async {
@@ -144,7 +154,7 @@ class VaultNotifier extends Notifier<VaultState> {
   }
 
   Future<void> _init() async {
-    final dir = await getApplicationSupportDirectory();
+    final dir = await _supportDir();
     final appDir = Directory(p.join(dir.path, 'assetscope'));
     await appDir.create(recursive: true);
     _store = FileKeyStore(appDir);
@@ -158,48 +168,90 @@ class VaultNotifier extends Notifier<VaultState> {
   }
 
   Future<Directory> appDir() async {
-    final dir = await getApplicationSupportDirectory();
+    final dir = await _supportDir();
     return Directory(p.join(dir.path, 'assetscope'));
   }
 
+  /// 开发预览：`--dart-define=ASCOPE_PREVIEW_DIR=<路径>` 时账本改用
+  /// 指定目录（隔离真实数据，便于 UI 走查/截图）；正式构建不受影响。
+  static const _previewDir = String.fromEnvironment('ASCOPE_PREVIEW_DIR');
+
+  Future<Directory> _supportDir() async => _previewDir.isEmpty
+      ? await getApplicationSupportDirectory()
+      : Directory(_previewDir);
+
   CryptoSuite get _suite => DartCryptoSuite.instance;
 
-  /// 首次创建金库。
+  /// 首次创建金库：派生密钥并落盘密钥头。**不**在此发布会话——恢复码
+  /// 必须先让用户离线保存（LockPage 展示恢复码界面），待确认后再
+  /// [finishCreate] 打开数据库进入首页。若中途退出，下次启动走正常
+  /// 解锁（口令即创建口令），无中间态。
   Future<String> createVault(String passphrase) async {
     final km = KeyManager(suite: _suite);
     final boot = await km.createVault(passphrase);
     await _store!.savePrimary(boot.header);
     await _store!.saveRecovery(boot.recoveryHeader);
     _keyManager = km;
-    await _openDatabase(appDir: await appDir());
-    // 提示用户离线保存恢复码
     return boot.recoveryCode;
   }
 
-  /// 解锁（主口令或恢复码）。
-  Future<void> unlock(String passphrase) async {
-    final store = _store!;
-    var header = await store.loadPrimary();
-    var viaRecovery = false;
-    try {
-      if (header == null) {
-        throw StateError('金库不存在');
-      }
-      final km = KeyManager(suite: _suite);
-      await km.unlock(passphrase, header);
-      _keyManager = km;
-    } on WrongPassphraseException {
-      header = await store.loadRecovery();
-      if (header == null) rethrow;
-      final km = KeyManager(suite: _suite);
-      await km.unlock(passphrase, header);
-      _keyManager = km;
-      viaRecovery = true;
-    }
+  /// 创建确认（恢复码已保存）：打开数据库、发布会话，进入首页。
+  Future<void> finishCreate() async {
     await _openDatabase(appDir: await appDir());
-    if (viaRecovery) {
-      // 用恢复码解锁后建议尽快改口令（UI 提示）。
+  }
+
+  /// 解锁（主口令或恢复码）＝核验 + 落库发布会话。
+  /// UI 需要分两段编排（核验期间只有按钮粒子、成功后才上全屏舞台）时
+  /// 直接用 [unlockCheck] + [finalizeUnlock]。
+  Future<void> unlock(String passphrase) async {
+    await unlockCheck(passphrase);
+    await finalizeUnlock();
+  }
+
+  /// 解锁第一步：只核验口令（慢哈希在此），不发布会话、不换树。
+  ///
+  /// 快排门控（省一轮注定失败的慢哈希）：
+  /// - 形如恢复码的输入先试恢复码头，命中即免主口令那轮；
+  /// - 主口令失败且输入不符恢复码形态（[looksLikeRecoveryCode]）时
+  ///   立即抛 [WrongPassphraseException]——不符形态的字符串不可能等于
+  ///   任何恢复码，第二轮必败，不再白等。
+  ///
+  /// 失败抛 [WrongPassphraseException]；成功把已装填密钥的 KeyManager
+  /// 挂上本 notifier 并返回（恢复码命中时同样返回，调用方可提示改口令）。
+  Future<KeyManager> unlockCheck(String passphrase) async {
+    final store = _store!;
+    final primary = await store.loadPrimary();
+    final recovery = await store.loadRecovery();
+    if (primary == null && recovery == null) {
+      throw StateError('金库不存在');
     }
+    final recoveryShaped = looksLikeRecoveryCode(passphrase);
+    final order = recoveryShaped
+        ? <(String, VaultHeader?)>[
+            ('recovery', recovery),
+            ('primary', primary),
+          ]
+        : <(String, VaultHeader?)>[
+            ('primary', primary),
+            ('recovery', recovery),
+          ];
+    for (final (kind, header) in order) {
+      if (header == null) continue;
+      final km = KeyManager(suite: _suite);
+      try {
+        await km.unlock(passphrase, header);
+        _keyManager = km;
+        return km;
+      } on WrongPassphraseException {
+        if (kind == 'primary' && !recoveryShaped) break;
+      }
+    }
+    throw WrongPassphraseException();
+  }
+
+  /// 解锁第二步（口令已核验）：打开数据库、发布会话进入首页。
+  Future<void> finalizeUnlock() async {
+    await _openDatabase(appDir: await appDir());
   }
 
   Future<void> _openDatabase({required Directory appDir}) async {
@@ -213,8 +265,17 @@ class VaultNotifier extends Notifier<VaultState> {
     final stats = StatsService(accounts, ledger, meta);
     final portfolio = PortfolioService(accounts, ledger, meta, stats);
     final projection = ProjectionService(accounts, ledger, planning, meta);
-    final quoteFetch =
-        QuoteFetchService(accounts, ledger, meta, const AiChat());
+    // 全部 AI 请求经同一计数实例（设置页「用量与额度」统计）。
+    final aiUsage = AiUsageStore(meta);
+    final chat = CountingAiChat(onCall: aiUsage.record);
+    final aiValuation = AiValuationService(accounts, meta, chat);
+    final assistant = AssistantService(stats, meta, chat);
+    final quoteFetch = QuoteFetchService(
+      accounts,
+      ledger,
+      meta,
+      chat,
+    );
     final planExecution = PlanExecutionService(accounts, ledger, planning);
     // 主题偏好先于会话发布生效，避免解锁首帧闪烁。
     final themeStr = await meta.settingString('themeMode');
@@ -235,17 +296,42 @@ class VaultNotifier extends Notifier<VaultState> {
       insightService: InsightService(accounts, ledger, planning, meta),
       exportService: ExportService(accounts, ledger, meta, planning),
       portfolioService: portfolio,
-      portfolioAnalytics:
-          PortfolioAnalyticsService(ledger, meta, stats, portfolio),
+      portfolioAnalytics: PortfolioAnalyticsService(
+        ledger,
+        meta,
+        stats,
+        portfolio,
+      ),
       yearReportService: YearReportService(accounts, ledger, stats),
       quoteFetch: quoteFetch,
       directQuotes: DirectQuoteService(accounts, quoteFetch),
       scenarios: ScenarioService(projection, stats),
       planExecution: planExecution,
+      aiValuation: aiValuation,
+      assistant: assistant,
+      aiUsage: aiUsage,
     );
     await _loadTunables();
     await _autoPostPlans();
+    unawaited(_autoAiValuation());
     _armAutoLock();
+  }
+
+  /// 解锁后后台自动刷新资产 AI 估值（每天一轮；不阻塞进入首页，
+  /// 失败静默——详情页可手动重估）。完成计数经
+  /// [VaultUnlocked.aiValuationNotice] 交首页轮询组件提示并刷新统计。
+  Future<void> _autoAiValuation() async {
+    final s = state;
+    if (s is! VaultUnlocked) return;
+    try {
+      final run = await s.aiValuation.refreshDue();
+      if (state != s) return; // 期间已锁定/换会话
+      if (run.updated > 0) {
+        s.aiValuationNotice = run.failures.isEmpty ? run.updated : -run.updated;
+      }
+    } catch (_) {
+      // 静默：AI 未配置/网络失败不影响使用。
+    }
   }
 
   /// 解锁后自动落地到期计划（只处理 autoPost 且配置齐全的计划）。
@@ -306,8 +392,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final header = await store.loadPrimary();
     if (header == null) throw StateError('金库不存在');
     final km = KeyManager(suite: _suite);
-    final newHeader =
-        await km.changePassphrase(oldPass, newPass, header);
+    final newHeader = await km.changePassphrase(oldPass, newPass, header);
     await store.savePrimary(newHeader);
   }
 
@@ -321,23 +406,24 @@ class VaultNotifier extends Notifier<VaultState> {
   }
 }
 
-final vaultProvider =
-    NotifierProvider<VaultNotifier, VaultState>(VaultNotifier.new);
+final vaultProvider = NotifierProvider<VaultNotifier, VaultState>(
+  VaultNotifier.new,
+);
 
 /// 便捷：当前已解锁会话（未解锁时为 null）。
 VaultUnlocked? sessionOf(VaultState s) => s is VaultUnlocked ? s : null;
 
 /// 外观模式持久化（settings 表 themeMode 键，值 system/light/dark）。
 ThemeMode themeModeFromString(String s) => switch (s) {
-      'light' => ThemeMode.light,
-      'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
-    };
+  'light' => ThemeMode.light,
+  'dark' => ThemeMode.dark,
+  _ => ThemeMode.system,
+};
 String themeModeToString(ThemeMode m) => switch (m) {
-      ThemeMode.light => 'light',
-      ThemeMode.dark => 'dark',
-      ThemeMode.system => 'system',
-    };
+  ThemeMode.light => 'light',
+  ThemeMode.dark => 'dark',
+  ThemeMode.system => 'system',
+};
 
 /// 外观模式（跟随系统/浅色/深色）：解锁流程从设置表预读，
 /// 设置页修改后立即生效；锁定期间记忆保留（锁定页自绘深色）。
@@ -360,8 +446,9 @@ class ThemeModeController extends Notifier<ThemeMode> {
   }
 }
 
-final themeModeProvider =
-    NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
+  ThemeModeController.new,
+);
 
 /// 当前 base 币种。
 final baseCurrencyProvider = FutureProvider<String>((ref) async {

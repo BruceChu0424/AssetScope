@@ -35,14 +35,15 @@ class BudgetForecast {
     final s = Rational.fromInt(spentMinor);
     final projected = daysLeft == 0
         ? spentMinor
-        : (s * Rational.fromInt(BigInt.from(daysInMonth)) /
-                Rational.fromInt(BigInt.from(daysElapsed)))
-            .rounded();
+        : (s *
+                  Rational.fromInt(BigInt.from(daysInMonth)) /
+                  Rational.fromInt(BigInt.from(daysElapsed)))
+              .rounded();
     final room = limitMinor - spentMinor;
     final daily = (room <= BigInt.zero || daysLeft <= 0)
         ? BigInt.zero
         : (Rational.fromInt(room) / Rational.fromInt(BigInt.from(daysLeft)))
-            .rounded();
+              .rounded();
     return BudgetForecast(
       projectedMinor: projected,
       suggestedDailyMinor: daily,

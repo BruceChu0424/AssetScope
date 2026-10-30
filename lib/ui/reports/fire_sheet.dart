@@ -59,15 +59,18 @@ class _FireSheetState extends ConsumerState<FireSheet> {
     s.statsService.baseCurrency().then((b) {
       if (mounted) setState(() => _base = b);
     });
-    ref.read(fireDefaultsProvider.future).then((d) {
-      if (!mounted) return;
-      setState(() {
-        _portfolio.text = _major(d.investableMinor);
-        _spend.text = _major(d.ttmSpendMinor);
-        _savings.text = _major(d.ttmSavingsMinor);
-      });
-      _recompute();
-    }).catchError((_) {});
+    ref
+        .read(fireDefaultsProvider.future)
+        .then((d) {
+          if (!mounted) return;
+          setState(() {
+            _portfolio.text = _major(d.investableMinor);
+            _spend.text = _major(d.ttmSpendMinor);
+            _savings.text = _major(d.ttmSavingsMinor);
+          });
+          _recompute();
+        })
+        .catchError((_) {});
   }
 
   String _major(BigInt minor) {
@@ -138,17 +141,22 @@ class _FireSheetState extends ConsumerState<FireSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text('财务独立（FIRE）规划器',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '财务独立（FIRE）规划器',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               'FI 门槛 = 年支出 ÷ 提取率；累积期逐月精确复利（名义收益、'
               '目标随通胀增长）。蒙特卡洛为实际口径（已扣通胀），固定种子可复现。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             ),
           ),
           const Divider(height: 16),
@@ -158,7 +166,7 @@ class _FireSheetState extends ConsumerState<FireSheet> {
               children: [
                 _inputCard(theme),
                 const SizedBox(height: 12),
-                FilledButton.icon(
+                ParticleFilledButton.icon(
                   onPressed: _recompute,
                   icon: const Icon(Icons.calculate),
                   label: const Text('重新测算'),
@@ -182,13 +190,19 @@ class _FireSheetState extends ConsumerState<FireSheet> {
   }
 
   Widget _inputCard(ThemeData theme) {
-    Widget field(TextEditingController c, String label,
-        {bool decimal = false, bool signed = false}) {
+    Widget field(
+      TextEditingController c,
+      String label, {
+      bool decimal = false,
+      bool signed = false,
+    }) {
       return Expanded(
-        child: TextField(
+        child: ParticleTextField(
           controller: c,
           keyboardType: TextInputType.numberWithOptions(
-              decimal: decimal, signed: signed),
+            decimal: decimal,
+            signed: signed,
+          ),
           decoration: InputDecoration(isDense: true, labelText: label),
         ),
       );
@@ -199,29 +213,38 @@ class _FireSheetState extends ConsumerState<FireSheet> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: Column(
           children: [
-            Row(children: [
-              field(_portfolio, '可投资净资产（元）'),
-              const SizedBox(width: 12),
-              field(_savings, '年储蓄（元，可负）', signed: true),
-            ]),
+            Row(
+              children: [
+                field(_portfolio, '可投资净资产（元）'),
+                const SizedBox(width: 12),
+                field(_savings, '年储蓄（元，可负）', signed: true),
+              ],
+            ),
             const SizedBox(height: 10),
-            Row(children: [
-              field(_spend, '目标年支出（元）'),
-              const SizedBox(width: 12),
-              field(_nominal, '名义收益 %/年', decimal: true),
-            ]),
+            Row(
+              children: [
+                field(_spend, '目标年支出（元）'),
+                const SizedBox(width: 12),
+                field(_nominal, '名义收益 %/年', decimal: true),
+              ],
+            ),
             const SizedBox(height: 10),
-            Row(children: [
-              field(_inflation, '通胀 %/年', decimal: true),
-              const SizedBox(width: 12),
-              field(_wr, '提取率 %（4=4% 法则）', decimal: true),
-            ]),
+            Row(
+              children: [
+                field(_inflation, '通胀 %/年', decimal: true),
+                const SizedBox(width: 12),
+                field(_wr, '提取率 %（4=4% 法则）', decimal: true),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Text('提取期波动率 ${(_vol * 100).toStringAsFixed(0)}%',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor)),
+                Text(
+                  '提取期波动率 ${(_vol * 100).toStringAsFixed(0)}%',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                ),
                 Expanded(
                   child: Slider(
                     value: _vol,
@@ -247,22 +270,25 @@ class _FireSheetState extends ConsumerState<FireSheet> {
       child: Column(
         children: [
           StatRow(
-              label: 'FI 门槛（今天的钱）',
-              value: fmtMinor(plan.fiNumberMinor, _base),
-              emphasized: true),
+            label: 'FI 门槛（今天的钱）',
+            value: fmtMinor(plan.fiNumberMinor, _base),
+            emphasized: true,
+          ),
           StatRow(
-              label: '当前覆盖率',
-              value: '${(plan.coverage * 100).toStringAsFixed(0)}%'),
+            label: '当前覆盖率',
+            value: '${(plan.coverage * 100).toStringAsFixed(0)}%',
+          ),
           StatRow(
-              label: '达标时间',
-              value: plan.alreadyFi
-                  ? '已达标 🎉'
-                  : plan.yearsToFi == null
-                      ? '不可达（${plan.curve.length - 1} 年内）'
-                      : '≈ ${plan.yearsToFi} 年（${plan.monthsToFi} 个月）',
-              valueColor: plan.yearsToFi != null || plan.alreadyFi
-                  ? null
-                  : AppColors.negativeOf(theme.brightness)),
+            label: '达标时间',
+            value: plan.alreadyFi
+                ? '已达标 🎉'
+                : plan.yearsToFi == null
+                ? '不可达（${plan.curve.length - 1} 年内）'
+                : '≈ ${plan.yearsToFi} 年（${plan.monthsToFi} 个月）',
+            valueColor: plan.yearsToFi != null || plan.alreadyFi
+                ? null
+                : AppColors.negativeOf(theme.brightness),
+          ),
         ],
       ),
     );
@@ -286,7 +312,9 @@ class _FireSheetState extends ConsumerState<FireSheet> {
             StatRow(
               label: '$y 年内达标',
               value: fmtMinor(
-                  FirePlanner.requiredAnnualSavingsMinor(input, y), _base),
+                FirePlanner.requiredAnnualSavingsMinor(input, y),
+                _base,
+              ),
             ),
         ],
       ),
@@ -298,27 +326,33 @@ class _FireSheetState extends ConsumerState<FireSheet> {
     final color = mc.successRate >= 0.9
         ? AppColors.positiveOf(theme.brightness)
         : mc.successRate >= 0.75
-            ? AppColors.brassOf(theme.brightness)
-            : AppColors.negativeOf(theme.brightness);
+        ? AppColors.brassOf(theme.brightness)
+        : AppColors.negativeOf(theme.brightness);
     return SectionCard(
       title: '蒙特卡洛 · 达标后提取 30 年',
       child: Column(
         children: [
           StatRow(
-              label: '生存率（1000 条路径）',
-              value: '${(mc.successRate * 100).toStringAsFixed(0)}%',
-              emphasized: true,
-              valueColor: color),
+            label: '生存率（1000 条路径）',
+            value: '${(mc.successRate * 100).toStringAsFixed(0)}%',
+            emphasized: true,
+            valueColor: color,
+          ),
           StatRow(
-              label: '期末余额分位（年支出倍数）',
-              value: 'P10 ${mc.p10.toStringAsFixed(1)}× · '
-                  'P50 ${mc.p50.toStringAsFixed(1)}× · P90 ${mc.p90.toStringAsFixed(1)}×'),
+            label: '期末余额分位（年支出倍数）',
+            value:
+                'P10 ${mc.p10.toStringAsFixed(1)}× · '
+                'P50 ${mc.p50.toStringAsFixed(1)}× · P90 ${mc.p90.toStringAsFixed(1)}×',
+          ),
           const SizedBox(height: 6),
           Text(
             '期初 = FI 门槛（提取率倒数倍年支出），每年提取 1 倍并按随机实际收益增长；'
             '波动率 ${(_vol * 100).toStringAsFixed(0)}%。模拟为启发式参考，不构成投资建议。',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.hintColor, fontSize: 11, height: 1.5),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.hintColor,
+              fontSize: 11,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -330,8 +364,8 @@ class _FireSheetState extends ConsumerState<FireSheet> {
     String label(int months) => months < 0
         ? '不可达'
         : months == 0
-            ? '已达标'
-            : '${(months / 12).ceil()} 年';
+        ? '已达标'
+        : '${(months / 12).ceil()} 年';
     return SectionCard(
       title: '敏感性：收益 ±1pp × 支出 ±10%',
       child: Column(
@@ -345,32 +379,40 @@ class _FireSheetState extends ConsumerState<FireSheet> {
                     width: 64,
                     child: Text(
                       row == 0 ? '基准' : '收益${row > 0 ? '+' : ''}$row pp',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.hintColor),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
                     ),
                   ),
                   for (final f in const [0.9, 1.0, 1.1])
                     Expanded(
                       child: Center(
                         child: Text(
-                          label(cells
-                              .firstWhere((c) =>
-                                  c.returnShiftPercentPoint == row &&
-                                  c.spendFactor == f)
-                              .monthsToFi),
+                          label(
+                            cells
+                                .firstWhere(
+                                  (c) =>
+                                      c.returnShiftPercentPoint == row &&
+                                      c.spendFactor == f,
+                                )
+                                .monthsToFi,
+                          ),
                           style: theme.textTheme.bodyMedium?.copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures()
-                              ]),
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ),
                 ],
               ),
             ),
-          Text('列：支出 ×0.9 / ×1.0 / ×1.1（能省 10% 比多赚 1 个点更有力）',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, fontSize: 11)),
+          Text(
+            '列：支出 ×0.9 / ×1.0 / ×1.1（能省 10% 比多赚 1 个点更有力）',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.hintColor,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );

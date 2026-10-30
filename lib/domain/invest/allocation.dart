@@ -18,31 +18,27 @@ enum AllocationClass {
   final String labelZh;
 
   static AllocationClass fromSubtype(AssetSubtype s) => switch (s) {
-        AssetSubtype.stock => equity,
-        AssetSubtype.fund => fund,
-        AssetSubtype.bond => bond,
-        AssetSubtype.cash ||
-        AssetSubtype.alipay ||
-        AssetSubtype.wechat ||
-        AssetSubtype.bank ||
-        AssetSubtype.brokerCash ||
-        AssetSubtype.moneyFund =>
-          cash,
-        AssetSubtype.timeDeposit || AssetSubtype.wealthMgmt => fixedIncome,
-        AssetSubtype.preciousMetal ||
-        AssetSubtype.crypto ||
-        AssetSubtype.equityOwnership =>
-          alternatives,
-        AssetSubtype.realEstate || AssetSubtype.vehicle => realAssets,
-        AssetSubtype.pension ||
-        AssetSubtype.providentFund ||
-        AssetSubtype.insuranceCashValue =>
-          longTerm,
-        AssetSubtype.depositPaid ||
-        AssetSubtype.receivable ||
-        AssetSubtype.otherAsset =>
-          other,
-      };
+    AssetSubtype.stock => equity,
+    AssetSubtype.fund => fund,
+    AssetSubtype.bond => bond,
+    AssetSubtype.cash ||
+    AssetSubtype.alipay ||
+    AssetSubtype.wechat ||
+    AssetSubtype.bank ||
+    AssetSubtype.brokerCash ||
+    AssetSubtype.moneyFund => cash,
+    AssetSubtype.timeDeposit || AssetSubtype.wealthMgmt => fixedIncome,
+    AssetSubtype.preciousMetal ||
+    AssetSubtype.crypto ||
+    AssetSubtype.equityOwnership => alternatives,
+    AssetSubtype.realEstate || AssetSubtype.vehicle => realAssets,
+    AssetSubtype.pension ||
+    AssetSubtype.providentFund ||
+    AssetSubtype.insuranceCashValue => longTerm,
+    AssetSubtype.depositPaid ||
+    AssetSubtype.receivable ||
+    AssetSubtype.otherAsset => other,
+  };
 }
 
 /// 目标配置：类 → 整数百分比（0–100），未出现的类"不设目标"。
@@ -78,8 +74,8 @@ class TargetAllocation {
   }
 
   Map<String, int> toJson() => {
-        for (final e in _percents.entries) e.key.name: e.value,
-      };
+    for (final e in _percents.entries) e.key.name: e.value,
+  };
 }
 
 /// 单类配置现状：本位币价值与占全部资产比例（Rational，避免浮点）。
@@ -131,8 +127,14 @@ class RebalanceAdvice {
 class RebalanceAdvisor {
   const RebalanceAdvisor._();
 
-  static final _absBand = Rational.fromFrac(BigInt.from(5), BigInt.from(100)); // 5 个百分点
-  static final _relBand = Rational.fromFrac(BigInt.one, BigInt.from(4)); // 目标的 25%
+  static final _absBand = Rational.fromFrac(
+    BigInt.from(5),
+    BigInt.from(100),
+  ); // 5 个百分点
+  static final _relBand = Rational.fromFrac(
+    BigInt.one,
+    BigInt.from(4),
+  ); // 目标的 25%
 
   /// 逐类建议。[valuesBaseMinor] 为各类本位币价值；
   /// [totalBaseMinor] 为全部资产总值（建议金额的分母）。
@@ -147,32 +149,43 @@ class RebalanceAdvisor {
     for (final c in AllocationClass.values) {
       final targetPct = targets[c];
       if (targetPct == null || targetPct <= 0) continue;
-      final target = Rational.fromFrac(BigInt.from(targetPct), BigInt.from(100));
+      final target = Rational.fromFrac(
+        BigInt.from(targetPct),
+        BigInt.from(100),
+      );
       final value = Rational.fromInt(valuesBaseMinor[c] ?? BigInt.zero);
       final current = value / total;
       final drift = current - target;
-      final threshold =
-          _absBand > target * _relBand ? _absBand : target * _relBand;
+      final threshold = _absBand > target * _relBand
+          ? _absBand
+          : target * _relBand;
       if (drift.abs() <= threshold) {
-        out.add(RebalanceAdvice(
+        out.add(
+          RebalanceAdvice(
             allocationClass: c,
             currentShare: current,
             targetShare: target,
             action: RebalanceAction.none,
-            tradeMinor: BigInt.zero));
+            tradeMinor: BigInt.zero,
+          ),
+        );
         continue;
       }
       // 越带：交易回带边（目标 ± 阈值）。
       final edge = drift.isNegative
-          ? target - threshold // 低配 → 买入补到下带
+          ? target -
+                threshold // 低配 → 买入补到下带
           : target + threshold; // 高配 → 卖出减到上带
       final amount = ((current - edge) * total).abs().rounded();
-      out.add(RebalanceAdvice(
+      out.add(
+        RebalanceAdvice(
           allocationClass: c,
           currentShare: current,
           targetShare: target,
           action: drift.isNegative ? RebalanceAction.buy : RebalanceAction.sell,
-          tradeMinor: amount));
+          tradeMinor: amount,
+        ),
+      );
     }
     return out;
   }

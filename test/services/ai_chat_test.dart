@@ -143,4 +143,53 @@ void main() {
       expect(back.enableWebSearch, isTrue);
     });
   });
+
+  group('多轮对话', () {
+    final cfg = AiConfig(
+        presetId: 'glm',
+        baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+        apiKey: 'k',
+        model: 'glm-4.7-flash',
+        enableWebSearch: true);
+
+    test('OpenAI 兼容：消息按序展开并带联网工具', () {
+      final (uri, headers, body) = AiChat.buildOpenAiMessagesRequest(
+        cfg,
+        '你是账房先生',
+        [
+          AiMessage.user('我的钱花哪儿了'),
+          AiMessage.assistant('上月餐饮占 40%'),
+          AiMessage.user('那怎么省'),
+        ],
+      );
+      expect(uri.toString(),
+          'https://open.bigmodel.cn/api/paas/v4/chat/completions');
+      final msgs = (body['messages'] as List).cast<Map<String, Object?>>();
+      expect(msgs.length, 4);
+      expect(msgs[0]['role'], 'system');
+      expect(msgs[1]['content'], '我的钱花哪儿了');
+      expect(msgs[2]['role'], 'assistant');
+      expect(msgs[3]['content'], '那怎么省');
+      final tools = (body['tools'] as List).cast<Map<String, Object?>>();
+      expect(tools.single['type'], 'web_search');
+      expect(headers['Authorization'], 'Bearer k');
+    });
+
+    test('Anthropic：system 独立字段、多轮消息体', () {
+      final (uri, _, body) = AiChat.buildAnthropicMessagesRequest(
+        cfg,
+        'SYS',
+        [AiMessage.user('u1'), AiMessage.assistant('a1'), AiMessage.user('u2')],
+      );
+      expect(uri.toString(), 'https://open.bigmodel.cn/api/paas/v4/v1/messages');
+      expect(body['system'], 'SYS');
+      final msgs = (body['messages'] as List).cast<Map<String, Object?>>();
+      expect(msgs.map((m) => m['role']).toList(), ['user', 'assistant', 'user']);
+    });
+
+    test('AiMessage 构造器与映射', () {
+      expect(AiMessage.user('x').role, 'user');
+      expect(AiMessage.assistant('y').toMap(), {'role': 'assistant', 'content': 'y'});
+    });
+  });
 }

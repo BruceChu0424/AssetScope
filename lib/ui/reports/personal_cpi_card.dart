@@ -8,8 +8,9 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
 /// 我的通胀：近 12 个月分类支出 → 固定篮子个人消费指数（docs/11 §8）。
-final personalCpiProvider =
-    FutureProvider.autoDispose<PersonalCpiResult?>((ref) async {
+final personalCpiProvider = FutureProvider.autoDispose<PersonalCpiResult?>((
+  ref,
+) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) return null;
   final now = DateTime.now();
@@ -31,9 +32,13 @@ class PersonalCpiCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return ref.watch(personalCpiProvider).when(
+    return ref
+        .watch(personalCpiProvider)
+        .when(
           loading: () => const SizedBox(
-              height: 60, child: Center(child: CircularProgressIndicator())),
+            height: 60,
+            child: Center(child: CircularProgressIndicator()),
+          ),
           error: (e, _) => ErrorPlaceholder('加载失败：$e'),
           data: (r) => SectionCard(
             title: '我的通胀 · 近 12 个月',
@@ -41,8 +46,10 @@ class PersonalCpiCard extends ConsumerWidget {
                 ? Text(
                     '记账满 6 个月后，这里会用你自己的消费篮子计算"你的生活成本通胀"'
                     '（固定篮子口径：维持基期消费结构不变，现在要多花多少）。',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor, height: 1.6),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                      height: 1.6,
+                    ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +62,9 @@ class PersonalCpiCard extends ConsumerWidget {
                             '${(r.annualRate * 100).toStringAsFixed(1)}%',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                               color: r.annualRate > _kAssumedInflation
                                   ? AppColors.negativeOf(theme.brightness)
                                   : AppColors.positiveOf(theme.brightness),
@@ -67,8 +76,9 @@ class PersonalCpiCard extends ConsumerWidget {
                               r.annualRate > _kAssumedInflation
                                   ? '高于假设通胀 ${(_kAssumedInflation * 100).toStringAsFixed(1)}%'
                                   : '不高于假设通胀 ${(_kAssumedInflation * 100).toStringAsFixed(1)}%',
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: theme.hintColor),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.hintColor,
+                              ),
                             ),
                           ),
                         ],
@@ -80,7 +90,8 @@ class PersonalCpiCard extends ConsumerWidget {
                             '⚠ 篮子覆盖率 ${(r.basketCoverage * 100).toStringAsFixed(0)}%'
                             '（消费结构变化较大，解读需谨慎）',
                             style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.brassOf(theme.brightness)),
+                              color: AppColors.brassOf(theme.brightness),
+                            ),
                           ),
                         ),
                       const Divider(height: 20),
@@ -92,9 +103,10 @@ class PersonalCpiCard extends ConsumerWidget {
                           '基期 ${r.baseMonths} 个月 vs 近期 ${r.recentMonths} 个月的月均支出；'
                           '口径：维持基期消费结构不变的价格指数近似（固定篮子 Laspeyres）。',
                           style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.hintColor,
-                              fontSize: 11,
-                              height: 1.5),
+                            color: theme.hintColor,
+                            fontSize: 11,
+                            height: 1.5,
+                          ),
                         ),
                       ),
                     ],
@@ -104,16 +116,22 @@ class PersonalCpiCard extends ConsumerWidget {
   }
 
   Widget _contributionTile(
-      ThemeData theme, ({String categoryId, double share, double ratio}) c) {
+    ThemeData theme,
+    ({String categoryId, double share, double ratio}) c,
+  ) {
     final name = c.categoryId.replaceAll('cat:e:', '');
     final delta = c.share * (c.ratio - 1) * 100;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       title: Text(name),
-      subtitle: Text('占篮子 ${(c.share * 100).toStringAsFixed(0)}% · 近期/基期 ×${c.ratio.toStringAsFixed(2)}',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.hintColor, fontSize: 11)),
+      subtitle: Text(
+        '占篮子 ${(c.share * 100).toStringAsFixed(0)}% · 近期/基期 ×${c.ratio.toStringAsFixed(2)}',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.hintColor,
+          fontSize: 11,
+        ),
+      ),
       trailing: Text(
         '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)}pp',
         style: TextStyle(

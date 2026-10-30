@@ -57,8 +57,7 @@ class CsvTable {
   /// 首个包含全部 [names]（规范化比较）的行下标；未找到返回 -1。
   int headerRowIndex(Set<String> names) {
     for (var i = 0; i < rows.length; i++) {
-      final normalized =
-          rows[i].map(normalizeHeaderCell).toSet();
+      final normalized = rows[i].map(normalizeHeaderCell).toSet();
       if (normalized.containsAll(names)) return i;
     }
     return -1;

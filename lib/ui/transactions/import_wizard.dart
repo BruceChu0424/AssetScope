@@ -40,7 +40,10 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
   AutoParsed? _auto;
   String _parseError = '';
   ImportPreview _preview = const ImportPreview(
-      rows: [], skipped: [], suggestions: []);
+    rows: [],
+    skipped: [],
+    suggestions: [],
+  );
   String? _accountId;
   String? _expenseCatId;
   String? _incomeCatId;
@@ -49,9 +52,11 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
   int? _imported;
 
   Future<void> _pickFile() async {
-    final picked = await openFile(acceptedTypeGroups: const [
-      XTypeGroup(label: '账单', extensions: ['csv', 'txt']),
-    ]);
+    final picked = await openFile(
+      acceptedTypeGroups: const [
+        XTypeGroup(label: '账单', extensions: ['csv', 'txt']),
+      ],
+    );
     if (picked == null) return;
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
@@ -60,8 +65,10 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
       _fileName = picked.name;
       _lastPath = picked.path;
       // 解码（GBK/UTF-8）+ 解析在独立 isolate 执行，大账单不卡 UI。
-      _auto = await s.importService.decodeAndParseAutoIsolated(bytes,
-          genericParserId: picked.name);
+      _auto = await s.importService.decodeAndParseAutoIsolated(
+        bytes,
+        genericParserId: picked.name,
+      );
       setState(() => _parseError = '');
     } on FormatException catch (e) {
       setState(() => _parseError = e.message);
@@ -135,9 +142,12 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('第 ${_step + 1}/4 步 · ${_stepTitles[_step]}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor)),
+              Text(
+                '第 ${_step + 1}/4 步 · ${_stepTitles[_step]}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
               const SizedBox(height: 12),
               ...switch (_step) {
                 0 => _stepPickFile(theme),
@@ -155,63 +165,64 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
           child: Text(_step == 3 ? '完成' : '取消'),
         ),
         if (_step == 1)
-          FilledButton(
+          ParticleFilledButton(
             onPressed: (_accountId != null && _lastPath != null)
                 ? _analyze
                 : null,
             child: const Text('解析预览'),
           ),
         if (_step == 2)
-          FilledButton(
-            onPressed: (_expenseCatId != null && _incomeCatId != null && !_importing)
+          ParticleFilledButton(
+            onPressed:
+                (_expenseCatId != null && _incomeCatId != null && !_importing)
                 ? _import
                 : null,
             child: _importing
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Text('确认入账'),
           ),
       ],
     );
   }
 
-  static const _stepTitles = [
-    '选择文件',
-    '选择账户',
-    '预览与分类',
-    '完成',
-  ];
+  static const _stepTitles = ['选择文件', '选择账户', '预览与分类', '完成'];
 
   List<Widget> _stepPickFile(ThemeData theme) => [
-        Text(
-          '微信 / 支付宝导出的原生账单（CSV，GBK 或 UTF-8）自动识别列名与交易单号，无需改表头；其他 CSV 需表头含 date、type、amount 三列。',
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: _pickFile,
-          icon: const Icon(Icons.upload_file),
-          label: Text(_fileName ?? '选择 CSV 文件'),
-        ),
-        if (_parseError.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text('解析失败：$_parseError',
-              style: TextStyle(color: AppColors.negativeOf(theme.brightness))),
-        ],
-      ];
+    Text(
+      '微信 / 支付宝导出的原生账单（CSV，GBK 或 UTF-8）自动识别列名与交易单号，无需改表头；其他 CSV 需表头含 date、type、amount 三列。',
+      style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+    ),
+    const SizedBox(height: 12),
+    OutlinedButton.icon(
+      onPressed: _pickFile,
+      icon: const Icon(Icons.upload_file),
+      label: Text(_fileName ?? '选择 CSV 文件'),
+    ),
+    if (_parseError.isNotEmpty) ...[
+      const SizedBox(height: 8),
+      Text(
+        '解析失败：$_parseError',
+        style: TextStyle(color: AppColors.negativeOf(theme.brightness)),
+      ),
+    ],
+  ];
 
   List<Widget> _stepChooseAccount(
-      ThemeData theme, AsyncValue<List<Account>> accountsAsync) {
+    ThemeData theme,
+    AsyncValue<List<Account>> accountsAsync,
+  ) {
     return [
       accountsAsync.maybeWhen(
         data: (accounts) {
           final money = accounts
-              .where((a) =>
-                  a.type == AccountType.asset &&
-                  !a.isSystem &&
-                  !a.isHolding)
+              .where(
+                (a) =>
+                    a.type == AccountType.asset && !a.isSystem && !a.isHolding,
+              )
               .toList();
           return DropdownButtonFormField<String>(
             initialValue: _accountId,
@@ -228,25 +239,29 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
       const SizedBox(height: 8),
       Row(
         children: [
-          Text('文件：$_fileName',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor)),
+          Text(
+            '文件：$_fileName',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          ),
           const SizedBox(width: 8),
           Chip(
             label: Text(_auto?.format.label ?? '—'),
             visualDensity: VisualDensity.compact,
           ),
           const SizedBox(width: 6),
-          Text('已识别 ${_auto?.rows.length ?? 0} 行',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor)),
+          Text(
+            '已识别 ${_auto?.rows.length ?? 0} 行',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          ),
         ],
       ),
     ];
   }
 
   List<Widget> _stepPreview(
-      ThemeData theme, AsyncValue<List<Account>> accountsAsync) {
+    ThemeData theme,
+    AsyncValue<List<Account>> accountsAsync,
+  ) {
     return [
       accountsAsync.maybeWhen(
         data: (accounts) {
@@ -263,8 +278,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: _expenseCatId,
-                decoration:
-                    const InputDecoration(labelText: '支出默认分类'),
+                decoration: const InputDecoration(labelText: '支出默认分类'),
                 items: [
                   for (final a in expenses)
                     DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -287,14 +301,17 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
         orElse: () => const SizedBox.shrink(),
       ),
       const SizedBox(height: 12),
-      _previewLine(theme, '可入账', '${_preview.rows.length} 行',
-          emphasized: true),
+      _previewLine(theme, '可入账', '${_preview.rows.length} 行', emphasized: true),
       _previewLine(theme, '精确重复跳过', '${_preview.skipped.length} 行'),
       _previewLine(theme, '智慧分类命中', '$_suggestCount 行（规则+历史学习）'),
       for (final line in _auto?.skippedLines ?? const <String>[])
         _previewLine(theme, '原生解析跳过', line),
       if (_preview.suggestions.isNotEmpty)
-        _previewLine(theme, '转账配对建议', '${_preview.suggestions.length} 条（导入后可在流水页人工合并）'),
+        _previewLine(
+          theme,
+          '转账配对建议',
+          '${_preview.suggestions.length} 条（导入后可在流水页人工合并）',
+        ),
       const SizedBox(height: 8),
       SizedBox(
         height: 180,
@@ -305,14 +322,19 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              title: Text(r.counterparty.isEmpty ? '(无对方)' : r.counterparty,
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(
+                r.counterparty.isEmpty ? '(无对方)' : r.counterparty,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(
-                  '${r.date.month}/${r.date.day} · ${r.direction ? '收入' : '支出'}'),
+                '${r.date.month}/${r.date.day} · ${r.direction ? '收入' : '支出'}',
+              ),
               trailing: Text(
                 fmtMinor(r.amountMinor, r.currencyCode),
                 style: const TextStyle(
-                    fontFeatures: [FontFeature.tabularFigures()]),
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             );
           },
@@ -321,35 +343,47 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     ];
   }
 
-  Widget _previewLine(ThemeData theme, String label, String value,
-      {bool emphasized = false}) {
+  Widget _previewLine(
+    ThemeData theme,
+    String label,
+    String value, {
+    bool emphasized = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Text(value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              )),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );
   }
 
   List<Widget> _stepDone(ThemeData theme) => [
-        Icon(Icons.check_circle,
-            size: 44, color: AppColors.positiveOf(theme.brightness)),
-        const SizedBox(height: 10),
-        Text('已入账 $_imported 笔',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        Text(
-          '重复导入同一文件会自动跳过（外部 ID 幂等）。对手方分类已被学习，下次导入会自动建议。',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.hintColor, height: 1.5),
-        ),
-      ];
+    Icon(
+      Icons.check_circle,
+      size: 44,
+      color: AppColors.positiveOf(theme.brightness),
+    ),
+    const SizedBox(height: 10),
+    Text(
+      '已入账 $_imported 笔',
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+    ),
+    const SizedBox(height: 6),
+    Text(
+      '重复导入同一文件会自动跳过（外部 ID 幂等）。对手方分类已被学习，下次导入会自动建议。',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.hintColor,
+        height: 1.5,
+      ),
+    ),
+  ];
 }

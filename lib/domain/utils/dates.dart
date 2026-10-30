@@ -6,17 +6,24 @@ library;
 enum MonthEndPolicy {
   /// 1月31日 → 2月28/29日。
   clampToMonthEnd,
+
   /// 1月31日 → 2月28日 → 3月28日（顺延回退后保持新锚点）。
   shiftBackKeepAnchor,
+
   /// 1月31日 → 3月1日（跨到下月）。
   shiftForward,
 }
 
-DateTime addMonthsClamped(DateTime date, int months, {MonthEndPolicy policy = MonthEndPolicy.clampToMonthEnd}) {
+DateTime addMonthsClamped(
+  DateTime date,
+  int months, {
+  MonthEndPolicy policy = MonthEndPolicy.clampToMonthEnd,
+}) {
   final targetMonthIndex = (date.month - 1) + months;
   var year = date.year + targetMonthIndex ~/ 12;
   var month = targetMonthIndex % 12 + 1;
-  if (date.day == _daysInMonth(date.year, date.month) && policy == MonthEndPolicy.clampToMonthEnd) {
+  if (date.day == _daysInMonth(date.year, date.month) &&
+      policy == MonthEndPolicy.clampToMonthEnd) {
     // 锚点即月末：始终落在目标月末。
     return DateTime(year, month, _daysInMonth(year, month));
   }
@@ -52,7 +59,8 @@ int _daysInMonth(int year, int month) {
 bool isLeapYear(int year) =>
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 
-DateTime endOfMonth(DateTime d) => DateTime(d.year, d.month, _daysInMonth(d.year, d.month));
+DateTime endOfMonth(DateTime d) =>
+    DateTime(d.year, d.month, _daysInMonth(d.year, d.month));
 
 DateTime startOfMonth(DateTime d) => DateTime(d.year, d.month);
 

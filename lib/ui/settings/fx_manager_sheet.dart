@@ -9,7 +9,10 @@ import 'quote_fetch_sheet.dart';
 
 /// 汇率管理：查看各币种对最新汇率 + 手工新增/更新。
 Future<void> showFxManagerSheet(
-    BuildContext context, WidgetRef ref, VaultUnlocked s) async {
+  BuildContext context,
+  WidgetRef ref,
+  VaultUnlocked s,
+) async {
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -26,13 +29,19 @@ Future<void> showFxManagerSheet(
             controller: controller,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             children: [
-              Text('汇率管理',
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                '汇率管理',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('净值折算取"当日或之前最近"的一条；倒序存入即可覆盖历史。',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor)),
+              Text(
+                '净值折算取"当日或之前最近"的一条；倒序存入即可覆盖历史。',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
               const SizedBox(height: 12),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.add, size: 18),
@@ -49,25 +58,33 @@ Future<void> showFxManagerSheet(
               if (rates.isEmpty && snap.hasData)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text('还没有汇率记录。多币种账户折算需要至少一条对该币种的汇率。',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.hintColor)),
+                  child: Text(
+                    '还没有汇率记录。多币种账户折算需要至少一条对该币种的汇率。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
                 ),
               for (final r in rates)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Text('${r.from.code} → ${r.to.code}',
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  leading: Text(
+                    '${r.from.code} → ${r.to.code}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   title: Text(
-                      r.rate.toDecimalString(6),
-                      style: const TextStyle(
-                          fontFeatures: [FontFeature.tabularFigures()])),
+                    r.rate.toDecimalString(6),
+                    style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                   subtitle: Text(
-                      '${r.asOf.year}-${r.asOf.month.toString().padLeft(2, '0')}-${r.asOf.day.toString().padLeft(2, '0')} · ${r.source}'),
+                    '${r.asOf.year}-${r.asOf.month.toString().padLeft(2, '0')}-${r.asOf.day.toString().padLeft(2, '0')} · ${r.source}',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => _editRate(bctx, s,
-                        from: r.from.code, to: r.to.code),
+                    onPressed: () =>
+                        _editRate(bctx, s, from: r.from.code, to: r.to.code),
                   ),
                 ),
             ],
@@ -78,8 +95,12 @@ Future<void> showFxManagerSheet(
   );
 }
 
-Future<void> _editRate(BuildContext context, VaultUnlocked s,
-    {String? from, String? to}) async {
+Future<void> _editRate(
+  BuildContext context,
+  VaultUnlocked s, {
+  String? from,
+  String? to,
+}) async {
   final fromCtrl = TextEditingController(text: from ?? 'USD');
   final toCtrl = TextEditingController(text: to ?? 'CNY');
   final rateCtrl = TextEditingController();
@@ -126,22 +147,24 @@ Future<void> _editRate(BuildContext context, VaultUnlocked s,
             ],
           ),
           const SizedBox(height: 12),
-          TextField(
+          ParticleTextField(
             controller: rateCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
-                labelText: '1 原币种 = ? 目标币种（如 7.25）'),
+              labelText: '1 原币种 = ? 目标币种（如 7.25）',
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('取消')),
-        FilledButton(
-            onPressed: () => Navigator.pop(dctx, true),
-            child: const Text('保存')),
+          onPressed: () => Navigator.pop(dctx, false),
+          child: const Text('取消'),
+        ),
+        ParticleFilledButton(
+          onPressed: () => Navigator.pop(dctx, true),
+          child: const Text('保存'),
+        ),
       ],
     ),
   );
@@ -156,13 +179,15 @@ Future<void> _editRate(BuildContext context, VaultUnlocked s,
       rate: Rational.parseDecimal(t),
     );
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('汇率已保存')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('汇率已保存')));
     }
   } on FormatException {
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('汇率格式不正确')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('汇率格式不正确')));
     }
   }
 }

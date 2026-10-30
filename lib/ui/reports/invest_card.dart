@@ -7,7 +7,9 @@ import '../accounts/accounts_providers.dart' show holdingsProvider;
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
-final portfolioProvider = FutureProvider.autoDispose<PortfolioReturn>((ref) async {
+final portfolioProvider = FutureProvider.autoDispose<PortfolioReturn>((
+  ref,
+) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
   return s.portfolioService.portfolioReturns();
@@ -32,9 +34,11 @@ class InvestCard extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return Text(
-              '还没有持仓。在账户页新建持仓账户后，用「买入」记录第一笔投资。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              '还没有持仓。在总览「添加资产」新建持仓账户后，用「买入」记录第一笔投资。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             );
           }
           return Column(
@@ -45,19 +49,26 @@ class InvestCard extends ConsumerWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: SizedBox(
                     width: 90,
-                    child: Text(h.account.name,
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      h.account.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   title: Text(
                     '${h.quantity.toDecimalString(4)} 份'
                     '${h.unitPrice != null ? ' · 成本 ${fmtMinor(h.costMinor, h.account.currencyCode)}' : ''}',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
                   ),
                   trailing: h.marketValueMinor == null
-                      ? Text('缺价',
+                      ? Text(
+                          '缺价',
                           style: TextStyle(
-                              color: AppColors.brassOf(theme.brightness)))
+                            color: AppColors.brassOf(theme.brightness),
+                          ),
+                        )
                       : _pnlText(context, h),
                 ),
               portfolio.maybeWhen(
@@ -65,9 +76,11 @@ class InvestCard extends ConsumerWidget {
                     ? Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                            '⚠ ${p.skippedFlows} 笔含外币流水因缺历史汇率未计入 XIRR',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.brassOf(theme.brightness))),
+                          '⚠ ${p.skippedFlows} 笔含外币流水因缺历史汇率未计入 XIRR',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.brassOf(theme.brightness),
+                          ),
+                        ),
                       )
                     : const SizedBox.shrink(),
                 orElse: () => const SizedBox.shrink(),
@@ -76,7 +89,9 @@ class InvestCard extends ConsumerWidget {
           );
         },
         orElse: () => const SizedBox(
-            height: 60, child: Center(child: CircularProgressIndicator())),
+          height: 60,
+          child: Center(child: CircularProgressIndicator()),
+        ),
       ),
     );
   }
@@ -102,7 +117,10 @@ class InvestCard extends ConsumerWidget {
       );
     }
     if (p.xirr != null) {
-      return Text('年化 XIRR ${(p.xirr! * 100).toStringAsFixed(1)}%', style: style);
+      return Text(
+        '年化 XIRR ${(p.xirr! * 100).toStringAsFixed(1)}%',
+        style: style,
+      );
     }
     if (p.twr != null) {
       return Text('年化 TWR ${(p.twr! * 100).toStringAsFixed(1)}%', style: style);
@@ -119,10 +137,13 @@ class InvestCard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(fmtMinor(h.marketValueMinor!, h.account.currencyCode),
-            style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontFeatures: [FontFeature.tabularFigures()])),
+        Text(
+          fmtMinor(h.marketValueMinor!, h.account.currencyCode),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
         Text(
           '${v.isNegative ? '' : '+'}${fmtMinor(pnl.rounded(), h.account.currencyCode)}',
           style: TextStyle(

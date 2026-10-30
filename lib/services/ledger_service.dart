@@ -12,8 +12,7 @@ class LedgerService {
   final AccountsRepo accounts;
   final LedgerRepo ledger;
 
-  Future<LedgerTransaction> post(TransactionDraft draft) =>
-      ledger.post(draft);
+  Future<LedgerTransaction> post(TransactionDraft draft) => ledger.post(draft);
 
   Future<void> voidTx(String id) => ledger.voidTransaction(id);
 
@@ -35,8 +34,9 @@ class LedgerService {
     };
     if (tx.status == TxStatus.voided) return false;
     if (!supported.contains(tx.kind)) return false;
-    return !tx.postings.any((p) =>
-        p.securityId != null || p.accountId.startsWith('sys:cost'));
+    return !tx.postings.any(
+      (p) => p.securityId != null || p.accountId.startsWith('sys:cost'),
+    );
   }
 
   /// 卖出：按平均成本法自动计算应结转的成本与已实现损益。
@@ -53,10 +53,14 @@ class LedgerService {
       throw ArgumentError('持仓账户不存在: $holdingAccountId');
     }
     final dateEnd = DateTime(date.year, date.month, date.day, 23, 59, 59);
-    final cbBalance = (await ledger.moneyBalancesAt(dateEnd,
-            accountIds: {holding.costBasisAccountId!}))[holding.costBasisAccountId!] ??
+    final cbBalance =
+        (await ledger.moneyBalancesAt(
+          dateEnd,
+          accountIds: {holding.costBasisAccountId!},
+        ))[holding.costBasisAccountId!] ??
         BigInt.zero;
-    final qtyBalance = (await ledger.quantityBalancesAt(dateEnd))[holdingAccountId] ??
+    final qtyBalance =
+        (await ledger.quantityBalancesAt(dateEnd))[holdingAccountId] ??
         Rational.zero();
     if (qtyBalance.isZero || qtyBalance.isNegative) {
       throw StateError('持仓数量异常: $qtyBalance');
@@ -67,15 +71,17 @@ class LedgerService {
     // 平均成本 × 卖出数量（有理数精确，再舍入到最小单位）。
     final costRemoved =
         (Rational.fromInt(cbBalance) * quantitySold / qtyBalance).rounded();
-    return ledger.post(TxBuilders.sell(
-      holdingAccount: holding,
-      cashAccount: (await _requireAccount(cashAccountId, AccountType.asset))!,
-      quantitySold: quantitySold,
-      netProceedsMinor: netProceedsMinor,
-      costBasisRemovedMinor: costRemoved,
-      date: date,
-      note: note,
-    ));
+    return ledger.post(
+      TxBuilders.sell(
+        holdingAccount: holding,
+        cashAccount: (await _requireAccount(cashAccountId, AccountType.asset))!,
+        quantitySold: quantitySold,
+        netProceedsMinor: netProceedsMinor,
+        costBasisRemovedMinor: costRemoved,
+        date: date,
+        note: note,
+      ),
+    );
   }
 
   /// 买入（简化入口：金额与数量直接给出）。
@@ -91,14 +97,16 @@ class LedgerService {
     if (holding == null || !holding.isHolding) {
       throw ArgumentError('持仓账户不存在: $holdingAccountId');
     }
-    return ledger.post(TxBuilders.buy(
-      holdingAccount: holding,
-      cashAccount: (await _requireAccount(cashAccountId, AccountType.asset))!,
-      quantity: quantity,
-      totalPaidMinor: totalPaidMinor,
-      date: date,
-      note: note,
-    ));
+    return ledger.post(
+      TxBuilders.buy(
+        holdingAccount: holding,
+        cashAccount: (await _requireAccount(cashAccountId, AccountType.asset))!,
+        quantity: quantity,
+        totalPaidMinor: totalPaidMinor,
+        date: date,
+        note: note,
+      ),
+    );
   }
 
   Future<Account?> _requireAccount(String id, AccountType type) async {

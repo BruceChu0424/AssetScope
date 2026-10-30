@@ -17,16 +17,16 @@ class Posting {
     required this.amountMinor,
     required this.currencyCode,
     this.memo,
-  })  : securityId = null,
-        quantity = null;
+  }) : securityId = null,
+       quantity = null;
 
   const Posting.quantity({
     required this.accountId,
     required this.securityId,
     required this.quantity,
     this.memo,
-  })  : amountMinor = null,
-        currencyCode = null;
+  }) : amountMinor = null,
+       currencyCode = null;
 
   final String accountId;
 
@@ -62,7 +62,10 @@ class Posting {
     if (isQuantity) {
       return '$side $name ${quantity!.n}/${quantity!.d} ($securityId)';
     }
-    final m = Money.fromMinor(amountMinor!.abs(), CurrencyInfo.parse(currencyCode!));
+    final m = Money.fromMinor(
+      amountMinor!.abs(),
+      CurrencyInfo.parse(currencyCode!),
+    );
     return '$side $name ${m.format()}';
   }
 }

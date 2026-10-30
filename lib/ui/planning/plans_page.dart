@@ -14,71 +14,127 @@ import 'plan_post_sheet.dart';
 import 'recurring_sheet.dart';
 import 'scenario_sheet.dart';
 
-/// 固定开销与预定支出计划：待落地（到期未入账）→ 一键/逐笔记入账本。
+/// 计划页 · 落地台：页首汇总（到期笔数/未来 30 天净流）→ 待落地整带
+/// （宽幅 SectionCard）→ 大屏双栏（时间线 | 全部计划），小屏纵排。
+/// 头部动作：人生规划 / 情景模拟 / 识别固定收支。
 class PlansPage extends ConsumerWidget {
   const PlansPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_plansProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('固定开销 / 计划'),
-        actions: [
-          IconButton(
-            tooltip: '人生规划 · 多年度推演',
-            icon: const Icon(Icons.explore_outlined),
-            onPressed: () => showLifePlannerSheet(context, ref),
-          ),
-          IconButton(
-            tooltip: '情景模拟 · 现金压力测试',
-            icon: const Icon(Icons.shield_outlined),
-            onPressed: () => showScenarioSheet(context, ref),
-          ),
-          IconButton(
-            tooltip: '从流水识别固定收支',
-            icon: const Icon(Icons.auto_awesome),
-            onPressed: () async {
-              await showRecurringSheet(context, ref);
-              ref.invalidate(_plansProvider);
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final ok = await showDialog<bool>(
-              context: context, builder: (_) => const PlanEditDialog());
-          if (ok == true) ref.invalidate(_plansProvider);
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('新建计划'),
-      ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
-        data: (view) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-          children: [
-            if (view.due.isNotEmpty) _DueCard(due: view.due),
-            _UpcomingBlock(occurrences: view.upcoming),
-            const Divider(height: 32),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 4),
-              child: Text('全部计划'),
-            ),
-            if (view.events.isEmpty)
-              const EmptyState(
-                  icon: Icons.event_outlined,
-                  title: '还没有计划',
-                  message: '点右下角"新建计划"，或用识别功能从流水中生成。'),
-            for (final e in view.events)
-              _PlanTile(
-                event: e,
-                onChanged: () => ref.invalidate(_plansProvider),
-              ),
-          ],
+    final brightness = Theme.of(context).brightness;
+    return PageFrame(
+      title: '计划',
+      actions: [
+        ActionIcon(
+          tooltip: '人生规划 · 多年度推演',
+          icon: Icons.explore_outlined,
+          onTap: () => showLifePlannerSheet(context, ref),
         ),
+        ActionIcon(
+          tooltip: '情景模拟 · 现金压力测试',
+          icon: Icons.shield_outlined,
+          onTap: () => showScenarioSheet(context, ref),
+        ),
+        ActionIcon(
+          tooltip: '从流水识别固定收支',
+          icon: Icons.auto_awesome,
+          onTap: () async {
+            await showRecurringSheet(context, ref);
+            ref.invalidate(_plansProvider);
+          },
+        ),
+      ],
+      fab: ParticleEdge(
+        band: 12,
+        extendBelow: 6,
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (_) => const PlanEditDialog(),
+            );
+            if (ok == true) ref.invalidate(_plansProvider);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('新建计划'),
+        ),
+      ),
+      child: async.when(
+        loading: () => const Center(child: OrbitSpinner(size: 36)),
+        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+        data: (view) {
+          final upcomingNet = view.upcoming.fold<BigInt>(
+            BigInt.zero,
+            (s, o) => s + o.amountMinor,
+          );
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+            children: [
+              StatBand(
+                items: [
+                  StatBandItem(
+                    '到期未记入',
+                    '${view.due.length} 笔',
+                    color: view.due.isNotEmpty
+                        ? AppColors.warnOf(brightness)
+                        : null,
+                    tooltip: '到期未入账的计划事件，逐笔或一键记入账本',
+                  ),
+                  StatBandItem(
+                    '未来 30 天',
+                    '${view.upcoming.length} 笔',
+                    tooltip: '含已入账与未入账的全部发生额',
+                  ),
+                  StatBandItem(
+                    '未来 30 天净流',
+                    fmtMinor(upcomingNet.abs(), 'CNY', sign: true),
+                    color: upcomingNet.isNegative
+                        ? AppColors.negativeOf(brightness)
+                        : AppColors.positiveOf(brightness),
+                    tooltip: '正为净流入，负为净流出',
+                  ),
+                ],
+              ),
+              if (view.due.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _DueCard(due: view.due),
+              ],
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final twoCol = c.maxWidth >= 760;
+                  if (!twoCol) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _UpcomingCard(occurrences: view.upcoming),
+                        const SizedBox(height: 16),
+                        _AllPlansCard(events: view.events),
+                      ],
+                    );
+                  }
+                  final colW = (c.maxWidth - 16) / 2;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: colW,
+                        child: _UpcomingCard(occurrences: view.upcoming),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: colW,
+                        child: _AllPlansCard(events: view.events),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -94,7 +150,9 @@ class _DueCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final net = due.fold<BigInt>(
-        BigInt.zero, (s, d) => s + d.occurrence.amountMinor);
+      BigInt.zero,
+      (s, d) => s + d.occurrence.amountMinor,
+    );
     final blocked = due.where((d) => d.blockedReason != null).length;
     return SectionCard(
       title: '待落地 · ${due.length} 笔到期',
@@ -111,27 +169,38 @@ class _DueCard extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               leading: SizedBox(
                 width: 52,
-                child: Text(dateKey(d.occurrence.date).substring(5),
-                    style: const TextStyle(
-                        fontFeatures: [FontFeature.tabularFigures()])),
+                child: Text(
+                  dateKey(d.occurrence.date).substring(5),
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
               ),
               title: Row(
                 children: [
-                  Flexible(child: Text(d.event.name, overflow: TextOverflow.ellipsis)),
+                  Flexible(
+                    child: Text(d.event.name, overflow: TextOverflow.ellipsis),
+                  ),
                   if (d.blockedReason != null) ...[
                     const SizedBox(width: 6),
                     Tooltip(
                       message: d.blockedReason!,
-                      child: Icon(Icons.warning_amber_rounded,
-                          size: 15, color: AppColors.warnOf(theme.brightness)),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 15,
+                        color: AppColors.warnOf(theme.brightness),
+                      ),
                     ),
                   ] else if (d.occurrence.isEstimate) ...[
                     const SizedBox(width: 6),
                     Tooltip(
                       message: '估算金额，确认时可修改',
-                      child: Text('估',
-                          style: theme.textTheme.labelSmall
-                              ?.copyWith(color: theme.hintColor)),
+                      child: Text(
+                        '估',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -140,17 +209,16 @@ class _DueCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    fmtMinor(d.occurrence.amountMinor.abs(),
-                        d.event.currencyCode),
+                    fmtMinor(d.occurrence.amountMinor.abs(), d.event.currencyCode),
                     style: const TextStyle(
-                        fontFeatures: [FontFeature.tabularFigures()]),
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                   IconButton(
                     tooltip: '记入账本',
                     icon: const Icon(Icons.post_add, size: 20),
                     onPressed: () async {
-                      final changed =
-                          await showPlanPostSheet(context, ref, d);
+                      final changed = await showPlanPostSheet(context, ref, d);
                       if (changed) ref.invalidate(_plansProvider);
                     },
                   ),
@@ -160,17 +228,21 @@ class _DueCard extends ConsumerWidget {
           if (due.length > 8)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('…另有 ${due.length - 8} 笔，"全部记入"可一次处理',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.hintColor)),
+              child: Text(
+                '…另有 ${due.length - 8} 笔，"全部记入"可一次处理',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
             ),
           const Divider(height: 20),
           Text(
             '净影响 ${fmtMinor(net.abs(), 'CNY')}${net.isNegative ? ' 支出' : ' 收入'}'
             '${blocked > 0 ? ' · $blocked 笔需先在确认页选账户' : ''}',
             style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.hintColor,
-                fontFeatures: [FontFeature.tabularFigures()]),
+              color: theme.hintColor,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),
@@ -195,52 +267,106 @@ class _DueCard extends ConsumerWidget {
       }
     }
     ref.invalidate(_plansProvider);
-    messenger.showSnackBar(SnackBar(
-        content: Text(posted > 0
-            ? '已记入 $posted 笔计划'
-            : '没有可直接记入的计划（需先在确认页选账户）')));
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          posted > 0 ? '已记入 $posted 笔计划' : '没有可直接记入的计划（需先在确认页选账户）',
+        ),
+      ),
+    );
   }
 }
 
-class _UpcomingBlock extends StatelessWidget {
-  const _UpcomingBlock({required this.occurrences});
+/// 未来 30 天时间线：日期 | 事件 | 带符号金额（收支着色）。
+class _UpcomingCard extends StatelessWidget {
+  const _UpcomingCard({required this.occurrences});
 
   final List<Occurrence> occurrences;
 
   @override
   Widget build(BuildContext context) {
-    if (occurrences.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(0, 16, 0, 4),
-          child: Text('未来 30 天'),
-        ),
-        for (final o in occurrences.take(12))
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: SizedBox(
-              width: 52,
-              child: Text(dateKey(o.date).substring(5),
-                  style: const TextStyle(
-                      fontFeatures: [FontFeature.tabularFigures()])),
-            ),
-            title: Text(o.eventName),
-            trailing: Text(
-              '${o.amountMinor.isNegative ? '-' : '+'}${fmtMinor(o.amountMinor.abs(), 'CNY')}',
-              style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()]),
-            ),
+    final brightness = Theme.of(context).brightness;
+    if (occurrences.isEmpty) {
+      return SectionCard(
+        title: '未来 30 天',
+        child: Text(
+          '暂无预定支出',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).hintColor,
           ),
-      ],
+        ),
+      );
+    }
+    return SectionCard(
+      title: '未来 30 天',
+      child: Column(
+        children: [
+          for (final o in occurrences.take(14))
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: SizedBox(
+                width: 52,
+                child: Text(
+                  dateKey(o.date).substring(5),
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              title: Text(o.eventName, maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: Text(
+                '${o.amountMinor.isNegative ? '−' : '+'}${fmtMinor(o.amountMinor.abs(), 'CNY')}',
+                style: TextStyle(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: o.amountMinor.isNegative
+                      ? AppColors.negativeOf(brightness)
+                      : AppColors.positiveOf(brightness),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _PlanTile extends ConsumerWidget {
-  const _PlanTile({required this.event, required this.onChanged});
+/// 全部计划：ListRow 行（图标位 + 名称 + 周期金额 + 溢出菜单）。
+class _AllPlansCard extends ConsumerWidget {
+  const _AllPlansCard({required this.events});
+
+  final List<ScheduledEvent> events;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (events.isEmpty) {
+      return SectionCard(
+        title: '全部计划',
+        child: Text(
+          '点右下角「新建计划」，或用识别功能从流水中生成。',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).hintColor,
+          ),
+        ),
+      );
+    }
+    return SectionCard(
+      title: '全部计划',
+      child: Column(
+        children: [
+          for (final e in events)
+            _PlanRow(
+              event: e,
+              onChanged: () => ref.invalidate(_plansProvider),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanRow extends ConsumerWidget {
+  const _PlanRow({required this.event, required this.onChanged});
 
   final ScheduledEvent event;
   final VoidCallback onChanged;
@@ -248,84 +374,103 @@ class _PlanTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isActive = event.status == PlanStatus.active;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-          event.direction == EventDirection.outflow
-              ? Icons.arrow_outward
-              : Icons.arrow_downward,
-          color: event.status == PlanStatus.active
-              ? null
-              : theme.disabledColor),
-      title: Row(
-        children: [
-          Flexible(
-              child: Text(event.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: event.status == PlanStatus.active
-                      ? null
-                      : TextStyle(color: theme.disabledColor))),
-          if (event.autoPost) ...[
-            const SizedBox(width: 6),
-            Tooltip(
-              message: '到期自动记入账本',
-              child: Icon(Icons.bolt,
-                  size: 15, color: AppColors.brassOf(theme.brightness)),
-            ),
-          ],
-        ],
-      ),
-      subtitle: Text(
-        '${event.cadence.labelZh} · ${fmtMinor(event.resolvedAmountMinor(), event.currencyCode)}'
-        '${event.isEstimate ? '（估）' : ''} · ${planStatusLabel(event.status)}',
-      ),
+    final active = event.status == PlanStatus.active;
+    final outflow = event.direction == EventDirection.outflow;
+    final brightness = theme.brightness;
+    return ListRow(
+      icon: outflow ? Icons.arrow_outward : Icons.arrow_downward,
+      title: event.name,
+      hint: '${event.cadence.labelZh} · ${planStatusLabel(event.status)}'
+          '${event.isEstimate ? ' · 估算金额' : ''}',
       onTap: () async {
         final ok = await showDialog<bool>(
-            context: context,
-            builder: (_) => PlanEditDialog(initial: event));
+          context: context,
+          builder: (_) => PlanEditDialog(initial: event),
+        );
         if (ok == true) onChanged();
       },
-      trailing: PopupMenuButton<String>(
-        onSelected: (action) => _onAction(context, ref, action),
-        itemBuilder: (_) => [
-          const PopupMenuItem(value: 'edit', child: Text('编辑')),
-          PopupMenuItem(
-              value: 'togglePause',
-              child: Text(isActive ? '暂停' : '恢复')),
-          const PopupMenuItem(value: 'finish', child: Text('标记完成')),
-          const PopupMenuItem(value: 'delete', child: Text('删除')),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (event.autoPost) ...[
+            Tooltip(
+              message: '到期自动记入账本',
+              child: Icon(
+                Icons.bolt,
+                size: 16,
+                color: AppColors.brassOf(brightness),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            fmtMinor(event.resolvedAmountMinor(), event.currencyCode),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+              color: active ? null : theme.disabledColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              size: 19,
+              color: theme.hintColor.withValues(alpha: active ? 1 : 0.5),
+            ),
+            tooltip: '计划操作',
+            onSelected: (action) => _onAction(context, ref, action),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('编辑')),
+              PopupMenuItem(
+                value: 'togglePause',
+                child: Text(active ? '暂停' : '恢复'),
+              ),
+              const PopupMenuItem(value: 'finish', child: Text('标记完成')),
+              const PopupMenuItem(value: 'delete', child: Text('删除')),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Future<void> _onAction(
-      BuildContext context, WidgetRef ref, String action) async {
+    BuildContext context,
+    WidgetRef ref,
+    String action,
+  ) async {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     switch (action) {
       case 'edit':
         final ok = await showDialog<bool>(
-            context: context,
-            builder: (_) => PlanEditDialog(initial: event));
+          context: context,
+          builder: (_) => PlanEditDialog(initial: event),
+        );
         if (ok == true) onChanged();
       case 'togglePause':
-        await s.planning.saveScheduledEvent(event.copyWith(
+        await s.planning.saveScheduledEvent(
+          event.copyWith(
             status: event.status == PlanStatus.active
                 ? PlanStatus.paused
-                : PlanStatus.active));
+                : PlanStatus.active,
+          ),
+        );
         onChanged();
       case 'finish':
         await s.planning.saveScheduledEvent(
-            event.copyWith(status: PlanStatus.finished));
+          event.copyWith(status: PlanStatus.finished),
+        );
         onChanged();
       case 'delete':
-        final ok = await confirmDialog(context,
-            title: '删除计划',
-            message: '删除"${event.name}"不影响已入账的交易。',
-            confirmLabel: '删除',
-            destructive: true);
+        final ok = await confirmDialog(
+          context,
+          title: '删除计划',
+          message: '删除"${event.name}"不影响已入账的交易。',
+          confirmLabel: '删除',
+          destructive: true,
+        );
         if (ok) {
           await s.planning.deleteScheduledEvent(event.id);
           onChanged();
@@ -353,8 +498,11 @@ final _plansProvider = FutureProvider.autoDispose<PlansView>((ref) async {
   final through = now.add(const Duration(days: 30));
   final occ = <Occurrence>[];
   for (final e in events) {
-    occ.addAll(e.expand(DateTime(now.year, now.month, now.day), through)
-        .where((o) => !postedExtIds.contains(planExternalId(e.id, o.date))));
+    occ.addAll(
+      e
+          .expand(DateTime(now.year, now.month, now.day), through)
+          .where((o) => !postedExtIds.contains(planExternalId(e.id, o.date))),
+    );
   }
   occ.sort((a, b) => a.date.compareTo(b.date));
   return PlansView(events, due, occ);

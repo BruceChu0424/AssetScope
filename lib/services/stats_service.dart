@@ -34,8 +34,7 @@ class AccountValuationItem {
   /// 本人份额价值（家庭账本归属比例，1 = 全额本人）。
   /// 逐账户（Rational × BigInt）精确计算后 halfEven 舍入（docs/05 §16）。
   BigInt get myValueBaseMinor =>
-      (Rational.fromInt(valueBaseMinor) * account.effectiveOwnership)
-          .rounded();
+      (Rational.fromInt(valueBaseMinor) * account.effectiveOwnership).rounded();
 }
 
 /// 净资产构成。
@@ -75,8 +74,7 @@ class NetWorthBreakdown {
   bool get hasSharedAccounts =>
       items.any((i) => i.account.effectiveOwnership != Rational.one);
 
-  int get missingValuations =>
-      items.where((i) => i.valuationMissing).length;
+  int get missingValuations => items.where((i) => i.valuationMissing).length;
 
   int get staleValuations => items.where((i) => i.valuationStale).length;
 }
@@ -132,8 +130,7 @@ class StatsService {
 
   Future<String> baseCurrency() async {
     await _invalidateIfStale();
-    return _baseCache ??=
-        await _meta.settingString('baseCurrency') ?? 'CNY';
+    return _baseCache ??= await _meta.settingString('baseCurrency') ?? 'CNY';
   }
 
   /// 某日的净资产构成（含估值新鲜度）。同日命中缓存。
@@ -161,7 +158,11 @@ class StatsService {
 
     Future<BigInt> toBase(BigInt minor, String ccy) async {
       if (ccy == base) return minor;
-      final rate = await _meta.toBaseRate(ccy: ccy, base: base, onOrBefore: end);
+      final rate = await _meta.toBaseRate(
+        ccy: ccy,
+        base: base,
+        onOrBefore: end,
+      );
       if (rate == null) return BigInt.zero; // 无汇率：计 0 并由缺口披露
       return (Rational.fromInt(minor) * rate.rate).rounded();
     }
@@ -173,50 +174,69 @@ class StatsService {
         case ValuationMethod.ledger:
           final signed = money[a.id] ?? BigInt.zero;
           final bal = LedgerMath.displayBalance(a.type, signed);
-          items.add(AccountValuationItem(
-            account: a,
-            valueBaseMinor: await toBase(bal, a.currencyCode),
-            balanceMinor: bal,
-          ));
+          items.add(
+            AccountValuationItem(
+              account: a,
+              valueBaseMinor: await toBase(bal, a.currencyCode),
+              balanceMinor: bal,
+            ),
+          );
         case ValuationMethod.manualValue:
           final r = ValuationResolver.resolve(byAccount[a.id] ?? const [], end);
           if (r.missing) {
-            items.add(AccountValuationItem(
-                account: a, valueBaseMinor: BigInt.zero, valuationMissing: true));
+            items.add(
+              AccountValuationItem(
+                account: a,
+                valueBaseMinor: BigInt.zero,
+                valuationMissing: true,
+              ),
+            );
           } else {
-            items.add(AccountValuationItem(
-              account: a,
-              valueBaseMinor:
-                  await toBase(r.record!.totalValueMinor ?? BigInt.zero, a.currencyCode),
-              valuationStale: r.isStale,
-            ));
+            items.add(
+              AccountValuationItem(
+                account: a,
+                valueBaseMinor: await toBase(
+                  r.record!.totalValueMinor ?? BigInt.zero,
+                  a.currencyCode,
+                ),
+                valuationStale: r.isStale,
+              ),
+            );
           }
         case ValuationMethod.marketPrice:
           final qty = qtys[a.id] ?? Rational.zero();
           final r = ValuationResolver.resolve(byAccount[a.id] ?? const [], end);
           if (qty.isZero) continue; // 空仓不列示
           if (r.missing) {
-            items.add(AccountValuationItem(
-                account: a, valueBaseMinor: BigInt.zero, valuationMissing: true));
+            items.add(
+              AccountValuationItem(
+                account: a,
+                valueBaseMinor: BigInt.zero,
+                valuationMissing: true,
+              ),
+            );
           } else {
             final price = r.record!.unitPrice ?? Rational.zero();
             final ccyValue = (qty * price).rounded();
-            items.add(AccountValuationItem(
-              account: a,
-              valueBaseMinor: await toBase(ccyValue, a.currencyCode),
-              valuationStale: r.isStale,
-            ));
+            items.add(
+              AccountValuationItem(
+                account: a,
+                valueBaseMinor: await toBase(ccyValue, a.currencyCode),
+                valuationStale: r.isStale,
+              ),
+            );
           }
       }
     }
-    return NetWorthBreakdown(
-        asOf: date, baseCurrencyCode: base, items: items);
+    return NetWorthBreakdown(asOf: date, baseCurrencyCode: base, items: items);
   }
 
   /// 最近 [months] 个月的月末净资产序列（含本月至今）。
   /// 按 (months, 当日) 记忆化；内部逐点走 netWorthAt 缓存。
-  Future<List<(String, BigInt)>> netWorthSeries(int months,
-      {DateTime? now}) async {
+  Future<List<(String, BigInt)>> netWorthSeries(
+    int months, {
+    DateTime? now,
+  }) async {
     final n = now ?? DateTime.now();
     await _invalidateIfStale();
     final key = '$months:${dateKey(n)}';
@@ -259,8 +279,11 @@ class StatsService {
 
     Future<BigInt> toBaseNow(BigInt minor, String ccy) async {
       if (ccy == base) return minor;
-      final rate =
-          await _meta.toBaseRate(ccy: ccy, base: base, onOrBefore: monthEnd);
+      final rate = await _meta.toBaseRate(
+        ccy: ccy,
+        base: base,
+        onOrBefore: monthEnd,
+      );
       if (rate == null) return BigInt.zero;
       return (Rational.fromInt(minor) * rate.rate).rounded();
     }
@@ -280,11 +303,13 @@ class StatsService {
       final v = await toBaseNow(e.value, acc.currencyCode);
       switch (acc.type) {
         case AccountType.expense:
-          if (acc.id == Account.sysExpenseFx || acc.id == Account.sysExpenseRounding) {
+          if (acc.id == Account.sysExpenseFx ||
+              acc.id == Account.sysExpenseRounding) {
             // 汇兑/尾差单独归因：−Σpostings
             fxSysLine -= v;
           } else if (!acc.isSystem) {
-            expenseByCategory[e.key] = (expenseByCategory[e.key] ?? BigInt.zero) + v;
+            expenseByCategory[e.key] =
+                (expenseByCategory[e.key] ?? BigInt.zero) + v;
             regularExpense += v;
           }
         case AccountType.income:
@@ -293,7 +318,8 @@ class StatsService {
           } else if (acc.id == Account.sysIncomeDividend) {
             dividend -= v;
           } else if (!acc.isSystem) {
-            incomeByCategory[e.key] = (incomeByCategory[e.key] ?? BigInt.zero) + v;
+            incomeByCategory[e.key] =
+                (incomeByCategory[e.key] ?? BigInt.zero) + v;
             regularIncome -= v;
           }
         case AccountType.equity:
@@ -328,8 +354,13 @@ class StatsService {
           total += u;
         } else {
           final rate = await _meta.toBaseRate(
-              ccy: a.currencyCode, base: base, onOrBefore: end);
-          total += rate == null ? BigInt.zero : (Rational.fromInt(u) * rate.rate).rounded();
+            ccy: a.currencyCode,
+            base: base,
+            onOrBefore: end,
+          );
+          total += rate == null
+              ? BigInt.zero
+              : (Rational.fromInt(u) * rate.rate).rounded();
         }
       }
       return total;
@@ -344,33 +375,50 @@ class StatsService {
     final moneyStart = await _ledger.moneyBalancesAt(prevEnd);
     final qtyStart = await _ledger.quantityBalancesAt(prevEnd);
     for (final a in accounts) {
-      if (a.currencyCode == base || a.archived || !a.includeInNetWorth) continue;
-      final fxS = await _meta.toBaseRate(ccy: a.currencyCode, base: base, onOrBefore: prevEnd);
-      final fxE = await _meta.toBaseRate(ccy: a.currencyCode, base: base, onOrBefore: monthEnd);
+      if (a.currencyCode == base || a.archived || !a.includeInNetWorth) {
+        continue;
+      }
+      final fxS = await _meta.toBaseRate(
+        ccy: a.currencyCode,
+        base: base,
+        onOrBefore: prevEnd,
+      );
+      final fxE = await _meta.toBaseRate(
+        ccy: a.currencyCode,
+        base: base,
+        onOrBefore: monthEnd,
+      );
       if (fxS == null || fxE == null) continue;
       if (a.isHolding && a.costBasisAccountId != null) {
         final r = await _meta.valuations(accountId: a.id);
         final price = ValuationResolver.resolve(r, monthEnd).record?.unitPrice;
         if (price == null) continue;
-        foreignHoldings.add(ForeignHoldingStart(
-          accountId: a.id,
-          qtyStart: qtyStart[a.id] ?? Rational.zero(),
-          priceEnd: price,
-          fxStart: fxS.rate,
-          fxEnd: fxE.rate,
-        ));
-      } else if (a.type == AccountType.asset || a.type == AccountType.liability) {
+        foreignHoldings.add(
+          ForeignHoldingStart(
+            accountId: a.id,
+            qtyStart: qtyStart[a.id] ?? Rational.zero(),
+            priceEnd: price,
+            fxStart: fxS.rate,
+            fxEnd: fxE.rate,
+          ),
+        );
+      } else if (a.type == AccountType.asset ||
+          a.type == AccountType.liability) {
         final sign = a.type == AccountType.asset ? BigInt.one : -BigInt.one;
-        foreignAccounts.add(ForeignBalanceStart(
-          accountId: a.id,
-          balanceStartMinor: (moneyStart[a.id] ?? BigInt.zero) * sign,
-          fxStart: fxS.rate,
-          fxEnd: fxE.rate,
-        ));
+        foreignAccounts.add(
+          ForeignBalanceStart(
+            accountId: a.id,
+            balanceStartMinor: (moneyStart[a.id] ?? BigInt.zero) * sign,
+            fxStart: fxS.rate,
+            fxEnd: fxE.rate,
+          ),
+        );
       }
     }
     final fxReval = fxEffectMinor(
-        foreignAccounts: foreignAccounts, foreignHoldings: foreignHoldings);
+      foreignAccounts: foreignAccounts,
+      foreignHoldings: foreignHoldings,
+    );
 
     // 手工估值变动
     BigInt otherValuation = BigInt.zero;
@@ -388,26 +436,30 @@ class StatsService {
       }
     }
 
-    final attribution = MonthAttributor.compute(AttributionInput(
-      nwStartBaseMinor: nwStart.netWorth,
-      nwEndBaseMinor: nwEnd.netWorth,
-      regularIncomeMinor: regularIncome,
-      regularExpenseMinor: regularExpense,
-      realizedPnlMinor: realizedPnl,
-      dividendMinor: dividend,
-      unrealizedStartMinor: uStart,
-      unrealizedEndMinor: uEnd,
-      fxEffectMinor: fxReval + fxSysLine,
-      otherValuationChangeMinor: otherValuation,
-      correctionMinor: correction,
-    ));
+    final attribution = MonthAttributor.compute(
+      AttributionInput(
+        nwStartBaseMinor: nwStart.netWorth,
+        nwEndBaseMinor: nwEnd.netWorth,
+        regularIncomeMinor: regularIncome,
+        regularExpenseMinor: regularExpense,
+        realizedPnlMinor: realizedPnl,
+        dividendMinor: dividend,
+        unrealizedStartMinor: uStart,
+        unrealizedEndMinor: uEnd,
+        fxEffectMinor: fxReval + fxSysLine,
+        otherValuationChangeMinor: otherValuation,
+        correctionMinor: correction,
+      ),
+    );
 
     // 债务还款拆分（本金/利息）
     var principalRepaid = BigInt.zero;
     var interestPaid = BigInt.zero;
     final txs = await _ledger.list(from: monthStart, to: monthEnd);
     for (final tx in txs) {
-      if (tx.kind != TxKind.loanRepay && tx.kind != TxKind.creditCardRepay) continue;
+      if (tx.kind != TxKind.loanRepay && tx.kind != TxKind.creditCardRepay) {
+        continue;
+      }
       for (final p in tx.postings) {
         final acc = byId[p.accountId];
         if (acc == null || p.amountMinor == null) continue;

@@ -94,13 +94,15 @@ class AiQuoteParser {
           warnings.add('「$query」价格无效（${e['price']}），已跳过');
           continue;
         }
-        prices.add(FetchedPrice(
-          query: query.trim(),
-          price: price,
-          currency: e['currency'] is String ? e['currency'] as String : '',
-          asOf: _parseDate(e['as_of'] ?? e['asOf']),
-          source: e['source'] is String ? e['source'] as String : null,
-        ));
+        prices.add(
+          FetchedPrice(
+            query: query.trim(),
+            price: price,
+            currency: e['currency'] is String ? e['currency'] as String : '',
+            asOf: _parseDate(e['as_of'] ?? e['asOf']),
+            source: e['source'] is String ? e['source'] as String : null,
+          ),
+        );
       }
     }
 
@@ -124,12 +126,14 @@ class AiQuoteParser {
           warnings.add('$pair 汇率无效（${e['rate']}），已跳过');
           continue;
         }
-        rates.add(FetchedRate(
-          ccy: ccy,
-          rate: rate,
-          asOf: _parseDate(e['as_of'] ?? e['asOf']),
-          source: e['source'] is String ? e['source'] as String : null,
-        ));
+        rates.add(
+          FetchedRate(
+            ccy: ccy,
+            rate: rate,
+            asOf: _parseDate(e['as_of'] ?? e['asOf']),
+            source: e['source'] is String ? e['source'] as String : null,
+          ),
+        );
       }
     }
     return QuoteFetchResult(prices: prices, rates: rates, warnings: warnings);
@@ -137,8 +141,10 @@ class AiQuoteParser {
 
   /// 提取 JSON：优先 ```json 围栏，否则首个 '{' 到与之平衡的 '}'。
   static String? _extractJson(String content) {
-    final fence = RegExp(r'```(?:json)?\s*(\{.*?\})\s*```', dotAll: true)
-        .firstMatch(content);
+    final fence = RegExp(
+      r'```(?:json)?\s*(\{.*?\})\s*```',
+      dotAll: true,
+    ).firstMatch(content);
     if (fence != null) return fence.group(1);
     final start = content.indexOf('{');
     if (start < 0) return null;
@@ -181,11 +187,15 @@ class AiQuoteParser {
 
   static DateTime? _parseDate(Object? raw) {
     if (raw is! String) return null;
-    final m = RegExp(r'^(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})')
-        .firstMatch(raw.trim());
+    final m = RegExp(
+      r'^(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})',
+    ).firstMatch(raw.trim());
     if (m == null) return null;
     return DateTime(
-        int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!));
+      int.parse(m.group(1)!),
+      int.parse(m.group(2)!),
+      int.parse(m.group(3)!),
+    );
   }
 }
 
@@ -217,7 +227,11 @@ String buildQuotePrompt({
     ..writeln('2. price/rate 为十进制数字字符串（不要带货币符号），rate 表示 1 单位外币 = 多少 $baseCcy。')
     ..writeln('3. as_of 为数据日期（yyyy-MM-dd），source 为信息来源网址。')
     ..writeln('4. 只输出严格 JSON（不要 markdown 围栏、不要解释），格式：')
-    ..writeln('{"prices":[{"query":"名称","price":"123.45","currency":"CNY","as_of":"2026-10-27","source":"https://..."}],')
-    ..writeln(' "rates":[{"pair":"USD/$baseCcy","rate":"7.12","as_of":"2026-10-27","source":"https://..."}]}');
+    ..writeln(
+      '{"prices":[{"query":"名称","price":"123.45","currency":"CNY","as_of":"2026-10-27","source":"https://..."}],',
+    )
+    ..writeln(
+      ' "rates":[{"pair":"USD/$baseCcy","rate":"7.12","as_of":"2026-10-27","source":"https://..."}]}',
+    );
   return sb.toString();
 }

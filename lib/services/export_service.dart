@@ -27,8 +27,10 @@ class ExportService {
     final accounts = await _accounts.all();
     final byId = {for (final a in accounts) a.id: a};
     final txs = await _ledger.list(
-        from: DateTime(2000), to: DateTime(2999, 12, 31),
-        includeVoided: true);
+      from: DateTime(2000),
+      to: DateTime(2999, 12, 31),
+      includeVoided: true,
+    );
     txs.sort((a, b) => a.date.compareTo(b.date));
 
     final sb = StringBuffer('\uFEFF'); // UTF-8 BOM
@@ -63,22 +65,24 @@ class ExportService {
         }
       }
       final d = tx.date;
-      sb.writeln([
-        dateKey(d),
-        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}',
-        tx.kind.labelZh,
-        _directionLabel(tx.kind),
-        if (amountMinor != null && ccy != null)
-          _plainAmount(amountMinor, ccy)
-        else
-          '',
-        ccy ?? '',
-        userAccounts.join('+'),
-        tx.counterparty ?? '',
-        category ?? '',
-        tx.note ?? '',
-        tx.status == TxStatus.voided ? '已作废' : '有效',
-      ].map(_esc).join(','));
+      sb.writeln(
+        [
+          dateKey(d),
+          '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}',
+          tx.kind.labelZh,
+          _directionLabel(tx.kind),
+          if (amountMinor != null && ccy != null)
+            _plainAmount(amountMinor, ccy)
+          else
+            '',
+          ccy ?? '',
+          userAccounts.join('+'),
+          tx.counterparty ?? '',
+          category ?? '',
+          tx.note ?? '',
+          tx.status == TxStatus.voided ? '已作废' : '有效',
+        ].map(_esc).join(','),
+      );
     }
     return sb.toString();
   }
@@ -92,8 +96,10 @@ class ExportService {
     final valuations = await _meta.valuations();
     final fxRates = await _meta.latestFxRates();
     final txs = await _ledger.list(
-        from: DateTime(2000), to: DateTime(2999, 12, 31),
-        includeVoided: true);
+      from: DateTime(2000),
+      to: DateTime(2999, 12, 31),
+      includeVoided: true,
+    );
     txs.sort((a, b) => a.date.compareTo(b.date));
     final events = await _planning.scheduledEvents();
     final budgets = await _planning.budgets();
@@ -128,7 +134,9 @@ class ExportService {
             'liabilitySubtype': a.liabilitySubtype?.name,
             'institution': a.institution,
             'currencyCode': a.currencyCode,
-            'ownership': a.ownership == null ? null : '${a.ownership!.n}/${a.ownership!.d}',
+            'ownership': a.ownership == null
+                ? null
+                : '${a.ownership!.n}/${a.ownership!.d}',
             'includeInNetWorth': a.includeInNetWorth,
             'creditLimitMinor': a.creditLimitMinor?.toString(),
             'statementDay': a.statementDay,
@@ -141,7 +149,7 @@ class ExportService {
             'securityId': a.securityId,
             'locationLat': a.locationLat,
             'locationLon': a.locationLon,
-          }
+          },
       ],
       'valuations': [
         for (final v in valuations)
@@ -149,11 +157,13 @@ class ExportService {
             'accountId': v.accountId,
             'date': dateKey(v.date),
             'kind': v.kind.name,
-            'unitPrice': v.unitPrice == null ? null : '${v.unitPrice!.n}/${v.unitPrice!.d}',
+            'unitPrice': v.unitPrice == null
+                ? null
+                : '${v.unitPrice!.n}/${v.unitPrice!.d}',
             'totalValueMinor': v.totalValueMinor?.toString(),
             'source': v.source,
             'note': v.note,
-          }
+          },
       ],
       'fxRates': [
         for (final f in fxRates)
@@ -163,7 +173,7 @@ class ExportService {
             'rate': '${f.rate.n}/${f.rate.d}',
             'date': dateKey(f.asOf),
             'source': f.source,
-          }
+          },
       ],
       'transactions': [
         for (final t in txs)
@@ -189,9 +199,9 @@ class ExportService {
                       ? null
                       : '${p.quantity!.n}/${p.quantity!.d}',
                   'memo': p.memo,
-                }
+                },
             ],
-          }
+          },
       ],
       'scheduledEvents': [
         for (final e in events)
@@ -215,9 +225,11 @@ class ExportService {
             'status': e.status.name,
             'skippedMonthKeys': e.skippedMonthKeys.toList(),
             'skippedDateKeys': e.skippedDateKeys.toList(),
-            'amountOverrides':
-                {for (final kv in e.amountOverrides.entries) kv.key: kv.value.toString()},
-          }
+            'amountOverrides': {
+              for (final kv in e.amountOverrides.entries)
+                kv.key: kv.value.toString(),
+            },
+          },
       ],
       'budgets': [
         for (final b in budgets)
@@ -233,26 +245,24 @@ class ExportService {
             'rollover': b.rollover.name,
             'rolloverCapMinor': b.rolloverCapMinor?.toString(),
             'active': b.active,
-          }
+          },
       ],
       'settings': settings,
     });
   }
 
   static String _directionLabel(TxKind kind) => switch (kind) {
-        TxKind.income ||
-        TxKind.refund ||
-        TxKind.dividend ||
-        TxKind.receiveBack ||
-        TxKind.borrow =>
-          '收入',
-        TxKind.expense ||
-        TxKind.loanRepay ||
-        TxKind.creditCardRepay ||
-        TxKind.lend =>
-          '支出',
-        _ => '中性',
-      };
+    TxKind.income ||
+    TxKind.refund ||
+    TxKind.dividend ||
+    TxKind.receiveBack ||
+    TxKind.borrow => '收入',
+    TxKind.expense ||
+    TxKind.loanRepay ||
+    TxKind.creditCardRepay ||
+    TxKind.lend => '支出',
+    _ => '中性',
+  };
 
   /// 主要单位十进制（按币种精度，无千分位）。
   static String _plainAmount(BigInt minor, String ccy) {
@@ -260,12 +270,11 @@ class ExportService {
     final neg = minor.isNegative;
     final abs = minor.abs();
     final major = abs ~/ info.minorFactor;
-    final frac = (abs % info.minorFactor)
-        .toString()
-        .padLeft(info.minorUnitDigits, '0');
-    final body = info.minorUnitDigits == 0
-        ? major.toString()
-        : '$major.$frac';
+    final frac = (abs % info.minorFactor).toString().padLeft(
+      info.minorUnitDigits,
+      '0',
+    );
+    final body = info.minorUnitDigits == 0 ? major.toString() : '$major.$frac';
     return neg ? '-$body' : body;
   }
 

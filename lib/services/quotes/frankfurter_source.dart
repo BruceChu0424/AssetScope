@@ -11,16 +11,17 @@ class FrankfurterFx {
 
   static const baseUrl = 'https://api.frankfurter.dev/v1/latest';
 
-  static Uri buildUrl(Set<String> currencies) => Uri.parse(baseUrl).replace(
-      queryParameters: {
-        'base': 'EUR',
-        'symbols': currencies.join(','),
-      });
+  static Uri buildUrl(Set<String> currencies) => Uri.parse(
+    baseUrl,
+  ).replace(queryParameters: {'base': 'EUR', 'symbols': currencies.join(',')});
 
   /// 解析 JSON，返回 币种 → 1 单位该币 = 多少 [baseCcy] 的精确汇率。
   /// 任一币种不在央行列表 → 计入 [missing]。
   static (Map<String, Rational>, DateTime?, List<String>) parse(
-      String body, List<String> currencies, String baseCcy) {
+    String body,
+    List<String> currencies,
+    String baseCcy,
+  ) {
     final Object decoded;
     try {
       decoded = jsonDecode(body);

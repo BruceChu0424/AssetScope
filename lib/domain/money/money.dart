@@ -22,8 +22,11 @@ class Money implements Comparable<Money> {
 
   /// 解析十进制字符串（如 "1234.56"、"-0.01"），忽略千分位逗号与首尾空白。
   /// 小数位超出币种精度时按 [mode] 舍入。
-  static Money parse(String input, CurrencyInfo currency,
-      {RoundingMode mode = RoundingMode.halfEven}) {
+  static Money parse(
+    String input,
+    CurrencyInfo currency, {
+    RoundingMode mode = RoundingMode.halfEven,
+  }) {
     var s = input.trim().replaceAll(',', '').replaceAll(currency.symbol, '');
     if (s.isEmpty) throw const FormatException('空金额');
     var neg = false;
@@ -52,7 +55,8 @@ class Money implements Comparable<Money> {
       final keep = fracPart.substring(0, digits);
       final rest = fracPart.substring(digits);
       final base = BigInt.parse('${intPart.isEmpty ? '0' : intPart}$keep');
-      final exact = Rational.fromInt(base) +
+      final exact =
+          Rational.fromInt(base) +
           Rational.fromInt(BigInt.parse(rest)) /
               Rational.fromInt(BigInt.from(10).pow(rest.length));
       final minor = exact.rounded(mode: mode);
@@ -88,27 +92,32 @@ class Money implements Comparable<Money> {
   Money negate() => Money.fromMinor(-amountMinor, currency);
   Money abs() => Money.fromMinor(amountMinor.abs(), currency);
 
-  Money operator +(Money o) => _same(o, () => Money.fromMinor(amountMinor + o.amountMinor, currency));
-  Money operator -(Money o) => _same(o, () => Money.fromMinor(amountMinor - o.amountMinor, currency));
+  Money operator +(Money o) =>
+      _same(o, () => Money.fromMinor(amountMinor + o.amountMinor, currency));
+  Money operator -(Money o) =>
+      _same(o, () => Money.fromMinor(amountMinor - o.amountMinor, currency));
 
   Money scale(BigInt factor) => Money.fromMinor(amountMinor * factor, currency);
 
   /// 按有理数比例缩放并舍入（例如归属比例 2/3）。
-  Money scaleRatio(BigInt numer, BigInt denom,
-          {RoundingMode mode = RoundingMode.halfEven}) =>
-      Money.fromMinor(
-          _roundDiv(amountMinor * numer, denom, mode), currency);
+  Money scaleRatio(
+    BigInt numer,
+    BigInt denom, {
+    RoundingMode mode = RoundingMode.halfEven,
+  }) => Money.fromMinor(_roundDiv(amountMinor * numer, denom, mode), currency);
 
   T _same<T>(Money other, T Function() f) {
     if (other.currency.code != currency.code) {
       throw ArgumentError(
-          '币种不一致: ${currency.code} vs ${other.currency.code}，请使用 FxRate.convert');
+        '币种不一致: ${currency.code} vs ${other.currency.code}，请使用 FxRate.convert',
+      );
     }
     return f();
   }
 
   @override
-  int compareTo(Money other) => _same(other, () => amountMinor.compareTo(other.amountMinor));
+  int compareTo(Money other) =>
+      _same(other, () => amountMinor.compareTo(other.amountMinor));
 
   bool operator <(Money o) => compareTo(o) < 0;
   bool operator >(Money o) => compareTo(o) > 0;
@@ -134,8 +143,7 @@ class Money implements Comparable<Money> {
     final major = abs ~/ f;
     final minor = (abs % f).toString().padLeft(currency.minorUnitDigits, '0');
     final majorStr = _groupThousands(major.toString());
-    final frac =
-        currency.minorUnitDigits == 0 ? '' : '.$minor';
+    final frac = currency.minorUnitDigits == 0 ? '' : '.$minor';
     final sign = neg ? '-' : '';
     final sym = withSymbol ? currency.symbol : '';
     return '$sign$sym$majorStr$frac';

@@ -15,6 +15,7 @@ class DashboardData {
     required this.projectionDays,
     required this.upcoming,
     required this.series,
+    required this.series36,
     required this.insights,
     required this.locatedAssets,
     this.pendingDueCount = 0,
@@ -32,6 +33,10 @@ class DashboardData {
 
   /// 近 12 个月净资产（月, 净资产）。
   final List<(String, BigInt)> series;
+
+  /// 近 36 个月净资产：走势卡「时间转轴」的完整数据域，任意 N 月
+  /// 区间取其后缀 N 项即得（与 netWorthSeries(N) 同锚点同序列）。
+  final List<(String, BigInt)> series36;
 
   /// 智慧分析（健康/配速/异常/周期/里程碑）。
   final InsightBundle insights;
@@ -51,28 +56,43 @@ class DashboardData {
   BigInt get surplus => income - expense;
 }
 
-final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) async {
+final dashboardProvider = FutureProvider.autoDispose<DashboardData>((
+  ref,
+) async {
   final s = sessionOf(ref.watch(vaultProvider));
   if (s == null) throw StateError('locked');
   final now = DateTime.now();
   final nw = await s.statsService.netWorthAt(now);
   final report = await s.statsService.monthReport(now.year, now.month);
-  final projection =
-      await s.projectionService.project(horizonDays: s.projectionHorizonDays);
+  final projection = await s.projectionService.project(
+    horizonDays: s.projectionHorizonDays,
+  );
   final through = now.add(const Duration(days: 30));
   final upcoming = <Occurrence>[];
   final postedExtIds = await s.ledger.externalIds();
   for (final e in await s.planning.scheduledEvents()) {
-    upcoming.addAll(e.expand(DateTime(now.year, now.month, now.day), through)
-        .where((o) => !postedExtIds.contains(planExternalId(e.id, o.date))));
+    upcoming.addAll(
+      e
+          .expand(DateTime(now.year, now.month, now.day), through)
+          .where((o) => !postedExtIds.contains(planExternalId(e.id, o.date))),
+    );
   }
   upcoming.sort((a, b) => a.date.compareTo(b.date));
-  final series = await s.statsService.netWorthSeries(12, now: now);
+  // 一次取 36 个月：12 月默认视图是其后缀，拖动转轴扩到最长无需再算。
+  final series36 = await s.statsService.netWorthSeries(36, now: now);
+  final series = series36.length > 12
+      ? series36.sublist(series36.length - 12)
+      : series36;
   final insights = await s.insightService.dashboardInsights();
   final accounts = await s.accounts.all();
   final located = accounts
-      .where((a) =>
-          a.type.name == 'asset' && !a.isSystem && a.hasLocation && !a.archived)
+      .where(
+        (a) =>
+            a.type.name == 'asset' &&
+            !a.isSystem &&
+            a.hasLocation &&
+            !a.archived,
+      )
       .length;
   final pendingDue = (await s.planExecution.pendingDue()).length;
   return DashboardData(
@@ -82,6 +102,7 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) async 
     projectionDays: s.projectionHorizonDays,
     upcoming: upcoming,
     series: series,
+    series36: series36,
     insights: insights,
     locatedAssets: located,
     pendingDueCount: pendingDue,

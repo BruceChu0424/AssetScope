@@ -18,16 +18,17 @@ Future<void> showRecurringSheet(BuildContext context, WidgetRef ref) {
 }
 
 final _recurringProvider =
-    FutureProvider.autoDispose<(List<RecurringSuggestion>, Set<String>)>(
-        (ref) async {
-  final s = sessionOf(ref.watch(vaultProvider));
-  if (s == null) return const (<RecurringSuggestion>[], <String>{});
-  final suggestions = await s.insightService.recurringSuggestions();
-  final existing = (await s.planning.scheduledEvents())
-      .map((e) => e.name)
-      .toSet();
-  return (suggestions, existing);
-});
+    FutureProvider.autoDispose<(List<RecurringSuggestion>, Set<String>)>((
+      ref,
+    ) async {
+      final s = sessionOf(ref.watch(vaultProvider));
+      if (s == null) return const (<RecurringSuggestion>[], <String>{});
+      final suggestions = await s.insightService.recurringSuggestions();
+      final existing = (await s.planning.scheduledEvents())
+          .map((e) => e.name)
+          .toSet();
+      return (suggestions, existing);
+    });
 
 class _RecurringSheet extends ConsumerWidget {
   const _RecurringSheet();
@@ -43,24 +44,28 @@ class _RecurringSheet extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text('识别到的固定收支',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '识别到的固定收支',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               '从近 18 个月流水中识别（同对手方、间隔规整、≥3 次）。'
               '转为计划后将计入现金预测与预算的"已计划"。',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.hintColor, height: 1.5),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+                height: 1.5,
+              ),
             ),
           ),
           const Divider(height: 16),
           Expanded(
             child: async.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => ErrorPlaceholder('加载失败：$e'),
               data: (data) {
                 final (suggestions, existing) = data;
@@ -71,8 +76,10 @@ class _RecurringSheet extends ConsumerWidget {
                       child: Text(
                         '暂未识别到固定收支。多记录几个月的房租/订阅/工资等\n规律流水后再来试试。',
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.hintColor, height: 1.6),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.hintColor,
+                          height: 1.6,
+                        ),
                       ),
                     ),
                   );
@@ -138,8 +145,9 @@ class _SuggestionTile extends ConsumerWidget {
     final draft = ScheduledEvent(
       id: 'evt:${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
       name: suggestion.label,
-      direction:
-          suggestion.direction ? EventDirection.inflow : EventDirection.outflow,
+      direction: suggestion.direction
+          ? EventDirection.inflow
+          : EventDirection.outflow,
       currencyCode: 'CNY',
       cadence: cadence,
       intervalValue: intervalValue,

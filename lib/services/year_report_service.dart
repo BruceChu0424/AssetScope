@@ -20,21 +20,27 @@ class YearReportService {
     final lites = <MonthLite>[];
     for (var m = 1; m <= 12; m++) {
       final r = await _stats.monthReport(year, m);
-      final income =
-          r.incomeByCategory.values.fold(BigInt.zero, (a, b) => a + b);
-      final expense =
-          r.expenseByCategory.values.fold(BigInt.zero, (a, b) => a + b);
-      lites.add(MonthLite(
-        month: m,
-        incomeMinor: income,
-        expenseMinor: expense,
-        expenseByCategory: r.expenseByCategory,
-        incomeByCategory: r.incomeByCategory,
-        debtPrincipalRepaidMinor: r.debtPrincipalRepaidMinor,
-        debtInterestPaidMinor: r.debtInterestPaidMinor,
-        realizedPnlMinor: r.attribution.investRealized,
-        dividendMinor: r.attribution.investDividend,
-      ));
+      final income = r.incomeByCategory.values.fold(
+        BigInt.zero,
+        (a, b) => a + b,
+      );
+      final expense = r.expenseByCategory.values.fold(
+        BigInt.zero,
+        (a, b) => a + b,
+      );
+      lites.add(
+        MonthLite(
+          month: m,
+          incomeMinor: income,
+          expenseMinor: expense,
+          expenseByCategory: r.expenseByCategory,
+          incomeByCategory: r.incomeByCategory,
+          debtPrincipalRepaidMinor: r.debtPrincipalRepaidMinor,
+          debtInterestPaidMinor: r.debtInterestPaidMinor,
+          realizedPnlMinor: r.attribution.investRealized,
+          dividendMinor: r.attribution.investDividend,
+        ),
+      );
     }
 
     // 全年最大单笔消费（按分类分录金额；排除系统分类）。
@@ -42,7 +48,9 @@ class YearReportService {
     final byId = {for (final a in accounts) a.id: a};
     BiggestExpense? biggest;
     final txs = await _ledger.list(
-        from: DateTime(year, 1, 1), to: DateTime(year, 12, 31, 23, 59, 59));
+      from: DateTime(year, 1, 1),
+      to: DateTime(year, 12, 31, 23, 59, 59),
+    );
     for (final tx in txs) {
       if (tx.kind != TxKind.expense) continue;
       for (final p in tx.postings) {
@@ -57,7 +65,8 @@ class YearReportService {
         if (biggest == null || amount > biggest.amountMinor) {
           biggest = BiggestExpense(
             date: tx.date,
-            label: (tx.counterparty?.trim().isNotEmpty == true
+            label:
+                (tx.counterparty?.trim().isNotEmpty == true
                     ? tx.counterparty!.trim()
                     : tx.note?.trim()) ??
                 tx.kind.labelZh,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../theme/app_theme.dart';
+import 'odometer.dart';
 
 /// 最小单位金额 → 展示文本（全 UI 唯一格式化入口）。
 String fmtMinor(BigInt minor, String ccyCode, {bool sign = false}) {
@@ -15,6 +16,7 @@ String fmtMinor(BigInt minor, String ccyCode, {bool sign = false}) {
 /// 金额文本：等宽数字、可选正负着色、三档字号。
 ///
 /// 全部金额展示应经此组件，保证全应用数字排版一致。
+/// [roll] = true 时数值变化走老虎机式逐位滚动（[Odometer]）。
 class MoneyText extends StatelessWidget {
   const MoneyText(
     this.minor, {
@@ -25,6 +27,7 @@ class MoneyText extends StatelessWidget {
     this.color,
     this.sign = false,
     this.weight,
+    this.roll = false,
   });
 
   final BigInt minor;
@@ -37,6 +40,9 @@ class MoneyText extends StatelessWidget {
   final bool sign;
   final FontWeight? weight;
 
+  /// 数值变化时逐位老虎机滚动（首页 hero 等读数场景）。
+  final bool roll;
+
   static const _styles = <MoneySize, TextStyle>{
     MoneySize.xl: TextStyle(fontSize: 36, fontWeight: FontWeight.w600),
     MoneySize.lg: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
@@ -48,13 +54,13 @@ class MoneyText extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = _styles[size]!.copyWith(
       fontFeatures: const [FontFeature.tabularFigures()],
-      color: color ??
-          (colorBySign
-              ? signColor(minor, Theme.of(context).brightness)
-              : null),
+      color:
+          color ??
+          (colorBySign ? signColor(minor, Theme.of(context).brightness) : null),
       fontWeight: weight,
     );
-    return Text(fmtMinor(minor, currencyCode, sign: sign), style: style);
+    final text = fmtMinor(minor, currencyCode, sign: sign);
+    return roll ? Odometer(text: text, style: style) : Text(text, style: style);
   }
 }
 

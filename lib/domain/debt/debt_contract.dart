@@ -64,16 +64,24 @@ class DebtContract {
 
   /// 月利率（有理数精确值）。
   Rational get monthlyRate => switch (basis) {
-        DayCountBasis.monthlyRate => aprPercent / _r(BigInt.from(1200)),
-        DayCountBasis.d360 => aprPercent / _r(BigInt.from(36000)),
-        DayCountBasis.d365 => aprPercent / _r(BigInt.from(36500)),
-      };
+    DayCountBasis.monthlyRate => aprPercent / _r(BigInt.from(1200)),
+    DayCountBasis.d360 => aprPercent / _r(BigInt.from(36000)),
+    DayCountBasis.d365 => aprPercent / _r(BigInt.from(36500)),
+  };
 
   DateTime paymentDate(int seqFrom1) {
-    final anchor = firstPaymentDate ??
-        DateTime(startDate.year, startDate.month, repaymentDay ?? startDate.day);
-    return addMonthsClamped(anchor, seqFrom1 - 1,
-        policy: MonthEndPolicy.clampToMonthEnd);
+    final anchor =
+        firstPaymentDate ??
+        DateTime(
+          startDate.year,
+          startDate.month,
+          repaymentDay ?? startDate.day,
+        );
+    return addMonthsClamped(
+      anchor,
+      seqFrom1 - 1,
+      policy: MonthEndPolicy.clampToMonthEnd,
+    );
   }
 
   /// 生成完整还款计划（末期修正累计舍入差，保证本金恰好清零）。
@@ -112,14 +120,16 @@ class DebtContract {
         principal = remaining; // 末期（或利率极端时）整笔清偿
       }
       remaining -= principal;
-      entries.add(DebtScheduleEntry(
-        seq: k,
-        dueDate: paymentDate(k),
-        principalMinor: principal,
-        interestMinor: interest,
-        feeMinor: fee,
-        remainingPrincipalMinor: remaining,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: k,
+          dueDate: paymentDate(k),
+          principalMinor: principal,
+          interestMinor: interest,
+          feeMinor: fee,
+          remainingPrincipalMinor: remaining,
+        ),
+      );
     }
     return entries;
   }
@@ -136,14 +146,16 @@ class DebtContract {
       if (k == termMonths || principal >= remaining) principal = remaining;
       final interest = (_r(remaining) * i).rounded();
       remaining -= principal;
-      entries.add(DebtScheduleEntry(
-        seq: k,
-        dueDate: paymentDate(k),
-        principalMinor: principal,
-        interestMinor: interest,
-        feeMinor: fee,
-        remainingPrincipalMinor: remaining,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: k,
+          dueDate: paymentDate(k),
+          principalMinor: principal,
+          interestMinor: interest,
+          feeMinor: fee,
+          remainingPrincipalMinor: remaining,
+        ),
+      );
     }
     return entries;
   }
@@ -157,14 +169,16 @@ class DebtContract {
     for (var k = 1; k <= termMonths; k++) {
       final interest = (_r(p) * i).rounded();
       final principal = k == termMonths ? p : BigInt.zero;
-      entries.add(DebtScheduleEntry(
-        seq: k,
-        dueDate: paymentDate(k),
-        principalMinor: principal,
-        interestMinor: interest,
-        feeMinor: fee,
-        remainingPrincipalMinor: k == termMonths ? BigInt.zero : p,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: k,
+          dueDate: paymentDate(k),
+          principalMinor: principal,
+          interestMinor: interest,
+          feeMinor: fee,
+          remainingPrincipalMinor: k == termMonths ? BigInt.zero : p,
+        ),
+      );
     }
     return entries;
   }
@@ -181,14 +195,16 @@ class DebtContract {
       if (k == termMonths || principal >= remaining) principal = remaining;
       final fee = (_r(p) * r).rounded();
       remaining -= principal;
-      entries.add(DebtScheduleEntry(
-        seq: k,
-        dueDate: paymentDate(k),
-        principalMinor: principal,
-        interestMinor: BigInt.zero,
-        feeMinor: fee,
-        remainingPrincipalMinor: remaining,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: k,
+          dueDate: paymentDate(k),
+          principalMinor: principal,
+          interestMinor: BigInt.zero,
+          feeMinor: fee,
+          remainingPrincipalMinor: remaining,
+        ),
+      );
     }
     return entries;
   }
@@ -201,14 +217,16 @@ class DebtContract {
       var principal = (_r(p) / _r(BigInt.from(termMonths))).rounded();
       if (k == termMonths || principal >= remaining) principal = remaining;
       remaining -= principal;
-      entries.add(DebtScheduleEntry(
-        seq: k,
-        dueDate: paymentDate(k),
-        principalMinor: principal,
-        interestMinor: BigInt.zero,
-        feeMinor: BigInt.zero,
-        remainingPrincipalMinor: remaining,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: k,
+          dueDate: paymentDate(k),
+          principalMinor: principal,
+          interestMinor: BigInt.zero,
+          feeMinor: BigInt.zero,
+          remainingPrincipalMinor: remaining,
+        ),
+      );
     }
     return entries;
   }
@@ -223,7 +241,8 @@ class DebtContract {
     }
     final monthly = irrMonthly(flows);
     if (monthly == null) return null;
-    return Rational.parseDecimal(monthly.toStringAsFixed(10)) * _r(BigInt.from(1200));
+    return Rational.parseDecimal(monthly.toStringAsFixed(10)) *
+        _r(BigInt.from(1200));
   }
 
   /// 提前还款模拟：在原计划第 [afterEntrySeq] 期还完之后，额外偿还 [extraMinor]。
@@ -269,7 +288,9 @@ class DebtContract {
         liabilityAccountId: liabilityAccountId,
         principalOriginalMinor: remaining,
         aprPercent: aprPercent,
-        method: method == RepaymentMethod.manual ? RepaymentMethod.annuity : method,
+        method: method == RepaymentMethod.manual
+            ? RepaymentMethod.annuity
+            : method,
         termMonths: oldRemainingMonths,
         startDate: startDate,
         firstPaymentDate: afterEntrySeq < schedule.length
@@ -279,8 +300,10 @@ class DebtContract {
         basis: basis,
       ).generateSchedule();
     }
-    final newCost =
-        tail.fold(BigInt.zero, (s, e) => s + e.interestMinor + e.feeMinor);
+    final newCost = tail.fold(
+      BigInt.zero,
+      (s, e) => s + e.interestMinor + e.feeMinor,
+    );
     return PrepaymentResult(
       remainingEntries: tail,
       prepayFeeMinor: fee,
@@ -291,7 +314,10 @@ class DebtContract {
 
   /// 以固定每期还款额 [payLevelMinor] 逐月清偿 [startRemaining]，返回逐期明细。
   List<DebtScheduleEntry> _simulateWithPayment(
-      BigInt startRemaining, int startSeq, BigInt payLevelMinor) {
+    BigInt startRemaining,
+    int startSeq,
+    BigInt payLevelMinor,
+  ) {
     final i = monthlyRate;
     final fee = monthlyFeeMinor ?? BigInt.zero;
     final entries = <DebtScheduleEntry>[];
@@ -304,14 +330,16 @@ class DebtContract {
         principal = remaining;
       }
       remaining -= principal;
-      entries.add(DebtScheduleEntry(
-        seq: seq++,
-        dueDate: paymentDate(seq - 1),
-        principalMinor: principal,
-        interestMinor: interest,
-        feeMinor: fee,
-        remainingPrincipalMinor: remaining,
-      ));
+      entries.add(
+        DebtScheduleEntry(
+          seq: seq++,
+          dueDate: paymentDate(seq - 1),
+          principalMinor: principal,
+          interestMinor: interest,
+          feeMinor: fee,
+          remainingPrincipalMinor: remaining,
+        ),
+      );
     }
     return entries;
   }
@@ -425,10 +453,17 @@ class DebtPayoffPlanner {
       for (var j = 0; j < n; j++) {
         if (cleared[j]) pool += mins[j];
       }
-      final live = [for (var j = 0; j < n; j++) if (!cleared[j]) j];
-      live.sort(strategy == PayoffStrategy.avalanche
-          ? (a, b) => debts[b].aprPercent.asDouble().compareTo(debts[a].aprPercent.asDouble())
-          : (a, b) => remaining[a].compareTo(remaining[b]));
+      final live = [
+        for (var j = 0; j < n; j++)
+          if (!cleared[j]) j,
+      ];
+      live.sort(
+        strategy == PayoffStrategy.avalanche
+            ? (a, b) => debts[b].aprPercent.asDouble().compareTo(
+                debts[a].aprPercent.asDouble(),
+              )
+            : (a, b) => remaining[a].compareTo(remaining[b]),
+      );
       // 每笔先付自己的最低还款。
       for (final j in live) {
         var pay = mins[j] > remaining[j] ? remaining[j] : mins[j];
@@ -449,7 +484,11 @@ class DebtPayoffPlanner {
         }
       }
     }
-    return PayoffPlan(order: order, months: month, totalInterestMinor: totalInterest);
+    return PayoffPlan(
+      order: order,
+      months: month,
+      totalInterestMinor: totalInterest,
+    );
   }
 }
 

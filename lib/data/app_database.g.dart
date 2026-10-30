@@ -252,6 +252,31 @@ class $AccountsTable extends Accounts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _aiValuationEnabledMeta =
+      const VerificationMeta('aiValuationEnabled');
+  @override
+  late final GeneratedColumn<bool> aiValuationEnabled = GeneratedColumn<bool>(
+    'ai_valuation_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("ai_valuation_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _aiValuationQueryMeta = const VerificationMeta(
+    'aiValuationQuery',
+  );
+  @override
+  late final GeneratedColumn<String> aiValuationQuery = GeneratedColumn<String>(
+    'ai_valuation_query',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -288,6 +313,8 @@ class $AccountsTable extends Accounts
     locationLat,
     locationLon,
     locationName,
+    aiValuationEnabled,
+    aiValuationQuery,
     createdAt,
   ];
   @override
@@ -463,6 +490,24 @@ class $AccountsTable extends Accounts
         ),
       );
     }
+    if (data.containsKey('ai_valuation_enabled')) {
+      context.handle(
+        _aiValuationEnabledMeta,
+        aiValuationEnabled.isAcceptableOrUnknown(
+          data['ai_valuation_enabled']!,
+          _aiValuationEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ai_valuation_query')) {
+      context.handle(
+        _aiValuationQueryMeta,
+        aiValuationQuery.isAcceptableOrUnknown(
+          data['ai_valuation_query']!,
+          _aiValuationQueryMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -568,6 +613,14 @@ class $AccountsTable extends Accounts
         DriftSqlType.string,
         data['${effectivePrefix}location_name'],
       ),
+      aiValuationEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}ai_valuation_enabled'],
+      )!,
+      aiValuationQuery: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_valuation_query'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -613,6 +666,14 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
   final double? locationLat;
   final double? locationLon;
   final String? locationName;
+
+  /// AI 每日自动估值（房产/车辆等 manualValue 类）：启用后解锁时
+  /// 联网检索最新市价并写入估值记录（source=ai:…），用户可随时手动
+  /// 纠正（当日手动估值优先，AI 不再覆盖）。
+  final bool aiValuationEnabled;
+
+  /// AI 估值检索线索（小区/栋/室、年款型号等）；null = 由名称+位置推导。
+  final String? aiValuationQuery;
   final DateTime createdAt;
   const AccountRow({
     required this.id,
@@ -637,6 +698,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     this.locationLat,
     this.locationLon,
     this.locationName,
+    required this.aiValuationEnabled,
+    this.aiValuationQuery,
     required this.createdAt,
   });
   @override
@@ -694,6 +757,10 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     if (!nullToAbsent || locationName != null) {
       map['location_name'] = Variable<String>(locationName);
     }
+    map['ai_valuation_enabled'] = Variable<bool>(aiValuationEnabled);
+    if (!nullToAbsent || aiValuationQuery != null) {
+      map['ai_valuation_query'] = Variable<String>(aiValuationQuery);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -750,6 +817,10 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
       locationName: locationName == null && nullToAbsent
           ? const Value.absent()
           : Value(locationName),
+      aiValuationEnabled: Value(aiValuationEnabled),
+      aiValuationQuery: aiValuationQuery == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiValuationQuery),
       createdAt: Value(createdAt),
     );
   }
@@ -784,6 +855,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
       locationLat: serializer.fromJson<double?>(json['locationLat']),
       locationLon: serializer.fromJson<double?>(json['locationLon']),
       locationName: serializer.fromJson<String?>(json['locationName']),
+      aiValuationEnabled: serializer.fromJson<bool>(json['aiValuationEnabled']),
+      aiValuationQuery: serializer.fromJson<String?>(json['aiValuationQuery']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -813,6 +886,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
       'locationLat': serializer.toJson<double?>(locationLat),
       'locationLon': serializer.toJson<double?>(locationLon),
       'locationName': serializer.toJson<String?>(locationName),
+      'aiValuationEnabled': serializer.toJson<bool>(aiValuationEnabled),
+      'aiValuationQuery': serializer.toJson<String?>(aiValuationQuery),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -840,6 +915,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     Value<double?> locationLat = const Value.absent(),
     Value<double?> locationLon = const Value.absent(),
     Value<String?> locationName = const Value.absent(),
+    bool? aiValuationEnabled,
+    Value<String?> aiValuationQuery = const Value.absent(),
     DateTime? createdAt,
   }) => AccountRow(
     id: id ?? this.id,
@@ -870,6 +947,10 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     locationLat: locationLat.present ? locationLat.value : this.locationLat,
     locationLon: locationLon.present ? locationLon.value : this.locationLon,
     locationName: locationName.present ? locationName.value : this.locationName,
+    aiValuationEnabled: aiValuationEnabled ?? this.aiValuationEnabled,
+    aiValuationQuery: aiValuationQuery.present
+        ? aiValuationQuery.value
+        : this.aiValuationQuery,
     createdAt: createdAt ?? this.createdAt,
   );
   AccountRow copyWithCompanion(AccountsCompanion data) {
@@ -924,6 +1005,12 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
       locationName: data.locationName.present
           ? data.locationName.value
           : this.locationName,
+      aiValuationEnabled: data.aiValuationEnabled.present
+          ? data.aiValuationEnabled.value
+          : this.aiValuationEnabled,
+      aiValuationQuery: data.aiValuationQuery.present
+          ? data.aiValuationQuery.value
+          : this.aiValuationQuery,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -953,6 +1040,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
           ..write('locationLat: $locationLat, ')
           ..write('locationLon: $locationLon, ')
           ..write('locationName: $locationName, ')
+          ..write('aiValuationEnabled: $aiValuationEnabled, ')
+          ..write('aiValuationQuery: $aiValuationQuery, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -982,6 +1071,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
     locationLat,
     locationLon,
     locationName,
+    aiValuationEnabled,
+    aiValuationQuery,
     createdAt,
   ]);
   @override
@@ -1010,6 +1101,8 @@ class AccountRow extends DataClass implements Insertable<AccountRow> {
           other.locationLat == this.locationLat &&
           other.locationLon == this.locationLon &&
           other.locationName == this.locationName &&
+          other.aiValuationEnabled == this.aiValuationEnabled &&
+          other.aiValuationQuery == this.aiValuationQuery &&
           other.createdAt == this.createdAt);
 }
 
@@ -1036,6 +1129,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
   final Value<double?> locationLat;
   final Value<double?> locationLon;
   final Value<String?> locationName;
+  final Value<bool> aiValuationEnabled;
+  final Value<String?> aiValuationQuery;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AccountsCompanion({
@@ -1061,6 +1156,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
     this.locationLat = const Value.absent(),
     this.locationLon = const Value.absent(),
     this.locationName = const Value.absent(),
+    this.aiValuationEnabled = const Value.absent(),
+    this.aiValuationQuery = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1087,6 +1184,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
     this.locationLat = const Value.absent(),
     this.locationLon = const Value.absent(),
     this.locationName = const Value.absent(),
+    this.aiValuationEnabled = const Value.absent(),
+    this.aiValuationQuery = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1116,6 +1215,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
     Expression<double>? locationLat,
     Expression<double>? locationLon,
     Expression<String>? locationName,
+    Expression<bool>? aiValuationEnabled,
+    Expression<String>? aiValuationQuery,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1143,6 +1244,9 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
       if (locationLat != null) 'location_lat': locationLat,
       if (locationLon != null) 'location_lon': locationLon,
       if (locationName != null) 'location_name': locationName,
+      if (aiValuationEnabled != null)
+        'ai_valuation_enabled': aiValuationEnabled,
+      if (aiValuationQuery != null) 'ai_valuation_query': aiValuationQuery,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1171,6 +1275,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
     Value<double?>? locationLat,
     Value<double?>? locationLon,
     Value<String?>? locationName,
+    Value<bool>? aiValuationEnabled,
+    Value<String?>? aiValuationQuery,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -1197,6 +1303,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
       locationLat: locationLat ?? this.locationLat,
       locationLon: locationLon ?? this.locationLon,
       locationName: locationName ?? this.locationName,
+      aiValuationEnabled: aiValuationEnabled ?? this.aiValuationEnabled,
+      aiValuationQuery: aiValuationQuery ?? this.aiValuationQuery,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1275,6 +1383,12 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
     if (locationName.present) {
       map['location_name'] = Variable<String>(locationName.value);
     }
+    if (aiValuationEnabled.present) {
+      map['ai_valuation_enabled'] = Variable<bool>(aiValuationEnabled.value);
+    }
+    if (aiValuationQuery.present) {
+      map['ai_valuation_query'] = Variable<String>(aiValuationQuery.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1309,6 +1423,8 @@ class AccountsCompanion extends UpdateCompanion<AccountRow> {
           ..write('locationLat: $locationLat, ')
           ..write('locationLon: $locationLon, ')
           ..write('locationName: $locationName, ')
+          ..write('aiValuationEnabled: $aiValuationEnabled, ')
+          ..write('aiValuationQuery: $aiValuationQuery, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8326,6 +8442,8 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<double?> locationLat,
       Value<double?> locationLon,
       Value<String?> locationName,
+      Value<bool> aiValuationEnabled,
+      Value<String?> aiValuationQuery,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8353,6 +8471,8 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<double?> locationLat,
       Value<double?> locationLon,
       Value<String?> locationName,
+      Value<bool> aiValuationEnabled,
+      Value<String?> aiValuationQuery,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -8474,6 +8594,16 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<String> get locationName => $composableBuilder(
     column: $table.locationName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get aiValuationEnabled => $composableBuilder(
+    column: $table.aiValuationEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aiValuationQuery => $composableBuilder(
+    column: $table.aiValuationQuery,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8602,6 +8732,16 @@ class $$AccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get aiValuationEnabled => $composableBuilder(
+    column: $table.aiValuationEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get aiValuationQuery => $composableBuilder(
+    column: $table.aiValuationQuery,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8712,6 +8852,16 @@ class $$AccountsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get aiValuationEnabled => $composableBuilder(
+    column: $table.aiValuationEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get aiValuationQuery => $composableBuilder(
+    column: $table.aiValuationQuery,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 }
@@ -8769,6 +8919,8 @@ class $$AccountsTableTableManager
                 Value<double?> locationLat = const Value.absent(),
                 Value<double?> locationLon = const Value.absent(),
                 Value<String?> locationName = const Value.absent(),
+                Value<bool> aiValuationEnabled = const Value.absent(),
+                Value<String?> aiValuationQuery = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion(
@@ -8794,6 +8946,8 @@ class $$AccountsTableTableManager
                 locationLat: locationLat,
                 locationLon: locationLon,
                 locationName: locationName,
+                aiValuationEnabled: aiValuationEnabled,
+                aiValuationQuery: aiValuationQuery,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -8821,6 +8975,8 @@ class $$AccountsTableTableManager
                 Value<double?> locationLat = const Value.absent(),
                 Value<double?> locationLon = const Value.absent(),
                 Value<String?> locationName = const Value.absent(),
+                Value<bool> aiValuationEnabled = const Value.absent(),
+                Value<String?> aiValuationQuery = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion.insert(
@@ -8846,6 +9002,8 @@ class $$AccountsTableTableManager
                 locationLat: locationLat,
                 locationLon: locationLon,
                 locationName: locationName,
+                aiValuationEnabled: aiValuationEnabled,
+                aiValuationQuery: aiValuationQuery,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
