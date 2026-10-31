@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../l10n/runtime_l10n.dart';
 import 'crypto_suite.dart';
 import 'dart_crypto_suite.dart';
 
 class WrongPassphraseException implements Exception {
   @override
-  String toString() => 'WrongPassphraseException: 主口令或恢复码不正确';
+  String toString() =>
+      'WrongPassphraseException: ${rt('主口令或恢复码不正确')}';
 }
 
 /// 恢复码形态：8 组 4 位十六进制、`-` 相连（见 [_generateRecoveryCode]
@@ -72,12 +74,12 @@ class VaultHeader {
             : DateTime.parse(j['createdAt'] as String),
       );
     } on TypeError {
-      throw const FormatException('密钥头格式不合法');
+      throw FormatException(rt('密钥头格式不合法'));
     } on RangeError {
-      throw const FormatException('密钥头格式不合法');
+      throw FormatException(rt('密钥头格式不合法'));
     } catch (e) {
       if (e is FormatException) rethrow;
-      throw const FormatException('密钥头格式不合法');
+      throw FormatException(rt('密钥头格式不合法'));
     }
   }
 
@@ -110,7 +112,7 @@ class KeyManager {
   /// 数据库密钥（PRAGMA key 使用的 64 位 hex = 32 字节 DEK）。
   String databaseKeyHex() {
     final d = _dek;
-    if (d == null) throw StateError('尚未解锁');
+    if (d == null) throw StateError(rt('尚未解锁'));
     return d.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
@@ -165,7 +167,7 @@ class KeyManager {
         box: header.wrappedDek,
         aad: _aad(),
       );
-      if (dek.length != 32) throw CryptoException('DEK 长度异常');
+      if (dek.length != 32) throw CryptoException(rt('DEK 长度异常'));
       _dek = dek;
       return dek;
     } on CryptoException {
@@ -186,7 +188,7 @@ class KeyManager {
   /// 重新生成恢复码头。
   Future<(String, VaultHeader)> newRecoveryCode() async {
     final d = _dek;
-    if (d == null) throw StateError('尚未解锁');
+    if (d == null) throw StateError(rt('尚未解锁'));
     final code = _generateRecoveryCode(_suite);
     return (code, await _wrap(d, code));
   }

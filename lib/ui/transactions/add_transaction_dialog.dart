@@ -6,6 +6,7 @@ import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
+import '../../l10n/app_localizations.dart';
 import '../widgets/common.dart';
 import 'transactions_page.dart' show txAccountsProvider;
 
@@ -115,9 +116,11 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final accountsAsync = ref.watch(txAccountsProvider);
-    return AlertDialog(
-      title: Text(widget.editing == null ? '记一笔' : '编辑交易'),
+    return AppDialog(
+      title: widget.editing == null ? t.txAddTitle : t.txEditTitle,
+      scroll: true,
       content: accountsAsync.when(
         loading: () => const SizedBox(
           height: 200,
@@ -158,31 +161,31 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
           List<Account> optionsA;
           switch (_kind) {
             case TxKind.expense:
-              labelA = '支付账户';
+              labelA = t.txAccountPayFrom;
               optionsA = payables;
             case TxKind.income:
-              labelA = '入账账户';
+              labelA = t.txAccountDeposit;
               optionsA = userAssets;
             case TxKind.transfer || TxKind.fxConversion:
-              labelA = '转出账户';
+              labelA = t.txAccountTransferFrom;
               optionsA = userAssets;
             case TxKind.creditCardRepay:
-              labelA = '偿还卡片';
+              labelA = t.txAccountRepayCard;
               optionsA = liabilities;
             case TxKind.loanRepay:
-              labelA = '贷款账户';
+              labelA = t.txAccountLoan;
               optionsA = liabilities;
             case TxKind.borrow:
-              labelA = '借入到';
+              labelA = t.txAccountBorrowTo;
               optionsA = userAssets;
             case TxKind.lend:
-              labelA = '借出（挂应收）';
+              labelA = t.txAccountLendReceivable;
               optionsA = receivables;
             case TxKind.receiveBack:
-              labelA = '收回至';
+              labelA = t.txAccountReceiveBackTo;
               optionsA = receivables;
             default:
-              labelA = '账户';
+              labelA = t.txAccountLabel;
               optionsA = userAssets;
           }
           final categories = _kind == TxKind.income ? incomes : expenses;
@@ -191,9 +194,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<TxKind>(
+                ParticleDropdownField<TxKind>(
                   initialValue: _kind,
-                  decoration: const InputDecoration(labelText: '类型'),
+                  decoration: InputDecoration(labelText: t.fieldType),
                   items:
                       const [
                             TxKind.expense,
@@ -219,7 +222,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                   }),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
+                ParticleDropdownField<String>(
                   initialValue: _accountA,
                   decoration: InputDecoration(labelText: labelA),
                   items: [
@@ -230,7 +233,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 ),
                 if (_needB()) ...[
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  ParticleDropdownField<String>(
                     initialValue: _accountB,
                     decoration: InputDecoration(labelText: _labelB()),
                     items: [
@@ -244,9 +247,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 ],
                 if (_kind == TxKind.loanRepay) ...[
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  ParticleDropdownField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(labelText: '利息分类'),
+                    decoration: InputDecoration(labelText: t.txInterestCategory),
                     items: [
                       for (final a in expenses)
                         DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -256,9 +259,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 ],
                 if (_kind == TxKind.expense || _kind == TxKind.income) ...[
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  ParticleDropdownField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(labelText: '分类'),
+                        decoration: InputDecoration(labelText: t.txCategory),
                     items: [
                       for (final a in categories)
                         DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -276,7 +279,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                 const SizedBox(height: 12),
                 ParticleTextField(
                   controller: _note,
-                  decoration: const InputDecoration(labelText: '备注（可选）'),
+                  decoration: InputDecoration(labelText: t.txNoteOptional),
                 ),
               ],
             ),
@@ -286,9 +289,9 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          child: Text(t.commonCancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.commonSave)),
       ],
     );
   }
@@ -311,13 +314,16 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
     _ => false,
   };
 
-  String _labelB() => switch (_kind) {
-    TxKind.transfer || TxKind.fxConversion => '转入账户',
-    TxKind.creditCardRepay || TxKind.loanRepay => '还款来源',
-    TxKind.borrow => '借入到账账户（资产）',
-    TxKind.lend || TxKind.receiveBack => '对方现金账户',
-    _ => '账户 B',
-  };
+  String _labelB() {
+    final t = AppLocalizations.of(context);
+    return switch (_kind) {
+      TxKind.transfer || TxKind.fxConversion => t.txAccountTransferTo,
+      TxKind.creditCardRepay || TxKind.loanRepay => t.txAccountRepayFrom,
+      TxKind.borrow => t.txAccountBorrowToAsset,
+      TxKind.lend || TxKind.receiveBack => t.txAccountCounterpartyCash,
+      _ => t.txAccountB,
+    };
+  }
 
   String? _defaultA(
     List<Account> payables,

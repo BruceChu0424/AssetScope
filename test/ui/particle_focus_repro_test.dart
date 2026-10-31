@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:assetscope/ui/widgets/particle_interactive.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 // 复现：粒子包装后输入框能否点击聚焦、按钮能否点击。
 void main() {
@@ -9,6 +10,9 @@ void main() {
     addTearDown(c.dispose);
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Center(
             child: ParticleTextField(controller: c, decoration: const InputDecoration(hintText: 'h')),
@@ -28,6 +32,9 @@ void main() {
     var fired = 0;
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Center(
             child: ParticleFilledButton(onPressed: () => fired++, child: const Text('GO')),

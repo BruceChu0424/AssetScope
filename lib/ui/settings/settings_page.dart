@@ -1,278 +1,430 @@
-import 'dart:io';
-
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/app_meta.dart';
 import '../../app/providers.dart';
-import '../transactions/import_wizard.dart';
+import '../../l10n/app_localizations.dart';
+import '../globe/space_backdrop.dart';
+import '../theme/app_theme.dart';
 import '../widgets/common.dart';
-import 'ai_config_sheet.dart';
-import 'category_manager_sheet.dart';
-import 'fx_manager_sheet.dart';
-import 'quote_fetch_sheet.dart';
-import 'merge_dialog.dart';
-import 'settings_dialogs.dart';
+import '../globe/glass_card.dart';
+import 'settings_security.dart';
+import 'settings_sections.dart';
 
-/// 设置页 · 控制台：按域分组的卡片墙（安全 / 备份与恢复 / 偏好 / 数据
-/// 管理 / AI 与行情 / 关于）。说明文字一律挂 info 悬停提示（提示语
-/// 规范），不再铺静态副标题。大屏 480 定宽分组网格，小屏单列。
-class SettingsPage extends ConsumerWidget {
+/// 设置页 · 深空控制舱（v0.26 全站改版）：整页深空底幕（与首页同源：
+/// 星野 + 星云 + 流星 + 游走星尘）上，左侧悬浮玻璃分类导航台 + 右侧
+/// 自适应内容区；小屏为顶部标题带 + 横向分类胶囊 + 单列。
+///
+/// - 六分类：安全 / 备份与恢复 / 偏好 / 数据管理 / AI 与行情 / 关于
+///   （各分类内容在 settings_security.dart / settings_sections.dart）；
+/// - 全部状态与计数读真实数据（金库状态 / 设置表 / 加密库配置），
+///   绝不展示假状态或无功能控件；
+/// - 分类切换：内容 240ms 淡入轻上浮 + 卡片阶梯入场，导航稳定不闪；
+/// - 顶部说明挂 info 悬停（提示语规范）；全局导航（A 按钮）是纯浮层，
+///   悬浮在标题带首段让出的空白区（84px），不占布局空间。
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  int _selected = 0;
+
+  /// 深空底色（与首页 GlobeHomePage 同一常数；设置页永远深空，玻璃卡
+  /// 随明暗主题切换深蓝/雾白质感）。
+  static const _space = Color(0xFF050A12);
+  static const _bandInk = Color(0xFFE7ECF2); // 标题带文字（直接落在深空上）
+  static const _bandHint = Color(0xB3A5B5C7);
+  static const _bandHairline = Color(0x26E7ECF2);
+
+  @override
+  Widget build(BuildContext context) {
     final s = sessionOf(ref.watch(vaultProvider));
-    if (s == null) return const ErrorPlaceholder('未解锁');
-    final groups = <Widget>[
-      _GroupCard(
-        title: '安全',
-        icon: Icons.shield_outlined,
-        rows: [
-          ListRow(
-            icon: Icons.lock,
-            title: '立即锁定',
-            hint: '关闭数据库并清除内存密钥；无操作也会自动锁定',
-            onTap: () => ref.read(vaultProvider.notifier).lock(),
-          ),
-          ListRow(
-            icon: Icons.password,
-            title: '修改主口令',
-            hint: '只重新包裹密钥，数据不需要重加密',
-            onTap: () => showChangePassphraseDialog(context, ref),
-          ),
-          ListRow(
-            icon: Icons.key,
-            title: '重新生成恢复码',
-            hint: '旧恢复码立即失效',
-            onTap: () => showNewRecoveryCodeDialog(context, ref),
-          ),
-        ],
+    final t = AppLocalizations.of(context);
+    if (s == null) return ErrorPlaceholder(t.settingsNotUnlocked);
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
+    final categories = <(IconData, String, Widget)>[
+      (
+        Icons.shield_outlined,
+        t.settingsGroupSecurity,
+        SecuritySection(session: s),
       ),
-      _GroupCard(
-        title: '备份与恢复',
-        icon: Icons.backup_outlined,
-        rows: [
-          ListRow(
-            icon: Icons.upload_file,
-            title: '导出加密备份',
-            hint: '生成 .asbk 加密容器，请用独立口令并离线保存',
-            onTap: () => showBackupExportDialog(context, ref, s),
-          ),
-          ListRow(
-            icon: Icons.restore,
-            title: '从备份恢复',
-            hint: '先隔离校验，通过后才替换当前账本（原库保留 .bak）',
-            onTap: () => showBackupRestoreDialog(context, ref, s),
-          ),
-          ListRow(
-            icon: Icons.merge_type,
-            title: '从备份合并（多设备）',
-            hint: '把另一设备的 .asbk 并入当前账本：交易按时间新者胜，先自动安全备份',
-            onTap: () => showMergeDialog(context, ref, s),
-          ),
-        ],
+      (
+        Icons.backup_outlined,
+        t.settingsGroupBackup,
+        BackupSection(session: s),
       ),
-      _GroupCard(
-        title: '偏好',
-        icon: Icons.tune,
-        rows: [
-          _ThemeModeRow(session: s),
-          ListRow(
-            icon: Icons.attach_money,
-            title: '本位币',
-            hint: '统计、净资产与预测的基准货币',
-            onTap: () => showBaseCurrencyDialog(context, ref, s),
-          ),
-          _LockTimeoutRow(session: s),
-          _HorizonRow(session: s),
-          _CashFloorRow(session: s),
-        ],
+      (
+        Icons.tune,
+        t.settingsGroupPreferences,
+        PrefsSection(session: s),
       ),
-      _GroupCard(
-        title: '数据管理',
-        icon: Icons.storage_outlined,
-        rows: [
-          ListRow(
-            icon: Icons.file_upload_outlined,
-            title: '导入账单 CSV',
-            hint: 'UTF-8/GBK 自动识别，去重幂等，智慧分类建议',
-            onTap: () => showImportWizard(context, ref),
-          ),
-          ListRow(
-            icon: Icons.data_object,
-            title: '导出全量 JSON',
-            hint: '账户/估值/交易/计划/预算的明文快照（不含密钥），可审计可迁移',
-            onTap: () => _exportFullJson(context, s),
-          ),
-          ListRow(
-            icon: Icons.currency_exchange,
-            title: '汇率管理',
-            hint: '手工录入各币种对本位币汇率',
-            onTap: () => showFxManagerSheet(context, ref, s),
-          ),
-          ListRow(
-            icon: Icons.category_outlined,
-            title: '分类与规则',
-            hint: '管理收支分类、商户→分类关键词规则',
-            onTap: () => showCategoryManagerSheet(context, ref, s),
-          ),
-        ],
+      (
+        Icons.storage_outlined,
+        t.settingsGroupData,
+        DataSection(session: s),
       ),
-      _GroupCard(
-        title: 'AI 与行情',
-        icon: Icons.smart_toy_outlined,
-        rows: [
-          ListRow(
-            icon: Icons.smart_toy_outlined,
-            title: 'AI 服务配置',
-            hint: '智谱/Kimi/千问/OpenAI/Claude/自定义；Key 加密存本地',
-            onTap: () => showAiConfigSheet(context, s),
-          ),
-          ListRow(
-            icon: Icons.travel_explore,
-            title: '行情 / 汇率抓取',
-            hint: 'AI 联网搜索最新价格与汇率，预览确认后入账',
-            onTap: () => showQuoteFetchSheet(context, ref),
-          ),
-        ],
+      (
+        Icons.smart_toy_outlined,
+        t.settingsGroupAiQuotes,
+        AiSection(session: s),
       ),
-      _AboutCard(),
+      (Icons.info_outline, t.settingsGroupAbout, const AboutSection()),
     ];
-    return PageFrame(
-      title: '设置',
-      maxWidth: 1040,
-      child: LayoutBuilder(
-        builder: (context, c) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-          children: [
-            if (c.maxWidth >= 720)
-              CardWrap(tileWidth: 480, children: groups)
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final g in groups)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: g,
-                    ),
-                ],
-              ),
-          ],
-        ),
+    final sel = _selected.clamp(0, categories.length - 1);
+    return Scaffold(
+      backgroundColor: _space,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: SpaceBackdrop()),
+          Positioned.fill(
+            child: wide
+                ? _wideBody(context, t, categories, sel)
+                : _smallBody(context, t, categories, sel),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _exportFullJson(BuildContext context, VaultUnlocked s) async {
-    final loc = await getSaveLocation(
-      suggestedName:
-          'assetscope-full-${DateTime.now().toIso8601String().substring(0, 10)}.json',
-      acceptedTypeGroups: const [
-        XTypeGroup(label: 'JSON', extensions: ['json']),
+  // ── 大屏（≥900）：标题带 + 左玻璃导航 + 右内容 ──
+
+  Widget _wideBody(
+    BuildContext context,
+    AppLocalizations t,
+    List<(IconData, String, Widget)> categories,
+    int sel,
+  ) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    // 标题带与下方导航台/内容区同贴 28px 左缘（导航入口让位已删除）。
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(28, topInset + 16, 28, 0),
+          child: _titleBand(t, compact: false),
+        ),
+        const SizedBox(height: 14),
+        const Divider(height: 1, thickness: 1, color: _bandHairline),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 18, 28, 24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 236,
+                  child: _SettingsNav(
+                    categories: [
+                      for (final c in categories) (c.$1, c.$2),
+                    ],
+                    selected: sel,
+                    onSelect: (i) => setState(() => _selected = i),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(child: _switchableBody(categories, sel)),
+              ],
+            ),
+          ),
+        ),
       ],
     );
-    if (loc == null) return;
-    try {
-      final json = await s.exportService.fullLedgerJson(appVersion: appVersion);
-      await File(loc.path).writeAsString(json, flush: true);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已导出全量 JSON（明文，不含任何密钥）')));
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('导出失败：$e')));
-    }
+  }
+
+  // ── 小屏（<900）：标题带 + 横向分类胶囊 + 单列 ──
+
+  Widget _smallBody(
+    BuildContext context,
+    AppLocalizations t,
+    List<(IconData, String, Widget)> categories,
+    int sel,
+  ) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(8, topInset + 10, 12, 0),
+          child: _titleBand(t, compact: true),
+        ),
+        SizedBox(
+          height: 54,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            children: [
+              for (var i = 0; i < categories.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                _CategoryChip(
+                  icon: categories[i].$1,
+                  label: categories[i].$2,
+                  selected: i == sel,
+                  onTap: () => setState(() => _selected = i),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Expanded(child: _switchableBody(categories, sel, small: true)),
+      ],
+    );
+  }
+
+  /// 标题带：返回 + 设置 + info + 右上真实安全状态章。文字直接落在深空
+  /// 上，用显式浅色（同首页顶栏做法，不随主题反转）。
+  Widget _titleBand(AppLocalizations t, {required bool compact}) {
+    return Row(
+      children: [
+        const PageBackButton(onDark: true),
+        const SizedBox(width: 8),
+        Text(
+          t.settingsPageTitle,
+          style: TextStyle(
+            color: _bandInk,
+            fontSize: compact ? 19 : 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: t.settingsPageHint,
+          waitDuration: const Duration(milliseconds: 300),
+          child: const Icon(
+            Icons.info_outline,
+            size: 15,
+            color: _bandHint,
+          ),
+        ),
+        const Spacer(),
+        _SecurityBadge(compact: compact),
+      ],
+    );
+  }
+
+  /// 分类内容切换：240ms 淡入轻上浮（旧内容渐隐，导航与标题带稳定）。
+  Widget _switchableBody(
+    List<(IconData, String, Widget)> categories,
+    int sel, {
+    bool small = false,
+  }) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.014),
+            end: Offset.zero,
+          ).animate(anim),
+          child: child,
+        ),
+      ),
+      child: KeyedSubtree(
+        key: ValueKey(sel),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            small ? 16 : 0,
+            small ? 6 : 0,
+            small ? 16 : 0,
+            small ? 28 : 4,
+          ),
+          child: categories[sel].$3,
+        ),
+      ),
+    );
   }
 }
 
-/// 分组卡：小节标题行 + ListRow 列。
-class _GroupCard extends StatelessWidget {
-  const _GroupCard({required this.title, required this.icon, required this.rows});
+/// 右上安全状态章：整库加密恒真（金库机制），显示保护中徽标。
+/// 说明挂悬停提示。
+class _SecurityBadge extends StatelessWidget {
+  const _SecurityBadge({required this.compact});
 
-  final String title;
-  final IconData icon;
-  final List<Widget> rows;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // 底缘光尘（docs/12 §9 卡片规范）：分组卡与区块卡同一家族。
-    return ParticleEdge(
-      band: 22,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+    final t = AppLocalizations.of(context);
+    return Tooltip(
+      message: t.settingsHeaderShieldTip,
+      waitDuration: const Duration(milliseconds: 300),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 13,
+          vertical: 7,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: const Color(0xFF7EA6D9).withValues(alpha: 0.10),
+          border: Border.all(color: const Color(0xFF7EA6D9).withValues(alpha: 0.38)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.verified_user_outlined,
+              size: 15,
+              color: Color(0xFFA5C7EE),
+            ),
+            if (!compact) ...[
+              const SizedBox(width: 7),
+              Text(
+                t.settingsHeaderShield,
+                style: const TextStyle(
+                  color: Color(0xFFA5C7EE),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 左侧分类导航台：玻璃面板 + 图标条目。选中 = 主色渐变洗底 + 左缘
+/// 高亮线 + 图标提亮 + 微辉光边；悬浮 = 轻微提亮；切换 180ms 平滑。
+class _SettingsNav extends StatelessWidget {
+  const _SettingsNav({
+    required this.categories,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<(IconData, String)> categories;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 6),
-              child: Row(
-                children: [
-                  Icon(icon, size: 17, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            for (final r in rows)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: r,
+            for (var i = 0; i < categories.length; i++)
+              _NavTile(
+                icon: categories[i].$1,
+                label: categories[i].$2,
+                selected: i == selected,
+                onTap: () => onSelect(i),
               ),
           ],
         ),
       ),
-      ),
     );
   }
 }
 
-/// 关于卡：品牌 + 版本 + 一句定位。
-class _AboutCard extends StatelessWidget {
+class _NavTile extends StatefulWidget {
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_NavTile> createState() => _NavTileState();
+}
+
+class _NavTileState extends State<_NavTile> {
+  bool _hover = false;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ParticleEdge(
-      band: 22,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+    final tint = theme.colorScheme.primary;
+    final selected = widget.selected;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.chip),
+            // 选中：主色斜向渐变洗底 + 微辉光；悬浮：轻提亮。
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      tint.withValues(alpha: 0.16),
+                      tint.withValues(alpha: 0.04),
+                    ],
+                  )
+                : null,
+            color: !selected && _hover
+                ? theme.colorScheme.onSurface.withValues(alpha: 0.05)
+                : selected
+                ? null
+                : Colors.transparent,
+            border: Border.all(
+              color: selected
+                  ? tint.withValues(alpha: 0.30)
+                  : Colors.transparent,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: tint.withValues(alpha: 0.10),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : const [],
+          ),
           child: Row(
             children: [
-              const BrandMark(size: 40),
-              const SizedBox(width: 14),
+              // 左缘细高亮线：选中出现（宽度呼吸展开）。
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                width: selected ? 3 : 0,
+                height: 20,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: tint.withValues(alpha: selected ? 0.9 : 0),
+                ),
+              ),
+              Icon(
+                widget.icon,
+                size: 17,
+                color: selected ? tint : theme.hintColor,
+              ),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$appName $appVersion',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '本地优先的个人资产、负债与财务规划系统。数据全程加密存储，任何联网功能默认关闭。',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? tint : null,
+                  ),
                 ),
               ),
             ],
@@ -283,172 +435,73 @@ class _AboutCard extends StatelessWidget {
   }
 }
 
-/// 外观模式：跟随系统 / 浅色 / 深色（存设置表，立即生效）。
-class _ThemeModeRow extends ConsumerWidget {
-  const _ThemeModeRow({required this.session});
+/// 小屏分类胶囊：选中主色胶囊 + 微光，未选中玻璃幽灵。
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
-  final VaultUnlocked session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(themeModeProvider);
-    return ListRow(
-      icon: Icons.dark_mode_outlined,
-      title: '外观',
-      hint: '浅色冷雾白 / 深色财富终端，跟随系统自动切换',
-      trailingValue: switch (mode) {
-        ThemeMode.system => '跟随系统',
-        ThemeMode.light => '浅色',
-        ThemeMode.dark => '深色',
-      },
-      onTap: () async {
-        final picked = await showDialog<ThemeMode>(
-          context: context,
-          builder: (_) => SimpleDialog(
-            title: const Text('外观'),
-            children: [
-              for (final m in ThemeMode.values)
-                SimpleDialogOption(
-                  child: Text(switch (m) {
-                    ThemeMode.system => '跟随系统',
-                    ThemeMode.light => '浅色',
-                    ThemeMode.dark => '深色',
-                  }),
-                  onPressed: () => Navigator.pop(context, m),
-                ),
-            ],
-          ),
-        );
-        if (picked == null) return;
-        await ref.read(themeModeProvider.notifier).set(picked, session);
-      },
-    );
-  }
-}
-
-/// 自动锁定时长（设置项，立即生效）。
-class _LockTimeoutRow extends ConsumerWidget {
-  const _LockTimeoutRow({required this.session});
-
-  final VaultUnlocked session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListRow(
-      icon: Icons.timer_outlined,
-      title: '自动锁定',
-      hint: '无操作达到该时长后自动锁定账本',
-      trailingValue: '${session.lockTimeoutMinutes} 分钟',
-      onTap: () async {
-        final picked = await showDialog<int>(
-          context: context,
-          builder: (_) => SimpleDialog(
-            title: const Text('无操作自动锁定'),
-            children: [
-              for (final m in const [1, 5, 15, 30, 60])
-                SimpleDialogOption(
-                  child: Text('$m 分钟'),
-                  onPressed: () => Navigator.pop(context, m),
-                ),
-            ],
-          ),
-        );
-        if (picked == null) return;
-        await session.meta.setSetting('lockTimeoutMinutes', picked);
-        await ref.read(vaultProvider.notifier).refreshTunables();
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('自动锁定已设为 $picked 分钟')));
-        }
-      },
-    );
-  }
-}
-
-/// 现金预测期（设置项）。
-class _HorizonRow extends StatelessWidget {
-  const _HorizonRow({required this.session});
-
-  final VaultUnlocked session;
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListRow(
-      icon: Icons.timeline,
-      title: '现金预测期',
-      hint: '首页「还能花多少」的推演天数',
-      trailingValue: '${session.projectionHorizonDays} 天',
-      onTap: () async {
-        final picked = await showDialog<int>(
-          context: context,
-          builder: (_) => SimpleDialog(
-            title: const Text('现金预测期'),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: selected
+                ? const Color(0xFF7EA6D9).withValues(alpha: 0.20)
+                : Colors.white.withValues(alpha: 0.05),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF7EA6D9).withValues(alpha: 0.55)
+                  : const Color(0x2EE7ECF2),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF7EA6D9).withValues(alpha: 0.14),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              for (final d in const [30, 60, 90, 180])
-                SimpleDialogOption(
-                  child: Text('$d 天'),
-                  onPressed: () => Navigator.pop(context, d),
+              Icon(
+                icon,
+                size: 15,
+                color: selected ? const Color(0xFFA5C7EE) : _SettingsPageState._bandHint,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected
+                      ? const Color(0xFFDCE9F7)
+                      : _SettingsPageState._bandHint,
                 ),
-            ],
-          ),
-        );
-        if (picked == null) return;
-        await session.meta.setSetting('projectionHorizonDays', picked);
-        session.projectionHorizonDays = picked;
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('现金预测期已设为 $picked 天')));
-        }
-      },
-    );
-  }
-}
-
-/// 现金底线（预测公式中的 R(t) 下限）。
-class _CashFloorRow extends StatelessWidget {
-  const _CashFloorRow({required this.session});
-
-  final VaultUnlocked session;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListRow(
-      icon: Icons.vertical_align_bottom,
-      title: '现金底线',
-      hint: '低于此值视为现金短缺（预测与可支配上限会扣除）',
-      onTap: () async {
-        final ctrl = TextEditingController();
-        final field = AppAmountField(controller: ctrl, currencyCode: 'CNY');
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (dctx) => AlertDialog(
-            title: const Text('现金底线'),
-            content: field,
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dctx, false),
-                child: const Text('取消'),
-              ),
-              ParticleFilledButton(
-                onPressed: () => Navigator.pop(dctx, true),
-                child: const Text('保存'),
               ),
             ],
           ),
-        );
-        if (ok != true) return;
-        final v = field.parseMinor();
-        if (v == null) return;
-        // 存最小单位字符串（与 seed 格式一致）。
-        await session.meta.setSetting('baselineMinCashMinor', v.toString());
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('现金底线已保存')));
-        }
-      },
+        ),
+      ),
     );
   }
 }

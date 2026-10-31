@@ -6,6 +6,7 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/recurrence.dart';
 import '../../domain/utils/dates.dart';
+import '../../l10n/app_localizations.dart';
 import '../transactions/transactions_page.dart' show txAccountsProvider;
 import '../widgets/common.dart';
 import 'plan_fields.dart';
@@ -97,10 +98,12 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final initial = widget.initial;
     final accountsAsync = ref.watch(txAccountsProvider);
-    return AlertDialog(
-      title: Text(initial == null ? '新建计划' : '编辑计划'),
+    return AppDialog(
+      title: initial == null ? t.planNew : t.planEdit,
+      scroll: true,
       content: accountsAsync.when(
         loading: () => const SizedBox(
           height: 320,
@@ -125,18 +128,18 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
               children: [
                 ParticleTextField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: '名称（如 房租 / 工资）'),
+                  decoration: InputDecoration(labelText: t.planNameLabel),
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<EventDirection>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: EventDirection.outflow,
-                      label: Text('支出'),
+                      label: Text(t.planOutflow),
                     ),
                     ButtonSegment(
                       value: EventDirection.inflow,
-                      label: Text('收入'),
+                      label: Text(t.planInflow),
                     ),
                   ],
                   selected: {_direction},
@@ -147,9 +150,9 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
                   }),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<Cadence>(
+                ParticleDropdownField<Cadence>(
                   initialValue: _cadence,
-                  decoration: const InputDecoration(labelText: '周期'),
+                  decoration: InputDecoration(labelText: t.planCadence),
                   items: [
                     for (final c in Cadence.values)
                       DropdownMenuItem(value: c, child: Text(c.labelZh)),
@@ -176,15 +179,15 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
                 const SizedBox(height: 8),
                 AppDateField(
                   controller: _anchor,
-                  label: _cadence == Cadence.monthly ? '起始日（每月此日发生）' : '起始日',
+                  label: _cadence == Cadence.monthly ? t.planAnchorMonthly : t.planAnchorDate,
                 ),
                 const SizedBox(height: 8),
-                AppDateField(controller: _end, label: '结束日（可选）'),
+                AppDateField(controller: _end, label: t.planEndDate),
                 const SizedBox(height: 4),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('到期自动记入账本'),
-                  subtitle: const Text('解锁应用时自动落账；已入账/作废不会重复记'),
+                  title: Text(t.planAutoPostTitle),
+                  subtitle: Text(t.planAutoPostSubtitle),
                   value: _autoPost,
                   onChanged: (v) => setState(() => _autoPost = v),
                 ),
@@ -196,9 +199,9 @@ class _PlanEditDialogState extends ConsumerState<PlanEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          child: Text(t.cancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.save)),
       ],
     );
   }

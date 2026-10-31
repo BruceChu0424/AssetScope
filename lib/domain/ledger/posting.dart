@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/currency.dart';
 import '../money/fx_rate.dart';
 import '../money/money.dart';
@@ -57,7 +58,7 @@ class Posting {
 
   /// 便于阅读的描述。
   String describe(Map<String, String> accountNames) {
-    final side = (amountMinor ?? BigInt.zero).isNegative ? '贷' : '借';
+    final side = (amountMinor ?? BigInt.zero).isNegative ? rt('贷') : rt('借');
     final name = accountNames[accountId] ?? accountId;
     if (isQuantity) {
       return '$side $name ${quantity!.n}/${quantity!.d} ($securityId)';

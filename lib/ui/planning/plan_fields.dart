@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/ledger/account.dart';
 import '../../domain/planning/recurrence.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
+import '../widgets/common.dart' show ParticleDropdownField;
 
 /// 计划表单公共件：支付账户与分类的口径过滤 + 下拉。
 ///
@@ -46,7 +49,7 @@ class PlanAccountDropdown extends StatelessWidget {
     required this.currency,
     required this.value,
     required this.onChanged,
-    this.label = '支付账户',
+    this.label,
   });
 
   final List<Account> accounts;
@@ -54,17 +57,18 @@ class PlanAccountDropdown extends StatelessWidget {
   final String currency;
   final String? value;
   final ValueChanged<String?> onChanged;
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final options = payableFor(accounts, direction, currency);
     final valid = value != null && options.any((a) => a.id == value);
-    return DropdownButtonFormField<String>(
+    return ParticleDropdownField<String>(
       initialValue: valid ? value : (options.isEmpty ? null : options.first.id),
       decoration: InputDecoration(
-        labelText: label,
-        helperText: options.isEmpty ? '没有 $currency 账户可选，请先建账户' : null,
+        labelText: label ?? t.planPayAccount,
+        helperText: options.isEmpty ? t.planNoAccountForCurrency(currency) : null,
       ),
       items: [
         for (final a in options)
@@ -92,11 +96,12 @@ class PlanCategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final options = categoriesFor(accounts, direction);
     final valid = value != null && options.any((a) => a.id == value);
-    return DropdownButtonFormField<String>(
+    return ParticleDropdownField<String>(
       initialValue: valid ? value : (options.isEmpty ? null : options.first.id),
-      decoration: const InputDecoration(labelText: '分类'),
+      decoration: InputDecoration(labelText: t.planCategory),
       items: [
         for (final a in options)
           DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -108,8 +113,8 @@ class PlanCategoryDropdown extends StatelessWidget {
 
 /// 计划状态 → 中文标签。
 String planStatusLabel(PlanStatus s) => switch (s) {
-  PlanStatus.active => '进行中',
-  PlanStatus.paused => '已暂停',
-  PlanStatus.finished => '已结束',
-  PlanStatus.cancelled => '已取消',
+  PlanStatus.active => rt('进行中'),
+  PlanStatus.paused => rt('已暂停'),
+  PlanStatus.finished => rt('已结束'),
+  PlanStatus.cancelled => rt('已取消'),
 };

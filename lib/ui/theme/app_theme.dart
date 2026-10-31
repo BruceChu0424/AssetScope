@@ -83,6 +83,34 @@ abstract final class AppSpace {
   static const gap = 10.0;
 }
 
+/// 字体令牌：全局默认拉丁/数字走 Space Grotesk，中文逐字回落思源黑体；
+/// 金额/读数走 IBM Plex Mono（[MoneyText]）；思源宋体留作大标题备选。
+abstract final class AppFonts {
+  static const grotesk = 'SpaceGrotesk';
+  static const notoSans = 'NotoSansSC';
+  static const mono = 'IBMPlexMono';
+  static const serif = 'NotoSerifSC';
+
+  /// 逐字符回落链：拉丁/数字 → 中文 → 兜底等宽。
+  static const fallback = [notoSans, mono];
+}
+
+/// 控件统一度量：并排出现的按钮 / 输入框 / 下拉 / 筛选条一律同高
+/// （[AppMeasure.controlH]），高度由主题层保证，页面不再各自为政。
+abstract final class AppMeasure {
+  /// 一切行内控件的标准高度（按钮、输入框、下拉、日期条）。
+  static const controlH = 48.0;
+
+  /// 表单弹窗标准宽度。
+  static const dialogW = 460.0;
+
+  /// 桌面侧滑面板（showAppSheet 大屏形态）宽度。
+  static const sideSheetW = 560.0;
+
+  /// 工作台页面（资产 / AI / 设置）大屏内容最大宽度。
+  static const workbench = 1440.0;
+}
+
 /// 正负金额颜色（全 UI 唯一入口）。
 Color signColor(BigInt minor, Brightness b) => minor.isNegative
     ? AppColors.negativeOf(b)
@@ -119,6 +147,8 @@ ThemeData buildAppTheme(Brightness brightness) {
     useMaterial3: true,
     brightness: brightness,
     colorScheme: scheme,
+    fontFamily: AppFonts.grotesk,
+    fontFamilyFallback: AppFonts.fallback,
     scaffoldBackgroundColor: isLight ? AppColors.paper : AppColors.darkBg,
     splashFactory: InkSparkle.splashFactory,
     appBarTheme: AppBarTheme(
@@ -153,6 +183,8 @@ ThemeData buildAppTheme(Brightness brightness) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: isLight ? Colors.white : const Color(0xFF10161D),
+      // 控件高度统一（docs · AppMeasure.controlH）：输入框与并排按钮同高。
+      constraints: const BoxConstraints(minHeight: AppMeasure.controlH),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: hairline),
@@ -163,18 +195,59 @@ ThemeData buildAppTheme(Brightness brightness) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.navy, width: 1.4),
+        borderSide: BorderSide(
+          color: isLight ? AppColors.navy : AppColors.darkPrimary,
+          width: 1.4,
+        ),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: scheme.primary,
         foregroundColor: isLight ? Colors.white : AppColors.darkBg,
+        minimumSize: const Size(88, AppMeasure.controlH),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(64, AppMeasure.controlH),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(72, AppMeasure.controlH),
+        side: BorderSide(color: hairline),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      elevation: 0,
+      backgroundColor: scheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: hairline),
+      ),
+      titleTextStyle: TextStyle(
+        color: baseText,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.2,
+      ),
+      contentTextStyle: TextStyle(
+        color: baseText.withValues(alpha: 0.8),
+        fontSize: 14,
+        height: 1.5,
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 4, 20, 18),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
@@ -207,6 +280,8 @@ ThemeData buildAppTheme(Brightness brightness) {
     textTheme: Typography.material2021().black.apply(
       bodyColor: baseText,
       displayColor: baseText,
+      fontFamily: AppFonts.grotesk,
+      fontFamilyFallback: AppFonts.fallback,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(

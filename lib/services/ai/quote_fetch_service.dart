@@ -6,6 +6,7 @@ import '../../data/repositories/meta_repo.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/valuation/valuation.dart';
+import '../../l10n/runtime_l10n.dart';
 import 'ai_chat.dart';
 import 'ai_quote.dart';
 
@@ -74,14 +75,14 @@ class QuoteFetchService {
   Future<QuoteFetchResult> fetch() async {
     final cfg = await config();
     if (cfg == null || cfg.apiKey.isEmpty || cfg.baseUrl.isEmpty) {
-      throw StateError('尚未配置 AI 服务（设置 → AI 服务配置）');
+      throw StateError(rt('尚未配置 AI 服务（设置 → AI 服务配置）'));
     }
     final (holdings, currencies, base) = await targets();
     if (holdings.isEmpty && currencies.isEmpty) {
-      return const QuoteFetchResult(
+      return QuoteFetchResult(
         prices: [],
         rates: [],
-        warnings: ['没有需要抓取的持仓或外币汇率'],
+        warnings: [rt('没有需要抓取的持仓或外币汇率')],
       );
     }
     final prompt = buildQuotePrompt(
@@ -98,7 +99,9 @@ class QuoteFetchService {
     for (final p in parsed.prices) {
       final acc = byName[p.query.trim()];
       if (acc == null) {
-        warnings.add('「${p.query}」未匹配到在持仓账户，不会入账');
+        warnings.add(
+          '${rt('「')}${p.query}${rt('」未匹配到在持仓账户，不会入账')}',
+        );
         prices.add(p);
         continue;
       }
@@ -107,8 +110,8 @@ class QuoteFetchService {
           p.currency.trim().toUpperCase() != acc.currencyCode.toUpperCase();
       if (mismatch) {
         warnings.add(
-          '「${p.query}」AI 标注币种 ${p.currency} 与账户币种 '
-          '${acc.currencyCode} 不一致，请核对',
+          '${rt('「')}${p.query}${rt('」AI 标注币种 ')}${p.currency}'
+          '${rt(' 与账户币种 ')}${acc.currencyCode}${rt(' 不一致，请核对')}',
         );
       }
       prices.add(
@@ -129,7 +132,7 @@ class QuoteFetchService {
         FetchedRate(ccy: r.ccy, rate: r.rate, asOf: r.asOf, source: r.source),
     ];
     if (prices.isEmpty && rates.isEmpty && warnings.isEmpty) {
-      warnings.add('AI 未返回任何可用数据');
+      warnings.add(rt('AI 未返回任何可用数据'));
     }
     return QuoteFetchResult(prices: prices, rates: rates, warnings: warnings);
   }

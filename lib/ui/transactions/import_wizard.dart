@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/import/bill_parsers.dart';
 import '../../domain/ledger/account.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/import_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -18,8 +19,8 @@ import 'transactions_page.dart' show txAccountsProvider;
 /// 微信/支付宝原生账单自动识别（含 GBK 编码）；其他 CSV 需表头含
 /// date、type(或 direction)、amount 三列。
 Future<void> showImportWizard(BuildContext context, WidgetRef ref) async {
-  await showDialog<void>(
-    context: context,
+  await showAppDialog<void>(
+    context,
     barrierDismissible: false,
     builder: (_) => const _ImportWizard(),
   );
@@ -52,9 +53,10 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
   int? _imported;
 
   Future<void> _pickFile() async {
+    final t = AppLocalizations.of(context);
     final picked = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(label: '账单', extensions: ['csv', 'txt']),
+      acceptedTypeGroups: [
+        XTypeGroup(label: t.importFileTypeBills, extensions: const ['csv', 'txt']),
       ],
     );
     if (picked == null) return;
@@ -132,9 +134,11 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final accountsAsync = ref.watch(txAccountsProvider);
-    return AlertDialog(
-      title: const Text('导入账单'),
+    return AppDialog(
+      title: t.importTitle,
+      scroll: true,
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
@@ -143,7 +147,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '第 ${_step + 1}/4 步 · ${_stepTitles[_step]}',
+                t.importStepHeader(_step + 1, _stepTitles()[_step]),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -162,14 +166,14 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(_step == 3 ? '完成' : '取消'),
+          child: Text(_step == 3 ? t.importStepDone : t.commonCancel),
         ),
         if (_step == 1)
           ParticleFilledButton(
             onPressed: (_accountId != null && _lastPath != null)
                 ? _analyze
                 : null,
-            child: const Text('解析预览'),
+            child: Text(t.importParsePreview),
           ),
         if (_step == 2)
           ParticleFilledButton(
@@ -183,29 +187,37 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('确认入账'),
+                : Text(t.importConfirm),
           ),
       ],
     );
   }
 
-  static const _stepTitles = ['选择文件', '选择账户', '预览与分类', '完成'];
+  List<String> _stepTitles() {
+    final t = AppLocalizations.of(context);
+    return [
+      t.importStepPickFile,
+      t.importStepChooseAccount,
+      t.importStepPreview,
+      t.importStepDone,
+    ];
+  }
 
   List<Widget> _stepPickFile(ThemeData theme) => [
     Text(
-      '微信 / 支付宝导出的原生账单（CSV，GBK 或 UTF-8）自动识别列名与交易单号，无需改表头；其他 CSV 需表头含 date、type、amount 三列。',
+      AppLocalizations.of(context).importPickFileHint,
       style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
     ),
     const SizedBox(height: 12),
     OutlinedButton.icon(
       onPressed: _pickFile,
       icon: const Icon(Icons.upload_file),
-      label: Text(_fileName ?? '选择 CSV 文件'),
+      label: Text(_fileName ?? AppLocalizations.of(context).importChooseCsvFile),
     ),
     if (_parseError.isNotEmpty) ...[
       const SizedBox(height: 8),
       Text(
-        '解析失败：$_parseError',
+        AppLocalizations.of(context).importParseFailed(_parseError),
         style: TextStyle(color: AppColors.negativeOf(theme.brightness)),
       ),
     ],
@@ -215,6 +227,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     ThemeData theme,
     AsyncValue<List<Account>> accountsAsync,
   ) {
+    final t = AppLocalizations.of(context);
     return [
       accountsAsync.maybeWhen(
         data: (accounts) {
@@ -224,9 +237,9 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
                     a.type == AccountType.asset && !a.isSystem && !a.isHolding,
               )
               .toList();
-          return DropdownButtonFormField<String>(
+          return ParticleDropdownField<String>(
             initialValue: _accountId,
-            decoration: const InputDecoration(labelText: '入到哪个账户'),
+            decoration: InputDecoration(labelText: t.importTargetAccount),
             items: [
               for (final a in money)
                 DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -240,7 +253,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
       Row(
         children: [
           Text(
-            '文件：$_fileName',
+            t.importFileName('$_fileName'),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
           const SizedBox(width: 8),
@@ -250,7 +263,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
           ),
           const SizedBox(width: 6),
           Text(
-            '已识别 ${_auto?.rows.length ?? 0} 行',
+            t.importRowsDetected(_auto?.rows.length ?? 0),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
         ],
@@ -262,6 +275,7 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     ThemeData theme,
     AsyncValue<List<Account>> accountsAsync,
   ) {
+    final t = AppLocalizations.of(context);
     return [
       accountsAsync.maybeWhen(
         data: (accounts) {
@@ -276,9 +290,11 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<String>(
+              ParticleDropdownField<String>(
                 initialValue: _expenseCatId,
-                decoration: const InputDecoration(labelText: '支出默认分类'),
+                decoration: InputDecoration(
+                  labelText: t.importDefaultExpenseCategory,
+                ),
                 items: [
                   for (final a in expenses)
                     DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -286,9 +302,11 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
                 onChanged: (v) => setState(() => _expenseCatId = v),
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
+              ParticleDropdownField<String>(
                 initialValue: _incomeCatId,
-                decoration: const InputDecoration(labelText: '收入默认分类'),
+                decoration: InputDecoration(
+                  labelText: t.importDefaultIncomeCategory,
+                ),
                 items: [
                   for (final a in incomes)
                     DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -301,16 +319,29 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
         orElse: () => const SizedBox.shrink(),
       ),
       const SizedBox(height: 12),
-      _previewLine(theme, '可入账', '${_preview.rows.length} 行', emphasized: true),
-      _previewLine(theme, '精确重复跳过', '${_preview.skipped.length} 行'),
-      _previewLine(theme, '智慧分类命中', '$_suggestCount 行（规则+历史学习）'),
+      _previewLine(
+        theme,
+        t.importReadyToPost,
+        t.importLineCount(_preview.rows.length),
+        emphasized: true,
+      ),
+      _previewLine(
+        theme,
+        t.importExactDuplicates,
+        t.importLineCount(_preview.skipped.length),
+      ),
+      _previewLine(
+        theme,
+        t.importCategoryHits,
+        t.importCategoryHitsDetail(_suggestCount),
+      ),
       for (final line in _auto?.skippedLines ?? const <String>[])
-        _previewLine(theme, '原生解析跳过', line),
+        _previewLine(theme, t.importParserSkipped, line),
       if (_preview.suggestions.isNotEmpty)
         _previewLine(
           theme,
-          '转账配对建议',
-          '${_preview.suggestions.length} 条（导入后可在流水页人工合并）',
+          t.importTransferSuggestions,
+          t.importTransferSuggestionDetail(_preview.suggestions.length),
         ),
       const SizedBox(height: 8),
       SizedBox(
@@ -323,12 +354,14 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               title: Text(
-                r.counterparty.isEmpty ? '(无对方)' : r.counterparty,
+                r.counterparty.isEmpty
+                    ? t.importNoCounterparty
+                    : r.counterparty,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               subtitle: Text(
-                '${r.date.month}/${r.date.day} · ${r.direction ? '收入' : '支出'}',
+                '${r.date.month}/${r.date.day} · ${r.direction ? t.dirIncome : t.dirExpense}',
               ),
               trailing: Text(
                 fmtMinor(r.amountMinor, r.currencyCode),
@@ -374,12 +407,12 @@ class _ImportWizardState extends ConsumerState<_ImportWizard> {
     ),
     const SizedBox(height: 10),
     Text(
-      '已入账 $_imported 笔',
+      AppLocalizations.of(context).importPostedCount(_imported ?? 0),
       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     ),
     const SizedBox(height: 6),
     Text(
-      '重复导入同一文件会自动跳过（外部 ID 幂等）。对手方分类已被学习，下次导入会自动建议。',
+      AppLocalizations.of(context).importDoneHint,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.hintColor,
         height: 1.5,

@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -36,6 +34,7 @@ class DissolveController extends ChangeNotifier {
 
   _DissolveCaptureState? _shell;
   bool _hidden = false;
+  DissolveCaptureData? _prepared;
 
   /// 本次弹窗是否已走粒子化（外层据此跳过即时的标记重载，避免剧透）。
   bool played = false;
@@ -47,6 +46,20 @@ class DissolveController extends ChangeNotifier {
 
   void _detach(_DissolveCaptureState shell) {
     if (_shell == shell) _shell = null;
+  }
+
+  /// 预备粒子化：保存按钮按下的**同一帧**调用——截图与采样和落库等
+  /// 异步工作并行完成；落库结束的那一帧 [dissolveAndPop] 直接起跳，
+  /// 消除「保存后画面先静止一拍再爆开」的卡顿（2026-10 用户指令：
+  /// 每个阶段的开始/结束都要流畅对得上）。重复调用/已 played 无效；
+  /// 不具备条件（未挂载/减少动画/截图失败）静默跳过。
+  Future<void> prepare({Offset? origin}) async {
+    if (played || _prepared != null) return;
+    final shell = _shell;
+    if (shell == null || !shell.mounted || shell.reduceMotion) return;
+    _prepared ??= await shell.capture(
+      origin ?? shell.boundaryCenter,
+    );
   }
 
   /// 截图 → 采样粒子 → 舞台接管显示 → 隐藏弹窗内容并 pop 路由。
@@ -61,32 +74,18 @@ class DissolveController extends ChangeNotifier {
   }) async {
     final shell = _shell;
     if (shell == null || !shell.mounted || shell.reduceMotion) return false;
-    final ro = shell.boundary;
-    if (ro == null || !ro.hasSize || ro.size.isEmpty) return false;
-    ui.Image image;
-    try {
-      image = await ro.toImage(pixelRatio: 1.0);
-      final bytes = await image.toByteData();
-      if (bytes == null) {
-        image.dispose();
-        return false;
-      }
-      final data = sampleDissolve(
-        image: image,
-        rgba: bytes.buffer.asUint8List(),
-        dialogRect: ro.localToGlobal(Offset.zero) & ro.size,
-        launchFrom: origin ?? ro.localToGlobal(ro.size.center(Offset.zero)),
-      );
-      played = true;
-      // 顺序关键：舞台先入根 Overlay（静止粒子云顶住画面），同帧再
-      // 隐藏弹窗内容、pop 路由——视觉上弹窗「原地变成粒子」。
-      _hidden = true;
-      notifyListeners();
-      shell.startStage(data, lat: lat, lon: lon);
-      return true;
-    } catch (_) {
-      return false; // 截图/采样异常：静默退回普通关闭
-    }
+    var data = _prepared ?? await shell.capture(
+      origin ?? shell.boundaryCenter,
+    );
+    _prepared = null;
+    if (data == null) return false;
+    played = true;
+    // 顺序关键：舞台先入根 Overlay（静止粒子云顶住画面），同帧再
+    // 隐藏弹窗内容、pop 路由——视觉上弹窗「原地变成粒子」。
+    _hidden = true;
+    notifyListeners();
+    shell.startStage(data, lat: lat, lon: lon);
+    return true;
   }
 }
 
@@ -132,6 +131,34 @@ class _DissolveCaptureState extends State<DissolveCapture> {
       _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
 
   bool get reduceMotion => _reduce;
+
+  Offset get boundaryCenter {
+    final ro = boundary;
+    if (ro == null || !ro.hasSize) return Offset.zero;
+    return ro.localToGlobal(ro.size.center(Offset.zero));
+  }
+
+  /// 截图并采样成粒子云（失败返回 null；调用方自行 dispose data.image）。
+  Future<DissolveCaptureData?> capture(Offset launchFrom) async {
+    final ro = boundary;
+    if (ro == null || !ro.hasSize || ro.size.isEmpty) return null;
+    try {
+      final image = await ro.toImage(pixelRatio: 1.0);
+      final bytes = await image.toByteData();
+      if (bytes == null) {
+        image.dispose();
+        return null;
+      }
+      return sampleDissolve(
+        image: image,
+        rgba: bytes.buffer.asUint8List(),
+        dialogRect: ro.localToGlobal(Offset.zero) & ro.size,
+        launchFrom: launchFrom,
+      );
+    } catch (_) {
+      return null; // 截图/采样异常：静默退回普通关闭
+    }
+  }
 
   /// 挂舞台到根 Overlay（覆盖弹窗路由与整页），随后 pop 弹窗路由。
   /// 舞台结束后摘除 OverlayEntry 并释放截图。

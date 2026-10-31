@@ -13,6 +13,7 @@ import '../domain/import/dedup.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/money/currency.dart';
 import '../domain/money/money.dart';
+import '../l10n/runtime_l10n.dart';
 
 /// 账单导入服务。
 ///
@@ -90,7 +91,7 @@ class ImportService {
     for (final row in rows) {
       final extId = row.externalId(parserId, accountId);
       if (knownIds.contains(extId)) {
-        skipped.add('精确重复（外部 ID 已存在）: ${row.counterparty}');
+        skipped.add('${rt('精确重复（外部 ID 已存在）: ')}${row.counterparty}');
         continue;
       }
       toImport.add(row);
@@ -99,9 +100,9 @@ class ImportService {
     final pairs = Deduper.pairTransfers(rows);
     for (final _ in pairs) {
       suggestions.add(
-        const DedupMatch(
+        DedupMatch(
           decision: DedupDecision.transferPair,
-          reason: '同批次内金额一致的一出一进，建议确认为内部转账',
+          reason: rt('同批次内金额一致的一出一进，建议确认为内部转账'),
         ),
       );
     }
@@ -126,11 +127,13 @@ class ImportService {
     String? Function(NormalizedRow row)? resolveCategory,
   }) async {
     final account = await _accounts.byId(accountId);
-    if (account == null) throw ArgumentError('账户不存在: $accountId');
+    if (account == null) {
+      throw ArgumentError('${rt('账户不存在: ')}$accountId');
+    }
     final expenseCat = await _accounts.byId(expenseCategoryId);
     final incomeCat = await _accounts.byId(incomeCategoryId);
     if (expenseCat == null || incomeCat == null) {
-      throw ArgumentError('分类账户不存在');
+      throw ArgumentError(rt('分类账户不存在'));
     }
     final source = TxSource.values.firstWhere(
       (s) => s.name == sourceName,
@@ -263,7 +266,7 @@ List<NormalizedRow> parseGenericCsvPure(
   final noteI = col('note');
   final txIdI = col('txid') >= 0 ? col('txid') : col('transaction_id');
   if (dateI < 0 || typeI < 0 || amountI < 0) {
-    throw const FormatException('CSV 表头缺少 date/type/amount 列');
+    throw FormatException(rt('CSV 表头缺少 date/type/amount 列'));
   }
   final out = <NormalizedRow>[];
   final ccy = CurrencyInfo.parse(currencyCode);

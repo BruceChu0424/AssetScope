@@ -1,14 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../l10n/runtime_l10n.dart';
 import '../theme/app_theme.dart';
+import 'odometer.dart';
 import 'page_frame.dart';
 import 'particle_edge.dart';
 
-/// 页面组件库（第二件）：列表行、进度计量、标题、图标动作钮。
-/// 与 page_frame.dart 的 PageFrame/StatBand/CardWrap/InfoHint 配套，
-/// 页面重写时从这里取件，禁止各页自造同类控件。
+/// 页面组件库（第二件）：列表行、进度计量、标题、图标动作钮、工作台
+/// 侧栏汇总件。与 page_frame.dart 的 PageFrame/StatBand/CardWrap/InfoHint
+/// 配套，页面重写时从这里取件，禁止各页自造同类控件。
 
 /// 页头/工具行的幽灵图标钮：透明底 + hover 提亮底，统一 36px 命中区。
 /// 页面头部动作一律用它（AppBar.actions 里同样成立）。
@@ -352,6 +355,7 @@ class DayHeader extends StatelessWidget {
   final Color netColor;
 
   static const _weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+  static const _weekdaysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {
@@ -361,14 +365,18 @@ class DayHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '${date.month} 月 ${date.day} 日',
+            RuntimeL10n.english
+                ? DateFormat('MMM d', 'en').format(date)
+                : '${date.month} 月 ${date.day} 日',
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            '周${_weekdays[date.weekday - 1]}',
+            RuntimeL10n.english
+                ? _weekdaysEn[date.weekday - 1]
+                : '周${_weekdays[date.weekday - 1]}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.hintColor,
             ),
@@ -383,6 +391,237 @@ class DayHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 工作台侧栏件（大屏 ≥900）：大屏页面 = 主区 + 固定宽侧栏（汇总/导航/
+// 详情），小屏退化为单列时由页面自行收起侧栏。侧栏内容与卡片同一家族
+// （发丝线卡 + 底缘光尘），但以「纵读清单」形态出现——大屏不铺满宽卡。
+// ─────────────────────────────────────────────────────────────────────────
+
+/// 侧栏汇总面板：标题行（可带 info 提示）→ 可选主数（大字 + 语义色，
+/// 数值变化走 Odometer）→ 明细行列表 → 可选底部附加区。
+///
+/// 大屏侧栏的统一形态，预算/目标/负债/计划/流水共用；替代这些页面
+/// 大屏上的 StatBand 横带（StatBand 保留给小屏）。
+class SummaryPanel extends StatelessWidget {
+  const SummaryPanel({
+    super.key,
+    required this.title,
+    this.rows = const [],
+    this.hint,
+    this.heroValue,
+    this.heroLabel,
+    this.heroColor,
+    this.heroHint,
+    this.footer,
+    this.child,
+  });
+
+  final String title;
+
+  /// 面板标题的悬停说明（提示语规范）。
+  final String? hint;
+
+  /// 主数：大屏侧栏的视觉锚点（如「剩余可花」）。null 时不渲染。
+  final String? heroValue;
+  final String? heroLabel;
+  final Color? heroColor;
+  final String? heroHint;
+
+  /// 明细行（label → value），发丝线分隔。
+  final List<SummaryRow> rows;
+
+  /// 底部附加区（如进度条/动作按钮），与明细行之间有 12px 间距。
+  final Widget? footer;
+
+  /// 完全自定义主体（有它时忽略 hero 与 rows）。
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ParticleEdge(
+      band: 22,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          color: theme.colorScheme.surface,
+          border: Border.all(color: theme.dividerColor),
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                if (hint != null) ...[
+                  const SizedBox(width: 6),
+                  InfoHint(message: hint!),
+                ],
+              ],
+            ),
+            if (child != null) ...[
+              const SizedBox(height: 12),
+              child!,
+            ] else ...[
+              if (heroValue != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Flexible(
+                      // 长数值在窄栏自动缩小（FittedBox），不溢出。
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Odometer(
+                          text: heroValue!,
+                          style: theme.textTheme.headlineMedium!.copyWith(
+                            color: heroColor,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (heroLabel != null) ...[
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          heroLabel!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (heroHint != null) ...[
+                      const SizedBox(width: 6),
+                      InfoHint(message: heroHint!),
+                    ],
+                  ],
+                ),
+              ],
+              if (rows.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 1,
+                      color: theme.dividerColor.withValues(alpha: 0.6),
+                    ),
+                  _SummaryRowTile(row: rows[i]),
+                ],
+              ],
+              if (footer != null) ...[
+                const SizedBox(height: 12),
+                footer!,
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SummaryRow {
+  const SummaryRow(this.label, this.value, {this.color, this.tooltip});
+
+  final String label;
+  final String value;
+  final Color? color;
+  final String? tooltip;
+}
+
+class _SummaryRowTile extends StatelessWidget {
+  const _SummaryRowTile({required this.row});
+
+  final SummaryRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              row.label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
+          ),
+          if (row.tooltip != null) ...[
+            const SizedBox(width: 5),
+            InfoHint(message: row.tooltip!, size: 13),
+          ],
+          const SizedBox(width: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Odometer(
+                text: row.value,
+                style: theme.textTheme.bodyMedium!.copyWith(
+                  color: row.color,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 大屏工作台分栏：`rail`（固定宽侧栏，默认 300）+ 16 间距 + 主区。
+/// 小屏（<900）只渲染主区（侧栏由页面以另一种形态收进页面流）。
+/// [reversed] 为 true 时侧栏在右（流水概览 / 资产详情）。
+class WorkbenchSplit extends StatelessWidget {
+  const WorkbenchSplit({
+    super.key,
+    required this.rail,
+    required this.main,
+    this.railWidth = 300,
+    this.reversed = false,
+  });
+
+  final Widget rail;
+  final Widget main;
+  final double railWidth;
+  final bool reversed;
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
+    if (!wide) return main;
+    final children = [
+      SizedBox(width: railWidth, child: rail),
+      const SizedBox(width: PageMeasure.gutter),
+      Expanded(child: main),
+    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: reversed ? children.reversed.toList() : children,
     );
   }
 }

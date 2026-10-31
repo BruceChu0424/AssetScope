@@ -4,6 +4,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// 桌面窗口框体：无边框窗口的「隐形标题条」+ macOS 风格红绿灯按钮。
 ///
 /// - 顶部 36px 是窗口栏（拖拽条 + 红绿灯）的保留区：以 **MediaQuery
@@ -168,6 +170,7 @@ class _TrafficLightsState extends State<TrafficLights> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return MouseRegion(
       onEnter: (_) => setState(() => _hoverAny = true),
       onExit: (_) => setState(() => _hoverAny = false),
@@ -180,7 +183,7 @@ class _TrafficLightsState extends State<TrafficLights> with WindowListener {
               color: const Color(0xFFFEBC2E),
               hoverAny: _hoverAny,
               focused: _focused,
-              label: '最小化',
+              label: t.wdgMinimize,
               glyph: _Glyph.minimize,
               onTap: () => _guarded(windowManager.minimize),
             ),
@@ -189,7 +192,7 @@ class _TrafficLightsState extends State<TrafficLights> with WindowListener {
               color: const Color(0xFF28C840),
               hoverAny: _hoverAny,
               focused: _focused,
-              label: _maximized ? '向下还原' : '最大化',
+              label: _maximized ? t.wdgRestoreDown : t.wdgMaximize,
               glyph: _maximized ? _Glyph.restore : _Glyph.zoom,
               onTap: () async {
                 try {
@@ -208,7 +211,7 @@ class _TrafficLightsState extends State<TrafficLights> with WindowListener {
               color: const Color(0xFFFF5F57),
               hoverAny: _hoverAny,
               focused: _focused,
-              label: '关闭',
+              label: t.wdgClose,
               glyph: _Glyph.close,
               onTap: () => _guarded(windowManager.close),
             ),

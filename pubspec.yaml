@@ -2,7 +2,7 @@ name: assetscope
 description: "资观 AssetScope —— 本地优先、端到端加密的个人资产、负债与财务规划系统。"
 publish_to: 'none'
 
-version: 0.23.0+25
+version: 0.25.0+27
 
 environment:
   sdk: ^3.12.2
@@ -49,6 +49,7 @@ dependencies:
   fast_gbk: ^1.0.0
   file_selector: ^1.1.0
   window_manager: ^0.5.2
+  geolocator: ^14.1.2
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +62,31 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
+  # 字体系统（OFL 1.1，见 assets/fonts/README.md）：
+  # 全局默认 = Space Grotesk（拉丁/数字）→ NotoSansSC 思源黑体（中文回落）；
+  # IBMPlexMono 金额专用（MoneyText）；NotoSerifSC 思源宋体 = 大标题备选。
+  # NotoSansSC/SpaceGrotesk 为可变字重，FontWeight.w100–w900 直接映射 wght 轴。
+  fonts:
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-VF.ttf
+    - family: NotoSerifSC
+      fonts:
+        - asset: assets/fonts/NotoSerifSC-VF.ttf
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-VF.ttf
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700
   assets:
     - assets/globe/land_dots.json
     # 品牌标识（A mark，透明背景矢量）：

@@ -7,6 +7,7 @@ import '../domain/ledger/ledger_math.dart';
 import '../domain/money/fx_rate.dart';
 import '../domain/planning/cash_projection.dart';
 import '../domain/planning/recurrence.dart';
+import '../l10n/runtime_l10n.dart';
 
 /// 现金流预测服务：把计划、债务、预算拼装为现金事件后调用领域投影器。
 class ProjectionService {
@@ -140,7 +141,7 @@ class ProjectionService {
               e.totalMinor,
               acc.currencyCode,
             ),
-            label: '${acc.name} 第${e.seq}期',
+            label: '${acc.name}${rt(' 第')}${e.seq}${rt('期')}',
             accountId: null,
             kind: CashEventKind.debtRepay,
           ),

@@ -6,14 +6,16 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/scenario.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
 /// 情景模拟弹层：预设压力情景（可叠加自定义冲击）→ 与基线现金预测对比。
 Future<void> showScenarioSheet(BuildContext context, WidgetRef ref) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
+  return showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (_) => const ScenarioSheet(),
   );
 }
@@ -27,13 +29,13 @@ class _PresetItem {
 
 final _presets = <_PresetItem>[
   _PresetItem(
-    '失业 3 个月',
-    '收入完全中断一个季度',
+    rt('失业 3 个月'),
+    rt('收入完全中断一个季度'),
     () => [IncomeShock(drop: Rational.one, months: 3)],
   ),
   _PresetItem(
-    '收入降三成 · 6 个月',
-    '降薪/绩效缩水的软着陆',
+    rt('收入降三成 · 6 个月'),
+    rt('降薪/绩效缩水的软着陆'),
     () => [
       IncomeShock(
         drop: Rational.fromFrac(BigInt.from(3), BigInt.from(10)),
@@ -42,13 +44,13 @@ final _presets = <_PresetItem>[
     ],
   ),
   _PresetItem(
-    '工资延发 30 天 · 2 个月',
-    '现金流错位，钱没少但迟到',
+    rt('工资延发 30 天 · 2 个月'),
+    rt('现金流错位，钱没少但迟到'),
     () => [IncomeDelay(delayDays: 30, months: 2)],
   ),
   _PresetItem(
-    '支出激增 20% · 3 个月',
-    '固定开销全面上涨',
+    rt('支出激增 20% · 3 个月'),
+    rt('固定开销全面上涨'),
     () => [
       ExpenseSurge(
         surge: Rational.fromFrac(BigInt.one, BigInt.from(5)),
@@ -96,6 +98,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
   Future<void> _run() async {
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
+    final t = AppLocalizations.of(context);
     final extra = _parseMinor(_extraMonthly.text);
     final oneOff = _parseMinor(_oneOffAmount.text);
     setState(() {
@@ -110,7 +113,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           ExtraMonthlyOutflow(
             monthlyMinor: extra,
             months: _extraMonths,
-            label: '情景：额外月支出',
+            label: t.scenarioExtraMonthlyLabel,
           ),
         );
       }
@@ -119,7 +122,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           OneOffEvent(
             afterDays: _oneOffAfterDays,
             amountBaseMinor: -oneOff,
-            label: '情景：一次性支出',
+            label: t.scenarioOneOffLabel,
           ),
         );
       }
@@ -133,7 +136,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
       });
     } catch (e) {
       setState(() {
-        _error = '模拟失败：$e';
+        _error = t.scenarioRunFailed(e.toString());
         _running = false;
       });
     }
@@ -142,6 +145,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.85,
       child: Column(
@@ -150,7 +154,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
             child: Text(
-              '情景模拟 · 现金压力测试',
+              t.scenarioTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -159,8 +163,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              '把"如果……会怎样"放进 180 天现金预测：计划、债务还款与准备金不变，'
-              '只冲击收入/支出，看低谷多深、钱会不会断。不写账本。',
+              t.scenarioIntro,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -206,7 +209,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.play_arrow),
-                  label: Text(_running ? '模拟中…' : '运行模拟'),
+                  label: Text(_running ? t.scenarioRunning : t.scenarioRun),
                 ),
                 if (_error != null)
                   Padding(
@@ -231,6 +234,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
   }
 
   Widget _extrasCard(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -238,7 +242,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '叠加自定义冲击（可选）',
+              t.scenarioExtrasTitle,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -253,22 +257,22 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
-                      labelText: '额外月支出（元/月）',
+                      labelText: t.scenarioExtraMonthlyAmount,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: DropdownButtonFormField<int>(
+                  child: ParticleDropdownField<int>(
                     initialValue: _extraMonths,
                     isDense: true,
-                    decoration: const InputDecoration(labelText: '月数'),
+                    decoration: InputDecoration(labelText: t.scenarioMonthsCount),
                     items: [
                       for (final m in const [3, 6, 12, 24])
-                        DropdownMenuItem(value: m, child: Text('$m 月')),
+                        DropdownMenuItem(value: m, child: Text(t.monthsN(m))),
                     ],
                     onChanged: (v) => setState(() => _extraMonths = v ?? 6),
                   ),
@@ -285,22 +289,22 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
-                      labelText: '一次性支出（元）',
+                      labelText: t.scenarioOneOffAmount,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: DropdownButtonFormField<int>(
+                  child: ParticleDropdownField<int>(
                     initialValue: _oneOffAfterDays,
                     isDense: true,
-                    decoration: const InputDecoration(labelText: '发生在'),
+                    decoration: InputDecoration(labelText: t.scenarioOccursOn),
                     items: [
                       for (final d in const [0, 15, 30, 90])
-                        DropdownMenuItem(value: d, child: Text('$d 天后')),
+                        DropdownMenuItem(value: d, child: Text(t.daysLaterN(d))),
                     ],
                     onChanged: (v) =>
                         setState(() => _oneOffAfterDays = v ?? 15),
@@ -315,6 +319,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
   }
 
   Widget _resultCard(ThemeData theme, ScenarioComparison r) {
+    final t = AppLocalizations.of(context);
     final neg = AppColors.negativeOf(theme.brightness);
     final pos = AppColors.positiveOf(theme.brightness);
     final brass = AppColors.brassOf(theme.brightness);
@@ -322,15 +327,15 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
     final cashOut = r.firstCashOutDate;
     final newShort = r.newShortfalls;
     return SectionCard(
-      title: '结果 · ${_presets[_preset].label}',
+      title: t.scenarioResultTitle(_presets[_preset].label),
       child: Column(
         children: [
           StatRow(
-            label: '最低现金 · 基线',
+            label: t.scenarioMinCashBaseline,
             value: fmtMinor(r.baseline.minBalanceBaseMinor, _base),
           ),
           StatRow(
-            label: '最低现金 · 情景',
+            label: t.scenarioMinCashScenario,
             value: fmtMinor(r.scenario.minBalanceBaseMinor, _base),
             emphasized: true,
             valueColor: r.scenario.minBalanceBaseMinor < BigInt.zero
@@ -338,13 +343,13 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
                 : null,
           ),
           StatRow(
-            label: '低谷变化',
+            label: t.scenarioTroughDelta,
             value: '${delta.isNegative ? '' : '+'}${fmtMinor(delta, _base)}',
             valueColor: delta.isNegative ? neg : pos,
           ),
           if (r.worstDailyDelta != delta) ...[
             StatRow(
-              label: '最难受的一天（相对基线）',
+              label: t.scenarioWorstDay,
               value:
                   '${r.worstDailyDelta.isNegative ? '' : '+'}${fmtMinor(r.worstDailyDelta, _base)}',
               valueColor: r.worstDailyDelta.isNegative ? neg : pos,
@@ -352,18 +357,20 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           ],
           if (cashOut != null)
             StatRow(
-              label: '现金耗尽日',
-              value:
-                  '${cashOut.year}-${cashOut.month.toString().padLeft(2, '0')}-${cashOut.day.toString().padLeft(2, '0')}（还剩 ${r.daysToCashOut} 天）',
+              label: t.scenarioCashOutDate,
+              value: t.scenarioCashOutValue(
+                '${cashOut.year}-${cashOut.month.toString().padLeft(2, '0')}-${cashOut.day.toString().padLeft(2, '0')}',
+                r.daysToCashOut ?? 0,
+              ),
               valueColor: neg,
               emphasized: true,
             )
           else
-            StatRow(label: '现金耗尽日', value: '预测期内未耗尽', valueColor: pos),
+            StatRow(label: t.scenarioCashOutDate, value: t.scenarioNoCashOut, valueColor: pos),
           if (newShort.isNotEmpty) ...[
             const Divider(height: 16),
             Text(
-              '新增缺口（基线没有、情景触发的）',
+              t.scenarioNewShortfalls,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
               ),
@@ -371,13 +378,13 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
             for (final s in newShort.take(5))
               StatRow(
                 label:
-                    '${s.date.month}/${s.date.day} ${s.accountId != null ? s.label : '低于准备金与底线'}',
+                    '${s.date.month}/${s.date.day} ${s.accountId != null ? s.label : t.scenarioBelowReserve}',
                 value: fmtMinor(s.amountBaseMinor, _base),
                 valueColor: neg,
               ),
             if (newShort.length > 5)
               Text(
-                '…共 ${newShort.length} 条',
+                t.scenarioShortfallCount(newShort.length),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -395,8 +402,10 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
               Expanded(
                 child: Text(
                   r.survives
-                      ? '情景可承受：无新增缺口、现金未耗尽。底线之外仍有余量 ${fmtMinor(r.scenario.discretionaryBaseMinor, _base)}。'
-                      : '该情景会造成伤害：考虑提高准备金、推迟可选支出或安排信用额度备用。',
+                      ? t.scenarioSurvives(
+                          fmtMinor(r.scenario.discretionaryBaseMinor, _base),
+                        )
+                      : t.scenarioHurts,
                   style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
                 ),
               ),
@@ -404,7 +413,7 @@ class _ScenarioSheetState extends ConsumerState<ScenarioSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            '口径：与现金预测同引擎重放（docs/05 §12）；准备金、债务还款与底线不变。',
+            t.scenarioMethodNote,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.hintColor,
               fontSize: 11,

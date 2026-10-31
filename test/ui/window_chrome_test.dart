@@ -1,6 +1,7 @@
 import 'package:assetscope/ui/widgets/window_chrome.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 无边框窗口框体冒烟：enabled 时渲染红绿灯；无插件环境下（widget
 /// 测试）点按三钮被安全吞掉不崩；enabled=false 时直通子树零痕迹。
@@ -11,7 +12,10 @@ void main() {
     WindowChrome.enabled = true;
     addTearDown(() => WindowChrome.enabled = false);
 
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
       home: WindowChrome(child: Scaffold(body: SizedBox.expand())),
     ));
     await tester.pump(const Duration(milliseconds: 50));
@@ -31,7 +35,10 @@ void main() {
   });
 
   testWidgets('WindowChrome：未启用时直通子树（无控件渲染）', (tester) async {
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
       home: WindowChrome(child: Text('内容')),
     ));
     expect(find.text('内容'), findsOneWidget);

@@ -6,6 +6,8 @@ library;
 
 import 'dart:convert';
 
+import '../../l10n/runtime_l10n.dart';
+
 String? extractAiJson(String content) {
   final fence = RegExp(
     r'```(?:json)?\s*(\{.*?\})\s*```',
@@ -42,16 +44,16 @@ String? extractAiJson(String content) {
 Map<String, Object?> decodeAiJsonObject(String content) {
   final jsonText = extractAiJson(content);
   if (jsonText == null) {
-    throw const FormatException('AI 应答中未找到 JSON 数据');
+    throw FormatException(rt('AI 应答中未找到 JSON 数据'));
   }
   final Object? decoded;
   try {
     decoded = jsonDecode(jsonText);
   } on FormatException {
-    throw const FormatException('AI 应答 JSON 无法解析');
+    throw FormatException(rt('AI 应答 JSON 无法解析'));
   }
   if (decoded is! Map<String, Object?>) {
-    throw const FormatException('AI 应答 JSON 不是对象');
+    throw FormatException(rt('AI 应答 JSON 不是对象'));
   }
   return decoded;
 }

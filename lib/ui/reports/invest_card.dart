@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/portfolio_service.dart';
 import '../accounts/accounts_providers.dart' show holdingsProvider;
 import '../theme/app_theme.dart';
@@ -22,10 +23,11 @@ class InvestCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final portfolio = ref.watch(portfolioProvider);
     final holdings = ref.watch(holdingsProvider);
     return SectionCard(
-      title: '投资组合',
+      title: t.portfolioTitle,
       trailing: portfolio.maybeWhen(
         data: (p) => _ratesText(context, p),
         orElse: () => null,
@@ -34,7 +36,7 @@ class InvestCard extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return Text(
-              '还没有持仓。在总览「添加资产」新建持仓账户后，用「买入」记录第一笔投资。',
+              t.noHoldingsHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -56,15 +58,15 @@ class InvestCard extends ConsumerWidget {
                     ),
                   ),
                   title: Text(
-                    '${h.quantity.toDecimalString(4)} 份'
-                    '${h.unitPrice != null ? ' · 成本 ${fmtMinor(h.costMinor, h.account.currencyCode)}' : ''}',
+                    '${t.holdingQtyShares(h.quantity.toDecimalString(4))}'
+                    '${h.unitPrice != null ? t.holdingCostHint(fmtMinor(h.costMinor, h.account.currencyCode)) : ''}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
                   ),
                   trailing: h.marketValueMinor == null
                       ? Text(
-                          '缺价',
+                          t.missingPrice,
                           style: TextStyle(
                             color: AppColors.brassOf(theme.brightness),
                           ),
@@ -76,7 +78,7 @@ class InvestCard extends ConsumerWidget {
                     ? Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          '⚠ ${p.skippedFlows} 笔含外币流水因缺历史汇率未计入 XIRR',
+                          t.skippedFxFlows(p.skippedFlows),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.brassOf(theme.brightness),
                           ),
@@ -99,6 +101,7 @@ class InvestCard extends ConsumerWidget {
   /// XIRR / TWR 摘要（有哪个显示哪个；TWR 需要历史估值点）。
   Widget? _ratesText(BuildContext context, PortfolioReturn p) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final color = (p.xirr ?? p.twr ?? 0) >= 0
         ? AppColors.positiveOf(theme.brightness)
         : AppColors.negativeOf(theme.brightness);
@@ -109,7 +112,7 @@ class InvestCard extends ConsumerWidget {
     );
     if (p.xirr != null && p.twr != null) {
       return Tooltip(
-        message: 'XIRR 资金加权（含你的加减仓时点影响）；TWR 时间加权（剔除资金进出，衡量标的表现）',
+        message: t.xirrTwrTooltip,
         child: Text(
           'XIRR ${(p.xirr! * 100).toStringAsFixed(1)}% · TWR ${(p.twr! * 100).toStringAsFixed(1)}%',
           style: style.copyWith(fontSize: 12),
@@ -118,12 +121,12 @@ class InvestCard extends ConsumerWidget {
     }
     if (p.xirr != null) {
       return Text(
-        '年化 XIRR ${(p.xirr! * 100).toStringAsFixed(1)}%',
+        t.annualizedXirr((p.xirr! * 100).toStringAsFixed(1)),
         style: style,
       );
     }
     if (p.twr != null) {
-      return Text('年化 TWR ${(p.twr! * 100).toStringAsFixed(1)}%', style: style);
+      return Text(t.annualizedTwr((p.twr! * 100).toStringAsFixed(1)), style: style);
     }
     return null;
   }

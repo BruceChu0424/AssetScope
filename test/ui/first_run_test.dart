@@ -11,6 +11,7 @@ import 'package:assetscope/security/crypto_suite.dart';
 import 'package:assetscope/security/key_manager.dart';
 import 'package:assetscope/ui/lock/lock_page.dart';
 import 'package:assetscope/ui/widgets/common.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 首启动回归（v0.15 修复）：干净机器（无 vault.key）上必须显示
 /// "创建加密账本"表单——此前 _init 会把状态误置为 Locked，新用户
@@ -49,7 +50,10 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: LockPage()),
+        child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),home: LockPage()),
       ),
     );
     await tester.pump();
@@ -86,7 +90,10 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: LockPage()),
+        child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),home: LockPage()),
       ),
     );
     await tester.pump();

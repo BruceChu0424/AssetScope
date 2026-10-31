@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../l10n/runtime_l10n.dart';
 import 'crypto_suite.dart';
 import 'dart_crypto_suite.dart';
 import 'key_manager.dart';
@@ -38,7 +39,7 @@ class BackupContainer {
     CryptoSuite? suite,
   }) async {
     if (dek == null && passphrase == null) {
-      throw ArgumentError('必须提供 dek 或 passphrase 之一');
+      throw ArgumentError(rt('必须提供 dek 或 passphrase 之一'));
     }
     final s = suite ?? DartCryptoSuite.instance;
     final Uint8List key;
@@ -100,18 +101,20 @@ class BackupContainer {
     CryptoSuite? suite,
   }) async {
     final s = suite ?? DartCryptoSuite.instance;
-    if (container.length < 10) throw BackupException('备份文件过短');
+    if (container.length < 10) throw BackupException(rt('备份文件过短'));
     for (var i = 0; i < 4; i++) {
-      if (container[i] != magic[i]) throw BackupException('不是合法的备份文件');
+      if (container[i] != magic[i]) throw BackupException(rt('不是合法的备份文件'));
     }
     if (container[4] != version) {
-      throw BackupException('不支持的备份版本 ${container[4]}');
+      throw BackupException(
+        '${rt('不支持的备份版本 ')}${container[4]}',
+      );
     }
     var p = 5;
     int metaLen = _readU32(container, p);
     p += 4;
     if (metaLen < 0 || p + metaLen > container.length) {
-      throw BackupException('备份头部损坏');
+      throw BackupException(rt('备份头部损坏'));
     }
     final meta = Map<String, Object>.from(
       jsonDecode(utf8.decode(container.sublist(p, p + metaLen))) as Map,
@@ -121,21 +124,21 @@ class BackupContainer {
     p += 4;
     VaultHeader? header;
     if (headerLen > 0) {
-      if (p + headerLen > container.length) throw BackupException('备份头部损坏');
+      if (p + headerLen > container.length) throw BackupException(rt('备份头部损坏'));
       header = VaultHeader.decode(
         utf8.decode(container.sublist(p, p + headerLen)),
       );
       p += headerLen;
     }
     if (dek == null && passphrase == null) {
-      throw ArgumentError('必须提供 dek 或 passphrase 之一');
+      throw ArgumentError(rt('必须提供 dek 或 passphrase 之一'));
     }
     final Uint8List key;
     if (dek != null) {
       key = dek;
     } else {
       if (header == null) {
-        throw BackupException('该备份创建时未绑定口令，请使用原设备数据密钥');
+        throw BackupException(rt('该备份创建时未绑定口令，请使用原设备数据密钥'));
       }
       final kek = await s.kdf.derive(
         passphrase: passphrase!,
@@ -144,11 +147,11 @@ class BackupContainer {
       try {
         key = await s.open(key: kek, box: header.wrappedDek, aad: _aadBackup());
       } on CryptoException {
-        throw BackupException('口令不正确或备份已损坏');
+        throw BackupException(rt('口令不正确或备份已损坏'));
       }
     }
     if (p + s.aead.nonceLength >= container.length) {
-      throw BackupException('备份数据段缺失');
+      throw BackupException(rt('备份数据段缺失'));
     }
     final nonce = container.sublist(p, p + s.aead.nonceLength);
     final ct = container.sublist(p + s.aead.nonceLength);
@@ -160,11 +163,11 @@ class BackupContainer {
         aad: _aadBackup(),
       );
       if (payload.length != (meta['payloadLen'] as num?)?.toInt()) {
-        throw BackupException('备份长度校验不一致');
+        throw BackupException(rt('备份长度校验不一致'));
       }
       return BackupPayload(bytes: payload, meta: meta);
     } on CryptoException {
-      throw BackupException('解密失败：密钥不匹配或数据被篡改');
+      throw BackupException(rt('解密失败：密钥不匹配或数据被篡改'));
     }
   }
 

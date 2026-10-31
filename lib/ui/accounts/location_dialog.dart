@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
+import '../../l10n/app_localizations.dart';
 import '../globe/city_locations.dart';
-import '../widgets/particle_interactive.dart';
+import '../widgets/common.dart';
 import 'accounts_providers.dart';
 
 /// 设置/修改资产位置（3D 地球标记）。
@@ -23,6 +24,7 @@ Future<void> showLocationDialog(
   final lonCtrl = TextEditingController(
     text: account.locationLon?.toStringAsFixed(4) ?? '',
   );
+  final t = AppLocalizations.of(context);
 
   Future<void> save() async {
     final lat = double.tryParse(latCtrl.text.trim());
@@ -41,10 +43,9 @@ Future<void> showLocationDialog(
     ref.invalidate(accountsViewProvider);
   }
 
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  await showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (sheetCtx) => Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -58,12 +59,12 @@ Future<void> showLocationDialog(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '「${account.name}」的位置',
+              t.locDialogTitle(account.name),
               style: Theme.of(ctx).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
             Text(
-              '设置后该资产将以呼吸标记出现在 3D 资产地球上',
+              t.locDialogSubtitle,
               style: Theme.of(
                 ctx,
               ).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).hintColor),
@@ -95,8 +96,8 @@ Future<void> showLocationDialog(
             const SizedBox(height: 12),
             ParticleTextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: '位置名（如 上海·前滩）',
+              decoration: InputDecoration(
+                labelText: t.locNameLabel,
                 suffixIcon: Icon(Icons.place),
               ),
             ),
@@ -110,8 +111,8 @@ Future<void> showLocationDialog(
                       signed: true,
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: '纬度 (-90 ~ 90)',
+                    decoration: InputDecoration(
+                      labelText: t.locLatitudeLabel,
                     ),
                   ),
                 ),
@@ -123,8 +124,8 @@ Future<void> showLocationDialog(
                       signed: true,
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: '经度 (-180 ~ 180)',
+                    decoration: InputDecoration(
+                      labelText: t.locLongitudeLabel,
                     ),
                   ),
                 ),
@@ -132,7 +133,7 @@ Future<void> showLocationDialog(
             ),
             const SizedBox(height: 6),
             Text(
-              '坐标为 WGS84；国内资产可用城市快选后在地图 App 里查小区坐标微调',
+              t.locCoordNote,
               style: Theme.of(
                 ctx,
               ).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).hintColor),
@@ -170,14 +171,14 @@ Future<void> showLocationDialog(
                       ref.invalidate(accountsViewProvider);
                       if (ctx.mounted) Navigator.pop(ctx);
                     },
-                    child: const Text('清除位置'),
+                    child: Text(t.locClear),
                   ),
                 ParticleFilledButton(
                   onPressed: () async {
                     await save();
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
-                  child: const Text('保存'),
+                  child: Text(t.save),
                 ),
               ],
             ),

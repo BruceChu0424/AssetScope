@@ -12,6 +12,8 @@ import 'globe_state.dart';
 /// [pulse] 为 0~1 循环相位，驱动标记呼吸；[selectedId] 高亮当前选中。
 /// [appear] 0~1 入场进度：大陆点阵按索引波式浮现、球缘渐显；
 /// [t] 为经过秒数，驱动球缘呼吸微光。
+/// [spawnIds]+[spawnAge]：新标记绽放（reload 差分出的新光点自 0 绽放
+/// 0.45s——光束到达点亮时不瞬跳）。
 class GlobePainter extends CustomPainter {
   GlobePainter({
     required this.landDots,
@@ -21,6 +23,8 @@ class GlobePainter extends CustomPainter {
     this.selectedId,
     this.appear = 1,
     this.t = 0,
+    this.spawnIds = const {},
+    this.spawnAge = 99,
   });
 
   final List<double> landDots;
@@ -30,6 +34,10 @@ class GlobePainter extends CustomPainter {
   final String? selectedId;
   final double appear;
   final double t;
+
+  /// 本次 reload 新增的标记（accountId）；[spawnAge] 为距绽放开始的秒数。
+  final Set<String> spawnIds;
+  final double spawnAge;
 
   static const _dotColor = Color(0xFF6FA8DC);
   static const _gridColor = Color(0x146FA8DC);
@@ -160,7 +168,20 @@ class GlobePainter extends CustomPainter {
       final p = view.project(m.lat, m.lon, radius);
       if (p == null) continue;
       final pos = center + Offset(p.dx, p.dy);
-      final r = markerRadiusFor(m.valueBaseMinor, maxValue, zoom: view.zoom);
+      // 新标记绽放：0.45s 自 0 长成（easeOutBack 轻过冲——像光点被
+      // 「点亮」；恰与光束到达闪耀同时发生，覆盖浮现过程）。
+      var bloom = 1.0;
+      if (spawnIds.contains(m.accountId) && spawnAge < 0.45) {
+        bloom = Curves.easeOutBack.transform(
+          (spawnAge / 0.45).clamp(0.0, 1.0),
+        );
+      }
+      if (bloom <= 0) {
+        idx++;
+        continue;
+      }
+      final r = markerRadiusFor(m.valueBaseMinor, maxValue, zoom: view.zoom) *
+          bloom;
       final phase = (pulse + idx * 0.18) % 1.0;
       final selected = m.accountId == selectedId;
       final color = selected
@@ -242,5 +263,6 @@ class GlobePainter extends CustomPainter {
       oldDelegate.selectedId != selectedId ||
       oldDelegate.appear != appear ||
       oldDelegate.t != t ||
+      oldDelegate.spawnAge != spawnAge ||
       !identical(oldDelegate.markers, markers);
 }

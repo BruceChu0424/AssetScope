@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/valuation/valuation.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/ai/ai_valuation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -48,6 +49,7 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
 
   /// 保存检索线索（空 = 回退到 名称+位置 推导）。
   Future<void> _saveQuery() async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final q = _query.text.trim();
@@ -59,19 +61,19 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
     );
     ref.invalidate(accountsViewProvider);
     if (mounted) {
-      showTopNotice(context, 'AI 估值线索已保存', tone: TopNoticeTone.info);
+      showTopNotice(context, t.aiValQuerySaved, tone: TopNoticeTone.info);
     }
   }
 
   /// 立即估值：AI 联网检索 → 预览结果（区间/依据/来源）→ 采用写入。
   Future<void> _estimateNow() async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _busy) return;
     final cfg = await s.aiValuation.config();
     if (!mounted) return;
     if (cfg == null) {
-      showTopNotice(context, '先在 设置 → AI 服务 绑定你的 AI Key',
-          tone: TopNoticeTone.info);
+      showTopNotice(context, t.aiValBindKeyFirst, tone: TopNoticeTone.info);
       return;
     }
     setState(() => _busy = true);
@@ -85,13 +87,13 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
         if (mounted) {
           showTopNotice(
             context,
-            '已更新估值：${fmtMinor(est.valueMinor, est.currency)}',
+            t.aiValUpdated(fmtMinor(est.valueMinor, est.currency)),
           );
         }
       }
     } catch (e) {
       if (!mounted) return;
-      showTopNotice(context, 'AI 估值：$e', tone: TopNoticeTone.error);
+      showTopNotice(context, t.aiValError(e), tone: TopNoticeTone.error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -100,10 +102,11 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
   /// 估值预览：区间 + 置信度 + 依据 + 来源，采用/放弃。
   Future<bool?> _preview(AiAssetEstimate est) {
     final theme = Theme.of(context);
-    return showDialog<bool>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('AI 估值结果'),
+    final t = AppLocalizations.of(context);
+    return showAppDialog<bool>(
+      context,
+      builder: (dctx) => AppDialog(
+        title: t.aiValResultTitle,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,22 +121,23 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
             if (est.low != null && est.high != null)
               _kv(
                 dctx,
-                '区间',
+                t.aiValRange,
                 '${fmtRational(est.low!)} ~ ${fmtRational(est.high!)}',
               ),
-            if (est.confidence != null) _kv(dctx, '置信度', '${est.confidence}%'),
-            if (est.rationale != null) _kv(dctx, '依据', est.rationale!),
-            for (final src in est.sources) _kv(dctx, '来源', src),
+            if (est.confidence != null)
+              _kv(dctx, t.aiValConfidence, '${est.confidence}%'),
+            if (est.rationale != null) _kv(dctx, t.aiValRationale, est.rationale!),
+            for (final src in est.sources) _kv(dctx, t.aiValSource, src),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('不用'),
+            child: Text(t.aiValDismiss),
           ),
           ParticleFilledButton(
             onPressed: () => Navigator.pop(dctx, true),
-            child: const Text('采用'),
+            child: Text(t.aiValAdopt),
           ),
         ],
       ),
@@ -170,10 +174,11 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) return const SizedBox.shrink();
     return SectionCard(
-      title: 'AI 估值',
+      title: t.aiValTitle,
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -183,11 +188,10 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
             color: AppColors.brassOf(theme.brightness),
           ),
           const SizedBox(width: 7),
-          const Text('AI 估值'),
+          Text(t.aiValTitle),
           const SizedBox(width: 5),
           Tooltip(
-            message: '每天解锁后自动联网检索真实市价并更新价值；'
-                '你手动改过的估值当日优先，AI 不覆盖',
+            message: t.aiValSectionTooltip,
             child: Icon(Icons.info_outline, size: 16, color: theme.hintColor),
           ),
         ],
@@ -212,15 +216,15 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
                       Expanded(
                         child: ParticleTextField(
                           controller: _query,
-                          decoration: const InputDecoration(
-                            labelText: '检索线索（小区/栋/室 · 年款型号）',
+                          decoration: InputDecoration(
+                            labelText: t.aiValQueryLabel,
                             isDense: true,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        tooltip: '保存线索',
+                        tooltip: t.aiValSaveQuery,
                         icon: const Icon(Icons.save_outlined, size: 20),
                         onPressed: _saveQuery,
                       ),
@@ -237,13 +241,14 @@ class _AiValuationSectionState extends ConsumerState<AiValuationSection> {
                                 child: Center(child: OrbitSpinner(size: 14)),
                               )
                             : null,
-                        label: Text(_busy ? '检索中…' : '立即估值'),
+                        label: Text(_busy ? t.aiValSearching : t.aiValEstimateNow),
                         onPressed: _busy ? null : _estimateNow,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '检索词空 = 「${widget.account.effectiveAiValuationQuery}」',
+                          t.aiValQueryFallback(
+                              widget.account.effectiveAiValuationQuery),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -282,6 +287,7 @@ class _ValuationHistory extends ConsumerWidget {
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return FutureBuilder<List<ValuationRecord>>(
       future: s.meta.valuations(accountId: accountId),
       builder: (context, snap) {
@@ -292,7 +298,7 @@ class _ValuationHistory extends ConsumerWidget {
           ..sort((a, b) => b.date.compareTo(a.date));
         if (records.isEmpty) {
           return Text(
-            '暂无估值记录',
+            t.aiValNoRecords,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.hintColor,
             ),

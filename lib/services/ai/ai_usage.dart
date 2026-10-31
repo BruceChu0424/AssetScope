@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import '../../data/repositories/meta_repo.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../net/guarded_http.dart';
 import 'ai_chat.dart';
 
@@ -147,7 +148,7 @@ class AiBalanceService {
     );
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! Map<String, Object?>) {
-      throw const FormatException('余额响应不是 JSON 对象');
+      throw FormatException(rt('余额响应不是 JSON 对象'));
     }
     return parseBalance(decoded, DateTime.now());
   }

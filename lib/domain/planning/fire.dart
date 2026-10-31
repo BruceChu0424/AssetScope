@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 
 /// FIRE（财务独立）输入：金额一律 BigInt（本位币最小单位），
@@ -212,7 +213,7 @@ class FirePlanner {
   /// 反解：想在 [years] 年内达标，每年需存多少（向上取整保证达标）。
   /// 返回 0 表示现有组合复利即可达标。
   static BigInt requiredAnnualSavingsMinor(FireInput input, int years) {
-    if (years <= 0) throw ArgumentError('years 必须为正');
+    if (years <= 0) throw ArgumentError(rt('years 必须为正'));
     final n = years * 12;
     final wr = input.withdrawalRate;
     final spend = Rational.fromInt(input.annualSpendMinor);

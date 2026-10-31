@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 import '../utils/dates.dart';
 import 'cash_projection.dart';
@@ -207,35 +208,35 @@ class ScenarioPresets {
   const ScenarioPresets._();
 
   static ScenarioSpec unemployment({int months = 3}) => ScenarioSpec(
-    name: '失业 $months 个月',
+    name: rt('失业 $months 个月'),
     components: [IncomeShock(drop: Rational.one, months: months)],
   );
 
   static ScenarioSpec incomeDown({Rational? drop, int months = 6}) {
     final d = drop ?? Rational.fromFrac(BigInt.from(3), BigInt.from(10));
     return ScenarioSpec(
-      name: '收入降三成 · $months 个月',
+      name: rt('收入降三成 · $months 个月'),
       components: [IncomeShock(drop: d, months: months)],
     );
   }
 
   static ScenarioSpec salaryDelay({int delayDays = 30, int months = 2}) =>
       ScenarioSpec(
-        name: '工资延发 $delayDays 天 · $months 个月',
+        name: rt('工资延发 $delayDays 天 · $months 个月'),
         components: [IncomeDelay(delayDays: delayDays, months: months)],
       );
 
   static ScenarioSpec oneOff(
     BigInt amountMinor,
     int afterDays, {
-    String label = '情景：一次性支出',
+    String? label,
   }) => ScenarioSpec(
-    name: '一次性支出',
+    name: rt('一次性支出'),
     components: [
       OneOffEvent(
         afterDays: afterDays,
         amountBaseMinor: -amountMinor,
-        label: label,
+        label: label ?? rt('情景：一次性支出'),
       ),
     ],
   );
@@ -243,14 +244,14 @@ class ScenarioPresets {
   static ScenarioSpec extraOutflow(
     BigInt monthlyMinor,
     int months, {
-    String label = '情景：额外月支出',
+    String? label,
   }) => ScenarioSpec(
-    name: '额外月支出 · $months 个月',
+    name: rt('额外月支出 · $months 个月'),
     components: [
       ExtraMonthlyOutflow(
         monthlyMinor: monthlyMinor,
         months: months,
-        label: label,
+        label: label ?? rt('情景：额外月支出'),
       ),
     ],
   );

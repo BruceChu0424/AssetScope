@@ -8,6 +8,7 @@ import '../../domain/ledger/transaction.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'debt_strategy_sheet.dart';
@@ -20,13 +21,15 @@ class DebtsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     final async = ref.watch(_debtsProvider);
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
     return PageFrame(
-      title: '负债',
-      maxWidth: 980,
+      title: t.debtPageTitle,
+      maxWidth: wide ? AppMeasure.workbench : 980,
       actions: [
         ActionIcon(
-          tooltip: '雪崩 vs 雪球策略对比',
+          tooltip: t.debtStrategyTooltip,
           icon: Icons.compare_arrows,
           onTap: () => showDebtStrategySheet(context, ref),
         ),
@@ -36,26 +39,26 @@ class DebtsPage extends ConsumerWidget {
         extendBelow: 6,
         child: FloatingActionButton.extended(
           onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
+            final ok = await showAppDialog<bool>(
+              context,
               builder: (_) => const _DebtEditDialog(),
             );
             if (ok == true) ref.invalidate(_debtsProvider);
           },
           icon: const Icon(Icons.add),
-          label: const Text('新建负债'),
+          label: Text(t.debtNew),
         ),
       ),
       child: async.when(
         loading: () => const Center(child: OrbitSpinner(size: 36)),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+        error: (e, _) => ErrorPlaceholder(t.loadFailed('$e')),
         data: (data) {
           final (debts, totalBase) = data;
           if (debts.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.credit_card_outlined,
-              title: '还没有负债',
-              message: '登记信用卡、房贷、花呗等负债后，这里给出还款计划与压力模拟。',
+              title: t.debtEmptyTitle,
+              message: t.debtEmptyHint,
             );
           }
           Rational? worstApr;
@@ -66,24 +69,74 @@ class DebtsPage extends ConsumerWidget {
             }
           }
           final brightness = Theme.of(context).brightness;
+          if (wide) {
+            // 大屏工作台：左 = 总览栏，右 = 合同网格。
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 300,
+                    child: SummaryPanel(
+                      title: t.debtOverviewTitle,
+                      heroValue: fmtMinor(totalBase, 'CNY'),
+                      heroLabel: t.debtTotalBase,
+                      heroColor: AppColors.negativeOf(brightness),
+                      rows: [
+                        SummaryRow(
+                          t.debtCountLabel,
+                          t.debtCountValue(debts.length),
+                        ),
+                        if (worstApr != null)
+                          SummaryRow(
+                            t.debtWorstApr,
+                            _pct(worstApr),
+                            color: AppColors.warnOf(brightness),
+                            tooltip: t.debtWorstAprTooltip,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: PageMeasure.gutter),
+                  Expanded(
+                    child: CardWrap(
+                      tileWidth: 460,
+                      children: [
+                        for (final d in debts)
+                          _DebtCard(
+                            account: d.$1,
+                            contract: d.$2,
+                            remainingMinor: d.$3,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             children: [
               StatBand(
                 items: [
                   StatBandItem(
-                    '总负债（折本位币）',
+                    t.debtTotalBase,
                     fmtMinor(totalBase, 'CNY'),
                     color: AppColors.negativeOf(brightness),
-                    tooltip: '按账本内最近汇率折算本位币汇总；无汇率的外币计 0',
+                    tooltip: t.debtTotalBaseTooltip,
                   ),
-                  StatBandItem('笔数', '${debts.length} 笔'),
+                  StatBandItem(
+                    t.debtCountLabel,
+                    t.debtCountValue(debts.length),
+                  ),
                   if (worstApr != null)
                     StatBandItem(
-                      '最高实际年化',
+                      t.debtWorstApr,
                       _pct(worstApr),
                       color: AppColors.warnOf(brightness),
-                      tooltip: 'IRR 口径；费用率类负债明显高于名义利率',
+                      tooltip: t.debtWorstAprTooltip,
                     ),
                 ],
               ),
@@ -182,6 +235,7 @@ class _DebtCard extends ConsumerWidget {
     }
     next ??= schedule.isEmpty ? null : schedule.last;
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final eff = contract.effectiveAprPercent();
     // 底缘光尘（docs/12 §9 卡片规范）：合同卡与区块卡同一家族。
     return ParticleEdge(
@@ -233,23 +287,26 @@ class _DebtCard extends ConsumerWidget {
               runSpacing: 6,
               children: [
                 AmountTile(
-                  label: '还款方式',
+                  label: t.debtRepayMethod,
                   amount: contract.method.labelZh,
                 ),
                 AmountTile(
-                  label: '名义年利率',
+                  label: t.debtNominalApr,
                   amount: contract.aprPercent.isZero
                       ? '0'
                       : DebtsPage._pct(contract.aprPercent),
                 ),
                 if (contract.termMonths > 0)
-                  AmountTile(label: '期数', amount: '${contract.termMonths} 期'),
+                  AmountTile(
+                    label: t.debtTermLabel,
+                    amount: t.debtTermCount(contract.termMonths),
+                  ),
                 if (eff != null)
                   AmountTile(
-                    label: '实际年化',
+                    label: t.debtEffectiveApr,
                     amount: '≈ ${DebtsPage._pct(eff)}',
                     color: AppColors.negativeOf(theme.brightness),
-                    tooltip: 'IRR 口径，费用率类负债明显更高',
+                    tooltip: t.debtEffectiveAprTooltip,
                   ),
               ],
             ),
@@ -265,10 +322,13 @@ class _DebtCard extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '下期 ${next.dueDate.month}/${next.dueDate.day} 还 '
-                      '${fmtMinor(next.totalMinor, account.currencyCode)}'
-                      '（本金 ${fmtMinor(next.principalMinor, account.currencyCode)}'
-                      ' + 利息 ${fmtMinor(next.interestMinor, account.currencyCode)}）',
+                      t.debtNextRepay(
+                        next.dueDate.month,
+                        next.dueDate.day,
+                        fmtMinor(next.totalMinor, account.currencyCode),
+                        fmtMinor(next.principalMinor, account.currencyCode),
+                        fmtMinor(next.interestMinor, account.currencyCode),
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -285,13 +345,13 @@ class _DebtCard extends ConsumerWidget {
                 TextButton.icon(
                   onPressed: () => _repayNext(context, ref, next),
                   icon: const Icon(Icons.payments_outlined, size: 17),
-                  label: const Text('按计划还款'),
+                  label: Text(t.debtRepayNext),
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: () => _prepay(context, ref),
                   icon: const Icon(Icons.bolt_outlined, size: 17),
-                  label: const Text('提前还款模拟'),
+                  label: Text(t.debtPrepaySim),
                 ),
               ],
             ),
@@ -307,11 +367,12 @@ class _DebtCard extends ConsumerWidget {
     WidgetRef ref,
     DebtScheduleEntry? entry,
   ) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     if (entry == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('没有待还期数（或为手工计划）')),
+        SnackBar(content: Text(t.debtNoScheduleSnackBar)),
       );
       return;
     }
@@ -340,36 +401,43 @@ class _DebtCard extends ConsumerWidget {
   }
 
   Future<void> _prepay(BuildContext context, WidgetRef ref) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final ctrl = TextEditingController(text: '10000');
     final shorten = true;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('提前还款模拟 · ${account.name}'),
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (dctx) => AppDialog(
+        title: t.debtPrepaySimTitle(account.name),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('当前剩余本金 ${fmtMinor(remainingMinor, account.currencyCode)}'),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: ctrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            Text(
+              t.debtRemainingPrincipal(
+                fmtMinor(remainingMinor, account.currencyCode),
               ),
-              decoration: const InputDecoration(labelText: '额外偿还金额（元）'),
+              style: Theme.of(dctx).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(dctx).hintColor,
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppAmountField(
+              controller: ctrl,
+              currencyCode: account.currencyCode,
+              label: t.debtExtraPayment,
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            onPressed: () => Navigator.pop(dctx, false),
+            child: Text(t.commonCancel),
           ),
           ParticleFilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('模拟'),
+            onPressed: () => Navigator.pop(dctx, true),
+            child: Text(t.debtSimulate),
           ),
         ],
       ),
@@ -387,20 +455,20 @@ class _DebtCard extends ConsumerWidget {
       shortenTerm: shorten,
     );
     if (context.mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('模拟结果'),
+      await showAppDialog<void>(
+        context,
+        builder: (dctx) => AppDialog(
+          title: t.debtSimResultTitle,
           content: Text(
-            '手续费：${fmtMinor(result.prepayFeeMinor, account.currencyCode)}\n'
-            '利息净节省：${fmtMinor(result.interestSavedMinor, account.currencyCode)}\n'
-            '剩余期数：${result.remainingEntries.length} 期'
-            '${result.monthsSaved > 0 ? '（少 ${result.monthsSaved} 期）' : ''}',
+            '${t.debtSimFee(fmtMinor(result.prepayFeeMinor, account.currencyCode))}\n'
+            '${t.debtSimInterestSaved(fmtMinor(result.interestSavedMinor, account.currencyCode))}\n'
+            '${t.debtSimRemaining(result.remainingEntries.length)}'
+            '${result.monthsSaved > 0 ? t.debtSimMonthsSaved(result.monthsSaved) : ''}',
           ),
           actions: [
             ParticleFilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('知道了'),
+              onPressed: () => Navigator.pop(dctx),
+              child: Text(t.commonGotIt),
             ),
           ],
         ),
@@ -479,72 +547,71 @@ class _DebtEditDialogState extends ConsumerState<_DebtEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('新建负债'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ParticleTextField(
-              controller: _name,
-              decoration: const InputDecoration(labelText: '名称'),
+    final t = AppLocalizations.of(context);
+    return AppDialog(
+      title: t.debtNew,
+      scroll: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ParticleTextField(
+            controller: _name,
+            autofocus: true,
+            decoration: InputDecoration(labelText: t.debtNameField),
+          ),
+          const SizedBox(height: 14),
+          ParticleDropdownField<LiabilitySubtype>(
+            initialValue: _subtype,
+            decoration: InputDecoration(labelText: t.fieldType),
+            items: [
+              for (final st in LiabilitySubtype.values)
+                DropdownMenuItem(value: st, child: Text(st.labelZh)),
+            ],
+            onChanged: (v) => setState(() => _subtype = v!),
+          ),
+          const SizedBox(height: 14),
+          ParticleDropdownField<RepaymentMethod>(
+            initialValue: _method,
+            decoration: InputDecoration(labelText: t.debtRepayMethod),
+            items: [
+              for (final m in RepaymentMethod.values)
+                DropdownMenuItem(value: m, child: Text(m.labelZh)),
+            ],
+            onChanged: (v) => setState(() => _method = v!),
+          ),
+          const SizedBox(height: 14),
+          AppAmountField(
+            controller: _principal,
+            currencyCode: 'CNY',
+            label: t.debtPrincipal,
+          ),
+          const SizedBox(height: 14),
+          ParticleTextField(
+            controller: _apr,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<LiabilitySubtype>(
-              initialValue: _subtype,
-              decoration: const InputDecoration(labelText: '类型'),
-              items: [
-                for (final st in LiabilitySubtype.values)
-                  DropdownMenuItem(value: st, child: Text(st.labelZh)),
-              ],
-              onChanged: (v) => setState(() => _subtype = v!),
+            decoration: InputDecoration(
+              labelText: t.debtNominalAprField,
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<RepaymentMethod>(
-              initialValue: _method,
-              decoration: const InputDecoration(labelText: '还款方式'),
-              items: [
-                for (final m in RepaymentMethod.values)
-                  DropdownMenuItem(value: m, child: Text(m.labelZh)),
-              ],
-              onChanged: (v) => setState(() => _method = v!),
-            ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _principal,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: '本金（元）'),
-            ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _apr,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: '名义年利率 %（如 3.85）'),
-            ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _term,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: '期数（月）'),
-            ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _start,
-              decoration: const InputDecoration(labelText: '起始日'),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          ParticleTextField(
+            controller: _term,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: t.debtTermMonthsField),
+          ),
+          const SizedBox(height: 14),
+          AppDateField(controller: _start, label: t.debtStartDate),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          child: Text(t.cancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.commonSave)),
       ],
     );
   }

@@ -1,10 +1,17 @@
+import '../../l10n/runtime_l10n.dart';
+
 /// 币种定义与小数位注册表。
 ///
 /// 金额一律以“最小货币单位”的整数（BigInt）存储与运算：
 /// CNY/USD 为“分”，JPY 为“元”，加密资产可到 8 位。
 /// 账本任何路径都不允许使用 double 累加金额。
 class CurrencyInfo {
-  const CurrencyInfo(this.code, this.minorUnitDigits, this.symbol, this.nameZh);
+  const CurrencyInfo(
+    this.code,
+    this.minorUnitDigits,
+    this.symbol,
+    this._nameZh,
+  );
 
   /// ISO 4217 风格代码，全大写；自定义币种允许 CNYX 之类扩展码。
   final String code;
@@ -13,7 +20,9 @@ class CurrencyInfo {
   final int minorUnitDigits;
 
   final String symbol;
-  final String nameZh;
+  final String _nameZh;
+
+  String get nameZh => rt(_nameZh);
 
   BigInt get minorFactor => BigInt.from(10).pow(minorUnitDigits);
 
@@ -51,7 +60,7 @@ class CurrencyInfo {
   static CurrencyInfo parse(String code) {
     final v = tryParse(code);
     if (v == null) {
-      throw ArgumentError('未注册的币种代码: $code');
+      throw ArgumentError(rt('未注册的币种代码: $code'));
     }
     return v;
   }

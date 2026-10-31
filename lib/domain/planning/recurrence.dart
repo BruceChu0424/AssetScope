@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../utils/dates.dart';
 
 /// 周期类型。
@@ -10,16 +11,18 @@ enum Cadence {
   customInterval('自定义间隔'),
   once('单次');
 
-  const Cadence(this.labelZh);
-  final String labelZh;
+  const Cadence(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 enum EventDirection {
   inflow('收入'),
   outflow('支出');
 
-  const EventDirection(this.labelZh);
-  final String labelZh;
+  const EventDirection(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 enum PlanStatus { active, paused, finished, cancelled }

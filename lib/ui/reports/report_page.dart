@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/reports/year_report.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/stats_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -58,13 +59,15 @@ class _ReportPageState extends ConsumerState<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
     final Widget body;
     if (_yearMode) {
       body = ref
           .watch(_yearProvider)
           .when(
             loading: () => const Center(child: OrbitSpinner(size: 36)),
-            error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+            error: (e, _) => ErrorPlaceholder(t.loadFailedReports(e.toString())),
             data: (r) => _magazine([YearView(report: r)]),
           );
     } else {
@@ -72,7 +75,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
           .watch(_monthProvider)
           .when(
             loading: () => const Center(child: OrbitSpinner(size: 36)),
-            error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+            error: (e, _) => ErrorPlaceholder(t.loadFailedReports(e.toString())),
             data: (r) => _magazine([
               _attributionCard(context, r),
               _categoryCard(context, r, income: true),
@@ -87,7 +90,8 @@ class _ReportPageState extends ConsumerState<ReportPage> {
           );
     }
     return PageFrame(
-      title: _yearMode ? '年度 · $_year 年' : '月报 · ${_month.year} 年 ${_month.month} 月',
+      title: _yearMode ? t.reportYearTitle(_year) : t.reportMonthTitle(_month.year, _month.month),
+      maxWidth: wide ? AppMeasure.workbench : PageMeasure.contentMax,
       appBarBottom: _ToggleBar(
         yearMode: _yearMode,
         onMode: (v) => setState(() {
@@ -100,13 +104,13 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       ),
       actions: [
         ActionIcon(
-          tooltip: '上一期',
+          tooltip: t.prevPeriod,
           icon: Icons.chevron_left,
           onTap: () => _shift(-1),
         ),
         const SizedBox(width: 6),
         ActionIcon(
-          tooltip: '下一期',
+          tooltip: t.nextPeriod,
           icon: Icons.chevron_right,
           onTap: () => _shift(1),
         ),
@@ -160,6 +164,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   }
 
   Widget _attributionCard(BuildContext context, MonthReport r) {
+    final t = AppLocalizations.of(context);
     final a = r.attribution;
     final base = r.baseCurrencyCode;
     Widget row(String label, BigInt v, {bool strong = false}) => ListTile(
@@ -174,29 +179,29 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       ),
     );
     return SectionCard(
-      title: '净资产变化分解',
+      title: t.nwChangeBreakdown,
       trailing: a.hasResidual
           ? Tooltip(
-              message: '差额非 0 通常意味着缺估值、漏记或导入重复',
+              message: t.residualTooltip,
               child: Chip(
-                label: Text('待核对 ${fmtMinor(a.residual, base)}'),
+                label: Text(t.pendingReviewChip(fmtMinor(a.residual, base))),
                 visualDensity: VisualDensity.compact,
               ),
             )
           : null,
       child: Column(
         children: [
-          row('期初净资产', a.nwStart),
-          row('收支贡献', a.incomeExpense),
-          row('投资损益·已实现', a.investRealized),
-          row('投资损益·分红', a.investDividend),
-          row('投资损益·未实现变化', a.investUnrealizedDelta),
-          row('汇兑影响', a.fxEffect),
-          row('其他估值变化', a.otherValuation),
-          row('范围/历史修正', a.correction),
-          if (a.hasResidual) row('待核对差额', a.residual),
+          row(t.netWorthOpening, a.nwStart),
+          row(t.attributionIncomeExpense, a.incomeExpense),
+          row(t.attributionRealized, a.investRealized),
+          row(t.attributionDividend, a.investDividend),
+          row(t.attributionUnrealizedDelta, a.investUnrealizedDelta),
+          row(t.attributionFx, a.fxEffect),
+          row(t.attributionOtherValuation, a.otherValuation),
+          row(t.attributionCorrection, a.correction),
+          if (a.hasResidual) row(t.attributionResidual, a.residual),
           const Divider(height: 8),
-          row('期末净资产', a.nwEnd, strong: true),
+          row(t.netWorthClosing, a.nwEnd, strong: true),
         ],
       ),
     );
@@ -207,6 +212,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     MonthReport r, {
     required bool income,
   }) {
+    final t = AppLocalizations.of(context);
     final base = r.baseCurrencyCode;
     final map = income ? r.incomeByCategory : r.expenseByCategory;
     final entries = map.entries.toList()
@@ -215,7 +221,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     if (entries.isEmpty) return const SizedBox.shrink();
     final palette = AppChartPalette.of(Theme.of(context).brightness);
     return SectionCard(
-      title: income ? '收入构成' : '消费构成',
+      title: income ? t.incomeMix : t.expenseMix,
       child: Column(
         children: [
           SizedBox(
@@ -262,21 +268,22 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   );
 
   Widget _compositionCard(BuildContext context, MonthReport r) {
+    final t = AppLocalizations.of(context);
     final items =
         r.nwEndBreakdown.items
             .where((i) => i.valueBaseMinor != BigInt.zero)
             .toList()
           ..sort((a, b) => b.valueBaseMinor.compareTo(a.valueBaseMinor));
     return SectionCard(
-      title: '期末资产负债构成',
+      title: t.closingBalanceSheetMix,
       child: Column(
         children: [
           for (final i in items.take(14))
             rowTile(
               '${i.account.name}${i.valuationMissing
-                  ? '（缺估值）'
+                  ? t.valuationMissingSuffix
                   : i.valuationStale
-                  ? '（估值过期）'
+                  ? t.valuationStaleSuffix
                   : ''}',
               fmtMinor(i.valueBaseMinor, i.account.currencyCode),
             ),
@@ -298,12 +305,13 @@ class _ToggleBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment(value: false, label: Text('月报')),
-          ButtonSegment(value: true, label: Text('年度')),
+        segments: [
+          ButtonSegment(value: false, label: Text(t.monthlyReport)),
+          ButtonSegment(value: true, label: Text(t.yearlyReport)),
         ],
         selected: {yearMode},
         onSelectionChanged: (v) => onMode(v.first),

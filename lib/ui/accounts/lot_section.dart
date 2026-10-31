@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/invest/lots.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -19,6 +20,7 @@ class LotSection extends ConsumerWidget {
     final s = sessionOf(ref.watch(vaultProvider));
     if (s == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final ccy = account.currencyCode;
     return FutureBuilder<LotLedgerResult?>(
       future: s.portfolioAnalytics.lotDetail(account.id),
@@ -37,7 +39,7 @@ class LotSection extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '成本批次（FIFO）',
+                    t.lotSectionTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -45,7 +47,8 @@ class LotSection extends ConsumerWidget {
                 ),
                 _pnlChip(
                   context,
-                  '累计已实现 ${fmtMinor(r.totalRealizedPnlMinor, ccy, sign: true)}',
+                  t.lotRealizedTotal(
+                      fmtMinor(r.totalRealizedPnlMinor, ccy, sign: true)),
                   r.totalRealizedPnlMinor,
                 ),
               ],
@@ -55,7 +58,8 @@ class LotSection extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 2),
                 child: _pnlChip(
                   context,
-                  '${DateTime.now().year} 年已实现 ${fmtMinor(thisYear, ccy, sign: true)}',
+                  t.lotRealizedYear(DateTime.now().year,
+                      fmtMinor(thisYear, ccy, sign: true)),
                   thisYear,
                 ),
               ),
@@ -74,7 +78,8 @@ class LotSection extends ConsumerWidget {
                   ),
                 ),
                 title: Text(
-                  '${lot.remainingQuantity.toDecimalString(4)} 份 × 单价 ${lot.unitCost.toDecimalString(6)}',
+                  t.lotLineItem(lot.remainingQuantity.toDecimalString(4),
+                      lot.unitCost.toDecimalString(6)),
                   style: theme.textTheme.bodySmall,
                 ),
                 trailing: Text(
@@ -88,7 +93,7 @@ class LotSection extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '⚠ ${r.shortfallQuantity.toDecimalString(4)} 份卖出早于首笔买入（历史缺口，以零成本配对）',
+                  t.lotShortfall(r.shortfallQuantity.toDecimalString(4)),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.brassOf(theme.brightness),
                   ),
@@ -97,7 +102,7 @@ class LotSection extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                '口径：先买先卖逐批配对，与账面平均成本法并行披露（docs/05 §11）',
+                t.lotMethodologyNote,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                   fontSize: 11,

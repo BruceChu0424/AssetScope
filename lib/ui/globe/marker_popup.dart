@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/stats_service.dart';
 import '../widgets/common.dart' show fmtMinor;
 import 'globe_state.dart';
@@ -45,6 +46,7 @@ class MarkerPopupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final shown = group.markers.take(3).toList();
     final overflow = group.markers.length - shown.length;
     return Container(
@@ -73,7 +75,7 @@ class MarkerPopupCard extends StatelessWidget {
             child: Transform.scale(
               scale: 0.96 + 0.04 * t,
               alignment: below ? Alignment.topCenter : Alignment.bottomCenter,
-              child: _content(shown, overflow),
+              child: _content(l, shown, overflow),
             ),
           ),
         ),
@@ -81,7 +83,7 @@ class MarkerPopupCard extends StatelessWidget {
     );
   }
 
-  Widget _content(List<GlobeMarker> shown, int overflow) {
+  Widget _content(AppLocalizations l, List<GlobeMarker> shown, int overflow) {
     final anchorColor = group.anchor.kind == MarkerKind.fixed
         ? const Color(0xFF7FD4C1)
         : const Color(0xFFE5C078);
@@ -147,14 +149,14 @@ class MarkerPopupCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _valueText(m),
+              _valueText(l, m),
             ],
           ),
         ],
         if (overflow > 0) ...[
           const SizedBox(height: 6),
           Text(
-            '同址还有 $overflow 处资产',
+            l.globeMoreSameLocation(overflow),
             style: TextStyle(
               color: const Color(0xFF7EA6D9).withValues(alpha: 0.7),
               fontSize: 11,
@@ -165,11 +167,11 @@ class MarkerPopupCard extends StatelessWidget {
     );
   }
 
-  Widget _valueText(GlobeMarker m) {
+  Widget _valueText(AppLocalizations l, GlobeMarker m) {
     final item = values[m.accountId];
     final hasValue = item != null && !item.valuationMissing;
     return Text(
-      hasValue ? fmtMinor(m.valueBaseMinor, base) : '缺估值',
+      hasValue ? fmtMinor(m.valueBaseMinor, base) : l.globeValuationMissing,
       style: TextStyle(
         color: hasValue
             ? Colors.white

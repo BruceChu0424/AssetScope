@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/currency.dart';
 import '../money/fx_rate.dart';
 import '../money/money.dart';
@@ -240,7 +241,7 @@ class CashProjector {
           CashShortfall(
             date: e.key,
             amountBaseMinor: e.value,
-            label: '低于准备金与现金底线',
+            label: rt('低于准备金与现金底线'),
           ),
         );
       }
@@ -266,7 +267,7 @@ class CashProjector {
             CashShortfall(
               date: e.date,
               amountBaseMinor: e.amountBaseMinor,
-              label: '账户 ${acc.name} 可能余额不足',
+              label: rt('账户 ${acc.name} 可能余额不足'),
               accountId: acc.accountId,
             ),
           );

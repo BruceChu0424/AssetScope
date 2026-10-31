@@ -6,15 +6,16 @@ import 'package:go_router/go_router.dart';
 
 import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
-import 'package:assetscope/ui/budget/budgets_page.dart';
 import 'package:assetscope/ui/globe/globe_home_page.dart';
-import 'package:assetscope/ui/home_shell.dart';
 import 'package:assetscope/ui/settings/settings_page.dart';
-import 'package:assetscope/ui/widgets/floating_nav_rail.dart' show NavItems;
+import 'package:assetscope/ui/overview/inbox_page.dart';
+import 'package:assetscope/ui/widgets/common.dart' show PageBackButton;
 
 import 'widget_host.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
-/// 导航框架与外观模式：底部导航"4 高频 + 更多"、选中态、主题切换持久化。
+/// 首页即枢纽（2026-10-30 导航体系删除）：右上集群承载目的地入口
+/// （待办 / AI / 设置），其余页面一律返回键回上层；外观模式持久化。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -41,23 +42,23 @@ void main() {
   GoRouter router() => GoRouter(
         initialLocation: '/',
         routes: [
-          ShellRoute(
-            builder: (_, _, child) => HomeShell(body: child),
-            routes: [
-              GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
-              GoRoute(path: '/budgets', builder: (_, _) => const BudgetsPage()),
-              GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
-            ],
-          ),
+          GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
+          GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+          GoRoute(path: '/inbox', builder: (_, _) => const InboxPage()),
         ],
       );
 
   Widget shellHost() => ProviderScope(
         overrides: [vaultProvider.overrideWith(() => FixedVault(session))],
-        child: MaterialApp.router(routerConfig: router()),
+        child: MaterialApp.router(
+          routerConfig: router(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+        ),
       );
 
-  /// 首页地球常驻动画（自转/呼吸）不会"settle"，改定时泵帧。
+  /// 首页地球常驻动画（自转/呼吸/粒子标）不会"settle"，改定时泵帧。
   Future<void> pumpMs(WidgetTester tester, int ms) async {
     var left = ms;
     while (left > 0) {
@@ -67,40 +68,36 @@ void main() {
     }
   }
 
-  testWidgets('底部导航：高频直达 + 更多弹层进入次要页并保持选中', (tester) async {
+  testWidgets('首页枢纽：右上集群直达设置/待办，返回键回首页', (tester) async {
     if (!dbAvailable) {
       markTestSkipped('宿主环境无可用 sqlite3，跳过');
       return;
     }
-    // 默认测试视口 800x600 < 900 → 底部导航分支。
     await tester.pumpWidget(shellHost());
     await pumpMs(tester, 1000);
 
-    // 首页：总览选中（此前用 startsWith('/') 导致任何路径都选中总览）。
-    var navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(navBar.selectedIndex, 0);
+    // 左上角是品牌粒子标（不再是导航入口）；右上集群六钮齐全。
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.checklist), findsOneWidget);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
 
-    // 高频直达：流水/月报在底栏；预算走"更多"。
-    await tester.tap(find.text('更多'));
+    // 设置直达。
+    await tester.tap(find.byIcon(Icons.settings_outlined));
     await pumpMs(tester, 600);
-    expect(find.text('计划'), findsOneWidget, reason: '次要目的地应出现在弹层');
-    await tester.tap(find.text('预算'));
-    await pumpMs(tester, 600);
-    // 离开首页后地球已卸载，此时才能 settle（收尾弹层/路由过渡）。
     await tester.pumpAndSettle();
-    expect(find.byType(BudgetsPage), findsOneWidget, reason: '应导航到预算页');
+    expect(find.byType(SettingsPage), findsOneWidget);
 
-    // 次要页保持"更多"选中（修复前任何路径都错亮"总览"）。
-    // 账户页并入总览后 primary=3 项，"更多"索引=primary.length。
-    navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(navBar.selectedIndex, NavItems.primary.length);
-
-    // 高频页直接点底栏返回（回首页又是不 settle 的动画页）。
-    await tester.tap(find.text('总览'));
+    // 返回键回上层（栈空回总览）。
+    await tester.tap(find.byType(PageBackButton));
     await pumpMs(tester, 800);
-    navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(navBar.selectedIndex, 0);
     expect(find.byType(GlobeHomePage), findsOneWidget);
+
+    // 待办直达（原右列「待处理卡」已删，入口收敛到这枚钮）。
+    await tester.tap(find.byIcon(Icons.checklist));
+    await pumpMs(tester, 600);
+    await tester.pumpAndSettle();
+    expect(find.byType(InboxPage), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
@@ -116,18 +113,24 @@ void main() {
     addTearDown(container.dispose);
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: const SettingsPage()),
+      child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),home: const SettingsPage()),
     ));
     await tester.pumpAndSettle();
 
     expect(container.read(themeModeProvider), ThemeMode.system);
 
-    // 新增入口（如"从备份合并"）可能把外观项挤出视口，先滚动到位。
+    // 深空控制舱改版：小屏为「横向分类胶囊 + 当前分类内容」。主题模式
+    // 行在「偏好」分类里——先切分类，再进主题模式项。
+    await tester.tap(find.text('偏好'));
+    await tester.pumpAndSettle();
     // （非懒加载 ListView 的所有子树都参与 finder，scrollUntilVisible
     // 会误判"已可见"，用 ensureVisible 真正滚动。）
-    await tester.ensureVisible(find.text('外观'));
+    await tester.ensureVisible(find.text('主题模式'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('外观'));
+    await tester.tap(find.text('主题模式'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('深色').last);
     await tester.pumpAndSettle();

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 
+import '../l10n/runtime_l10n.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -100,42 +101,42 @@ class AppDatabase extends _$AppDatabase {
     // 系统账户
     AccountsCompanion.insert(
       id: 'sys:equity:opening',
-      name: '期初余额权益',
+      name: rt('期初余额权益'),
       type: 'equity',
       currencyCode: 'CNY',
       isSystem: const Value(true),
     ),
     AccountsCompanion.insert(
       id: 'sys:equity:adjustment',
-      name: '对账调整',
+      name: rt('对账调整'),
       type: 'equity',
       currencyCode: 'CNY',
       isSystem: const Value(true),
     ),
     AccountsCompanion.insert(
       id: 'sys:expense:fx',
-      name: '汇兑损益',
+      name: rt('汇兑损益'),
       type: 'expense',
       currencyCode: 'CNY',
       isSystem: const Value(true),
     ),
     AccountsCompanion.insert(
       id: 'sys:expense:rounding',
-      name: '尾差',
+      name: rt('尾差'),
       type: 'expense',
       currencyCode: 'CNY',
       isSystem: const Value(true),
     ),
     AccountsCompanion.insert(
       id: 'sys:income:realized-pnl',
-      name: '已实现投资损益',
+      name: rt('已实现投资损益'),
       type: 'income',
       currencyCode: 'CNY',
       isSystem: const Value(true),
     ),
     AccountsCompanion.insert(
       id: 'sys:income:dividend',
-      name: '股息与分红',
+      name: rt('股息与分红'),
       type: 'income',
       currencyCode: 'CNY',
       isSystem: const Value(true),
@@ -143,110 +144,110 @@ class AppDatabase extends _$AppDatabase {
     // 默认支出分类
     AccountsCompanion.insert(
       id: 'cat:e:dining',
-      name: '餐饮',
+      name: rt('餐饮'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:transport',
-      name: '交通',
+      name: rt('交通'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:shopping',
-      name: '购物',
+      name: rt('购物'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:housing',
-      name: '居住',
+      name: rt('居住'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:utilities',
-      name: '水电燃气',
+      name: rt('水电燃气'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:telecom',
-      name: '通讯网络',
+      name: rt('通讯网络'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:medical',
-      name: '医疗',
+      name: rt('医疗'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:education',
-      name: '教育',
+      name: rt('教育'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:fun',
-      name: '娱乐',
+      name: rt('娱乐'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:travel',
-      name: '旅行',
+      name: rt('旅行'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:insurance',
-      name: '保险费',
+      name: rt('保险费'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:gift',
-      name: '人情往来',
+      name: rt('人情往来'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:interest',
-      name: '利息费用',
+      name: rt('利息费用'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:e:other',
-      name: '其他支出',
+      name: rt('其他支出'),
       type: 'expense',
       currencyCode: 'CNY',
     ),
     // 默认收入分类
     AccountsCompanion.insert(
       id: 'cat:i:salary',
-      name: '工资',
+      name: rt('工资'),
       type: 'income',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:i:bonus',
-      name: '奖金',
+      name: rt('奖金'),
       type: 'income',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:i:side-job',
-      name: '兼职/副业',
+      name: rt('兼职/副业'),
       type: 'income',
       currencyCode: 'CNY',
     ),
     AccountsCompanion.insert(
       id: 'cat:i:other',
-      name: '其他收入',
+      name: rt('其他收入'),
       type: 'income',
       currencyCode: 'CNY',
     ),

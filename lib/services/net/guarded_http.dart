@@ -4,6 +4,8 @@ import 'dart:typed_data' show BytesBuilder;
 
 import 'package:meta/meta.dart';
 
+import '../../l10n/runtime_l10n.dart';
+
 /// 出网请求守卫与共用 JSON POST 客户端。
 ///
 /// 安全约束（docs/06）：对外请求仅允许 http/https，且目标主机
@@ -26,10 +28,10 @@ class GuardedHttp {
   static Uri validate(String url) {
     final uri = Uri.tryParse(url.trim());
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      throw const FormatException('URL 不合法');
+      throw FormatException(rt('URL 不合法'));
     }
     if (uri.scheme != 'http' && uri.scheme != 'https') {
-      throw FormatException('仅允许 http/https，当前：${uri.scheme}');
+      throw FormatException('${rt('仅允许 http/https，当前：')}${uri.scheme}');
     }
     final host = uri.host.toLowerCase();
     if (host == 'localhost' ||
@@ -37,16 +39,16 @@ class GuardedHttp {
         host.endsWith('.local') ||
         host.endsWith('.internal') || // 云元数据内网域（AWS/GCP metadata.*）
         host == '0.0.0.0') {
-      throw const FormatException('不允许访问本机/本地域名');
+      throw FormatException(rt('不允许访问本机/本地域名'));
     }
     if (_isSuspiciousHost(host)) {
-      throw const FormatException('不允许访问疑似 IP 编码的主机名');
+      throw FormatException(rt('不允许访问疑似 IP 编码的主机名'));
     }
     if (_isPrivateIpv4(host)) {
-      throw const FormatException('不允许访问私有/保留 IPv4 地址');
+      throw FormatException(rt('不允许访问私有/保留 IPv4 地址'));
     }
     if (_isBlockedIpv6(host)) {
-      throw const FormatException('不允许访问环回/本地/组播 IPv6 地址');
+      throw FormatException(rt('不允许访问环回/本地/组播 IPv6 地址'));
     }
     return uri;
   }
@@ -168,7 +170,7 @@ class GuardedHttp {
     if (!isRedirect) return res;
     if (hop >= _maxRedirects) {
       await res.drain<void>();
-      throw const HttpException('重定向次数过多');
+      throw HttpException(rt('重定向次数过多'));
     }
     final loc = res.headers.value(HttpHeaders.locationHeader);
     if (loc == null) return res; // 无 Location：按普通响应交给状态码处理
@@ -240,11 +242,11 @@ class GuardedHttp {
     final text = await res.transform(utf8.decoder).join();
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw HttpException(
-        'HTTP ${res.statusCode}：${errorDetail(text, headers)}',
+        'HTTP ${res.statusCode}${rt('：')}${errorDetail(text, headers)}',
       );
     }
     final decoded = jsonDecode(text);
     if (decoded is Map<String, Object?>) return decoded;
-    throw const FormatException('响应不是 JSON 对象');
+    throw FormatException(rt('响应不是 JSON 对象'));
   }
 }

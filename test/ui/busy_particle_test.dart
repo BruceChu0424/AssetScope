@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:assetscope/ui/widgets/common.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// runBusy 粒子舞台生命周期回归：
 /// - 任务正常完成：舞台上屏 → hold 后自动收场，结果透传；
@@ -26,6 +27,9 @@ void main() {
     String? got;
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Builder(
             builder: (context) => Center(
@@ -60,6 +64,9 @@ void main() {
     Object? thrown;
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Builder(
             builder: (context) => Center(
@@ -96,6 +103,9 @@ void main() {
     int? got;
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Builder(
             builder: (context) => Center(
@@ -130,6 +140,9 @@ void main() {
     String? got;
     final gate = Completer<void>();
     Widget appOf(Widget home) => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
           builder: (_, c) => BusyHost(child: c ?? const SizedBox.shrink()),
           home: home,
         );

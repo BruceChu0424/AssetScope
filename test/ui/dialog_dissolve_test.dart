@@ -4,7 +4,6 @@ import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
 import 'package:assetscope/ui/accounts/account_edit_dialog.dart';
 import 'package:assetscope/ui/globe/globe_home_page.dart';
-import 'package:assetscope/ui/home_shell.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widget_host.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 新建资产 · 粒子化保存回归：
 /// ① 位置必填——不选位置点创建：顶部通知弹出、弹窗保留；
@@ -77,18 +77,17 @@ void main() {
   GoRouter router() => GoRouter(
         initialLocation: '/',
         routes: [
-          ShellRoute(
-            builder: (_, _, child) => HomeShell(body: child),
-            routes: [
-              GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
-            ],
-          ),
-        ],
+          GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
+      ],
       );
 
   Widget shellHost() => ProviderScope(
         overrides: [vaultProvider.overrideWith(() => FixedVault(session))],
-        child: MaterialApp.router(routerConfig: router()),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          routerConfig: router()),
       );
 
   /// 首页常驻动画不 settle，一律定时泵帧。

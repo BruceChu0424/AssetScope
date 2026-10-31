@@ -11,6 +11,7 @@ import '../domain/import/category_rules.dart';
 import '../domain/ledger/account.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/money/fx_rate.dart';
+import '../l10n/runtime_l10n.dart';
 import 'stats_service.dart';
 
 /// 单条智慧洞察（首页"体检"卡与洞察列表用）。
@@ -245,12 +246,12 @@ class InsightService {
       insights.add(
         Insight(
           icon: m >= 6 ? '🛡️' : (m >= 3 ? '🛡️' : '⚠️'),
-          title: '应急准备金 ≈ ${m.toStringAsFixed(1)} 个月',
+          title: '${rt('应急准备金 ≈ ')}${m.toStringAsFixed(1)}${rt(' 个月')}',
           detail: m >= 6
-              ? '已超过 6 个月安全线，闲钱可以考虑做更长周期安排'
+              ? rt('已超过 6 个月安全线，闲钱可以考虑做更长周期安排')
               : m >= 3
-              ? '达到 3 个月基本线，继续向 6 个月目标积累'
-              : '低于 3 个月基本线，优先把流动资产补到月均消费的 3 倍',
+              ? rt('达到 3 个月基本线，继续向 6 个月目标积累')
+              : rt('低于 3 个月基本线，优先把流动资产补到月均消费的 3 倍'),
           severity: m >= 3 ? InsightSeverity.good : InsightSeverity.warn,
         ),
       );
@@ -260,12 +261,12 @@ class InsightService {
       insights.add(
         Insight(
           icon: r >= 0.3 ? '💰' : (r >= 0.1 ? '💰' : '⚠️'),
-          title: '本月储蓄率 ${(r * 100).toStringAsFixed(0)}%',
+          title: '${rt('本月储蓄率 ')}${(r * 100).toStringAsFixed(0)}%',
           detail: r >= 0.3
-              ? '高于 30%，保持这个节奏净资产会稳步爬升'
+              ? rt('高于 30%，保持这个节奏净资产会稳步爬升')
               : r >= 0.1
-              ? '介于 10%–30%，还有优化空间'
-              : '本月入不敷出，看看消费构成里哪一项在拉动',
+              ? rt('介于 10%–30%，还有优化空间')
+              : rt('本月入不敷出，看看消费构成里哪一项在拉动'),
           severity: r >= 0.1 ? InsightSeverity.good : InsightSeverity.warn,
         ),
       );
@@ -274,9 +275,11 @@ class InsightService {
       insights.add(
         Insight(
           icon: '🧨',
-          title: '固定支出已超固定收入',
+          title: rt('固定支出已超固定收入'),
           detail:
-              '月度计划支出是固定收入的 ${(1 / health.passiveCushion!).toStringAsFixed(1)} 倍，依赖弹性收入或储蓄填补',
+              '${rt('月度计划支出是固定收入的 ')}'
+              '${(1 / health.passiveCushion!).toStringAsFixed(1)}'
+              '${rt(' 倍，依赖弹性收入或储蓄填补')}',
           severity: InsightSeverity.warn,
         ),
       );
@@ -288,8 +291,10 @@ class InsightService {
       insights.add(
         Insight(
           icon: '📈',
-          title: '「${a.categoryName}」本月${a.spendUp ? '激增' : '骤降'} $pct',
-          detail: '基线（近月中位数）对照的稳健异常信号，确认是否为一次性大额',
+          title:
+              '${rt('「')}${a.categoryName}${rt('」本月')}'
+              '${a.spendUp ? rt('激增') : rt('骤降')} $pct',
+          detail: rt('基线（近月中位数）对照的稳健异常信号，确认是否为一次性大额'),
           severity: InsightSeverity.warn,
         ),
       );
@@ -298,10 +303,13 @@ class InsightService {
       insights.add(
         Insight(
           icon: '🏁',
-          title: '净资产关口预测',
+          title: rt('净资产关口预测'),
           detail:
-              '按近 12 个月趋势（月均 +${(milestone.slopePerMonthMinor ~/ BigInt.from(100)).toString()} 元），'
-              '预计 ${milestone.targetDate.year} 年 ${milestone.targetDate.month} 月达到 ${_roundLabel(target)}',
+              '${rt('按近 12 个月趋势（月均 +')}'
+              '${(milestone.slopePerMonthMinor ~/ BigInt.from(100)).toString()}'
+              '${rt(' 元），预计 ')}${milestone.targetDate.year}${rt(' 年 ')}'
+              '${milestone.targetDate.month}${rt(' 月达到 ')}'
+              '${_roundLabel(target)}',
           severity: InsightSeverity.info,
         ),
       );
@@ -310,10 +318,12 @@ class InsightService {
       insights.add(
         Insight(
           icon: r.direction ? '🔁' : '📅',
-          title: '发现周期性${r.direction ? '收入' : '支出'}：${r.label}',
+          title:
+              '${rt('发现周期性')}${r.direction ? rt('收入') : rt('支出')}${rt('：')}${r.label}',
           detail:
-              '${r.cadenceLabel} · ${r.occurrences} 次 · 置信 ${(r.confidence * 100).toStringAsFixed(0)}%，'
-              '可在计划页固化为固定开销',
+              '${r.cadenceLabel} · ${r.occurrences}${rt(' 次 · 置信 ')}'
+              '${(r.confidence * 100).toStringAsFixed(0)}'
+              '${rt('%，可在计划页固化为固定开销')}',
           severity: InsightSeverity.info,
         ),
       );
@@ -341,10 +351,11 @@ class InsightService {
     if (lastMs == null) {
       return Insight(
         icon: '💾',
-        title: '还没有备份过',
-        detail:
-            '数据只存在本机（Android 卸载即清空）。到 设置 → 导出加密备份，'
-            '生成 .asbk 离线保存一份',
+        title: rt('还没有备份过'),
+        detail: rt(
+          '数据只存在本机（Android 卸载即清空）。到 设置 → 导出加密备份，'
+          '生成 .asbk 离线保存一份',
+        ),
         severity: InsightSeverity.warn,
       );
     }
@@ -354,8 +365,8 @@ class InsightService {
     if (days >= 30) {
       return Insight(
         icon: '💾',
-        title: '距上次备份已 $days 天',
-        detail: '重要数据建议每月备份一次；到 设置 → 导出加密备份 更新 .asbk',
+        title: '${rt('距上次备份已 ')}$days${rt(' 天')}',
+        detail: rt('重要数据建议每月备份一次；到 设置 → 导出加密备份 更新 .asbk'),
         severity: InsightSeverity.warn,
       );
     }
@@ -384,9 +395,9 @@ class InsightService {
   String _roundLabel(BigInt minor) {
     final yuan = minor ~/ BigInt.from(100);
     if (yuan >= BigInt.from(1000000)) {
-      return '${(yuan ~/ BigInt.from(10000)).toString()} 万';
+      return '${(yuan ~/ BigInt.from(10000)).toString()}${rt(' 万')}';
     }
-    return '$yuan 元';
+    return '$yuan${rt(' 元')}';
   }
 
   /// 雪崩 vs 雪球对比：返回两套计划与共同假设。

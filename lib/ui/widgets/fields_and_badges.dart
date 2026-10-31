@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import 'app_dialog.dart';
 import 'money_text.dart' show fmtMinor;
 import '../widgets/particle_interactive.dart';
 
@@ -23,13 +25,18 @@ class DeltaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final up = !minor.isNegative;
     final c = signColor(minor, theme.brightness);
     final amount = fmtMinor(minor, currencyCode, sign: up);
     final label = percent == null
         ? amount
-        : '$amount（${up ? '↑' : '↓'} ${(percent!.abs() * 100).toStringAsFixed(1)}%）';
+        : t.wdgDeltaWithPercent(
+            amount,
+            up ? '↑' : '↓',
+            (percent!.abs() * 100).toStringAsFixed(1),
+          );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -130,17 +137,18 @@ class AppAmountField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.currencyCode,
-    this.label = '金额',
+    this.label,
     this.allowNegative = false,
   });
 
   final TextEditingController controller;
   final String currencyCode;
-  final String label;
+  final String? label;
   final bool allowNegative;
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final ccy = CurrencyInfo.parse(currencyCode);
     return ParticleTextField(
       controller: controller,
@@ -148,7 +156,10 @@ class AppAmountField extends StatelessWidget {
         decimal: true,
         signed: allowNegative,
       ),
-      decoration: InputDecoration(labelText: label, suffixText: ccy.code),
+      decoration: InputDecoration(
+        labelText: label ?? t.wdgAmount,
+        suffixText: ccy.code,
+      ),
     );
   }
 
@@ -164,30 +175,54 @@ class AppAmountField extends StatelessWidget {
   }
 }
 
-/// 日期输入域：文本 + 点击弹日历选择器。
+/// 日期输入域：文本 + 点击弹日历（日历装进统一粒子弹窗壳 AppDialog，
+/// 弃用框架 showDatePicker 的默认观感——v0.25 全站弹窗统一粒子化）。
 class AppDateField extends StatelessWidget {
-  const AppDateField({super.key, required this.controller, this.label = '日期'});
+  const AppDateField({super.key, required this.controller, this.label});
 
   final TextEditingController controller;
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return ParticleTextField(
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: label ?? t.wdgDate,
         suffixIcon: const Icon(Icons.calendar_today, size: 18),
       ),
       onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: DateTime.tryParse(controller.text) ?? DateTime.now(),
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
+        var picked = DateTime.tryParse(controller.text) ?? DateTime.now();
+        final ok = await showAppDialog<bool>(
+          context,
+          builder: (dialogCtx) => AppDialog(
+            title: label ?? t.wdgDate,
+            content: StatefulBuilder(
+              builder: (context, setState) => SizedBox(
+                width: 328,
+                child: CalendarDatePicker(
+                  initialDate: picked,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  onDateChanged: (d) => setState(() => picked = d),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, false),
+                child: Text(t.wdgCancel),
+              ),
+              ParticleFilledButton(
+                onPressed: () => Navigator.pop(dialogCtx, true),
+                child: Text(t.wdgConfirm),
+              ),
+            ],
+          ),
         );
-        if (picked != null) {
+        if (ok == true) {
           controller.text =
               '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
         }
@@ -201,27 +236,29 @@ Future<bool> confirmDialog(
   BuildContext context, {
   required String title,
   required String message,
-  String confirmLabel = '确认',
+  String? confirmLabel,
   bool destructive = false,
 }) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: Text(title),
+  final t = AppLocalizations.of(context);
+  final ok = await showAppDialog<bool>(
+    context,
+    builder: (dctx) => AppDialog(
+      title: title,
+      icon: destructive ? Icons.warning_amber_rounded : null,
       content: Text(message),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          onPressed: () => Navigator.pop(dctx, false),
+          child: Text(t.wdgCancel),
         ),
         ParticleFilledButton(
           style: destructive
               ? FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
+                  backgroundColor: Theme.of(dctx).colorScheme.error,
                 )
               : null,
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(confirmLabel),
+          onPressed: () => Navigator.pop(dctx, true),
+          child: Text(confirmLabel ?? t.wdgConfirm),
         ),
       ],
     ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../data/repositories/meta_repo.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../stats_service.dart';
 import 'ai_chat.dart';
 
@@ -43,7 +44,7 @@ class AssistantService {
   }) async {
     final cfg = await config();
     if (cfg == null || cfg.apiKey.isEmpty || cfg.baseUrl.isEmpty) {
-      throw StateError('尚未配置 AI 服务（设置 → AI 服务配置）');
+      throw StateError(rt('尚未配置 AI 服务（设置 → AI 服务配置）'));
     }
     var system = _systemPrompt;
     if (withLedger) {

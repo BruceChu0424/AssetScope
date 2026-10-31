@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/runtime_l10n.dart';
 
 /// 单条 AI 抓回的价格（已映射或待映射到持仓账户）。
 class FetchedPrice {
@@ -66,16 +67,16 @@ class AiQuoteParser {
   static QuoteFetchResult parse(String content) {
     final jsonText = _extractJson(content);
     if (jsonText == null) {
-      throw const FormatException('AI 应答中未找到 JSON 数据');
+      throw FormatException(rt('AI 应答中未找到 JSON 数据'));
     }
     final Object? decoded;
     try {
       decoded = jsonDecode(jsonText);
     } on FormatException {
-      throw const FormatException('AI 应答 JSON 无法解析');
+      throw FormatException(rt('AI 应答 JSON 无法解析'));
     }
     if (decoded is! Map<String, Object?>) {
-      throw const FormatException('AI 应答 JSON 不是对象');
+      throw FormatException(rt('AI 应答 JSON 不是对象'));
     }
     final warnings = <String>[];
 
@@ -86,12 +87,14 @@ class AiQuoteParser {
         if (e is! Map) continue;
         final query = e['query'] is String ? e['query'] as String : null;
         if (query == null || query.trim().isEmpty) {
-          warnings.add('一条价格缺少查询名，已跳过');
+          warnings.add(rt('一条价格缺少查询名，已跳过'));
           continue;
         }
         final price = _parsePositiveDecimal(e['price']);
         if (price == null) {
-          warnings.add('「$query」价格无效（${e['price']}），已跳过');
+          warnings.add(
+            '${rt('「')}$query${rt('」价格无效（')}${e['price']}${rt('），已跳过')}',
+          );
           continue;
         }
         prices.add(
@@ -113,17 +116,17 @@ class AiQuoteParser {
         if (e is! Map) continue;
         final pair = e['pair'] is String ? e['pair'] as String : null;
         if (pair == null || !pair.contains('/')) {
-          warnings.add('一条汇率缺少币种对，已跳过');
+          warnings.add(rt('一条汇率缺少币种对，已跳过'));
           continue;
         }
         final ccy = pair.split('/').first.trim().toUpperCase();
         if (ccy.isEmpty) {
-          warnings.add('汇率币种对格式异常（$pair），已跳过');
+          warnings.add('${rt('汇率币种对格式异常（')}$pair${rt('），已跳过')}');
           continue;
         }
         final rate = _parsePositiveDecimal(e['rate']);
         if (rate == null) {
-          warnings.add('$pair 汇率无效（${e['rate']}），已跳过');
+          warnings.add('$pair${rt(' 汇率无效（')}${e['rate']}${rt('），已跳过')}');
           continue;
         }
         rates.add(

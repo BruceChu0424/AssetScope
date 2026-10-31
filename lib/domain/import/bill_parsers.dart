@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import 'csv_table.dart';
 import 'dedup.dart';
 import '../money/currency.dart';
@@ -9,8 +10,9 @@ enum BillFormat {
   alipay('支付宝账单'),
   generic('通用 CSV');
 
-  const BillFormat(this.label);
-  final String label;
+  const BillFormat(this._label);
+  final String _label;
+  String get label => rt(_label);
 }
 
 /// 单条跳过原因与条数。
@@ -96,7 +98,7 @@ class BillParsers {
       if (r.isEmpty || r.first.startsWith('---')) continue;
       final status = cell(r, statusI);
       if (_badStatus(status)) {
-        skip('状态不纳入（$status）');
+        skip(rt('状态不纳入（$status）'));
         continue;
       }
       final dirText = cell(r, dirI);
@@ -106,30 +108,30 @@ class BillParsers {
         _ => null,
       };
       if (direction == null) {
-        skip('不计收支（中性转账/资金转移）');
+        skip(rt('不计收支（中性转账/资金转移）'));
         continue;
       }
       final amountRaw = cell(r, amountI);
       if (amountRaw.isEmpty) {
-        skip('金额为空');
+        skip(rt('金额为空'));
         continue;
       }
       final BigInt amountMinor;
       try {
         amountMinor = Money.parse(cleanAmount(amountRaw), ccy).amountMinor;
       } on FormatException {
-        skip('金额无法解析（$amountRaw）');
+        skip(rt('金额无法解析（$amountRaw）'));
         continue;
       }
       if (amountMinor <= BigInt.zero) {
-        skip('金额非正（$amountRaw）');
+        skip(rt('金额非正（$amountRaw）'));
         continue;
       }
       DateTime date;
       try {
         date = parseDateTime(cell(r, dateI));
       } on FormatException {
-        skip('日期无法解析（${cell(r, dateI)}）');
+        skip(rt('日期无法解析（${cell(r, dateI)}）'));
         continue;
       }
       final counterparty = cell(r, cpartyI).isNotEmpty
@@ -200,7 +202,7 @@ class BillParsers {
       if (r.isEmpty || r.first.startsWith('---')) continue;
       final status = cell(r, statusI);
       if (_badStatus(status)) {
-        skip('状态不纳入（$status）');
+        skip(rt('状态不纳入（$status）'));
         continue;
       }
       final dirText = cell(r, dirI);
@@ -210,23 +212,23 @@ class BillParsers {
         _ => null,
       };
       if (direction == null) {
-        skip('不计收支（中性转账/资金转移）');
+        skip(rt('不计收支（中性转账/资金转移）'));
         continue;
       }
       final amountRaw = cell(r, amountI);
       if (amountRaw.isEmpty) {
-        skip('金额为空');
+        skip(rt('金额为空'));
         continue;
       }
       final BigInt amountMinor;
       try {
         amountMinor = Money.parse(cleanAmount(amountRaw), ccy).amountMinor;
       } on FormatException {
-        skip('金额无法解析（$amountRaw）');
+        skip(rt('金额无法解析（$amountRaw）'));
         continue;
       }
       if (amountMinor <= BigInt.zero) {
-        skip('金额非正（$amountRaw）');
+        skip(rt('金额非正（$amountRaw）'));
         continue;
       }
       DateTime date;
@@ -236,7 +238,7 @@ class BillParsers {
             : cell(r, paidI);
         date = parseDateTime(raw);
       } on FormatException {
-        skip('日期无法解析（${cell(r, createdI)}）');
+        skip(rt('日期无法解析（${cell(r, createdI)}）'));
         continue;
       }
       final counterparty = cell(r, cpartyI).isNotEmpty

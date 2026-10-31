@@ -3,6 +3,7 @@ import '../data/repositories/ledger_repo.dart';
 import '../domain/ledger/account.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/money/fx_rate.dart';
+import '../l10n/runtime_l10n.dart';
 
 /// 账务服务：面向用例的交易录入入口。
 /// 所有过账都经 [TxBuilders] 构造分录，禁止手写 Posting。
@@ -50,7 +51,7 @@ class LedgerService {
   }) async {
     final holding = await accounts.byId(holdingAccountId);
     if (holding == null || !holding.isHolding) {
-      throw ArgumentError('持仓账户不存在: $holdingAccountId');
+      throw ArgumentError('${rt('持仓账户不存在: ')}$holdingAccountId');
     }
     final dateEnd = DateTime(date.year, date.month, date.day, 23, 59, 59);
     final cbBalance =
@@ -63,10 +64,12 @@ class LedgerService {
         (await ledger.quantityBalancesAt(dateEnd))[holdingAccountId] ??
         Rational.zero();
     if (qtyBalance.isZero || qtyBalance.isNegative) {
-      throw StateError('持仓数量异常: $qtyBalance');
+      throw StateError('${rt('持仓数量异常: ')}$qtyBalance');
     }
     if (quantitySold > qtyBalance) {
-      throw ArgumentError('卖出数量 $quantitySold 超过持仓 $qtyBalance');
+      throw ArgumentError(
+        '${rt('卖出数量 ')}$quantitySold${rt(' 超过持仓 ')}$qtyBalance',
+      );
     }
     // 平均成本 × 卖出数量（有理数精确，再舍入到最小单位）。
     final costRemoved =
@@ -95,7 +98,7 @@ class LedgerService {
   }) async {
     final holding = await accounts.byId(holdingAccountId);
     if (holding == null || !holding.isHolding) {
-      throw ArgumentError('持仓账户不存在: $holdingAccountId');
+      throw ArgumentError('${rt('持仓账户不存在: ')}$holdingAccountId');
     }
     return ledger.post(
       TxBuilders.buy(
@@ -111,7 +114,7 @@ class LedgerService {
 
   Future<Account?> _requireAccount(String id, AccountType type) async {
     final a = await accounts.byId(id);
-    if (a == null) throw ArgumentError('账户不存在: $id');
+    if (a == null) throw ArgumentError('${rt('账户不存在: ')}$id');
     return a;
   }
 }

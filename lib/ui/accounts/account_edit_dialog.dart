@@ -10,6 +10,8 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
 import '../../domain/valuation/valuation.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../../services/ai/account_ai_service.dart';
 import '../../services/ai/ai_chat.dart';
 import '../globe/city_locations.dart';
@@ -19,8 +21,11 @@ import 'account_edit_parts.dart';
 import 'accounts_providers.dart';
 import 'ownership.dart';
 
-/// 新建资产对话框（类型磁贴 + 名称 AI 识别 + 子类型/币种 + 价值 +
-/// 地址自动适配 + 机构/份额）。
+/// 新建/编辑资产对话框。
+///
+/// 新建（类型磁贴 + 名称 AI 识别 + 子类型/币种 + 价值 + 地址自动适配 +
+/// 机构/份额）；编辑（[initial]）：类型/币种/价值不可改（账本语义稳定），
+/// 只改名称/机构/地址/份额——价值维护走资产页详情面板（估值/期初/调整）。
 ///
 /// 价值口径按子类型自动分流：现金类记期初余额（交易）、房产等手工估值
 /// 类记 totalValue 估值、负债记期初欠款（对账调整负值）、持仓不填
@@ -31,10 +36,13 @@ import 'ownership.dart';
 /// 地球联动钩子）。校验失败按规范反馈：顶部通知 + 红框 + 横摇，
 /// 不用内联错误文字。
 class AccountEditDialog extends ConsumerStatefulWidget {
-  const AccountEditDialog({super.key, this.dissolve});
+  const AccountEditDialog({super.key, this.dissolve, this.initial});
 
   /// 粒子化保存控制器（首页创建并挂地球钩子）；null = 普通关闭。
   final DissolveController? dissolve;
+
+  /// 编辑既有账户（null = 新建）。编辑模式下类型/币种/价值区块隐藏。
+  final Account? initial;
 
   @override
   ConsumerState<AccountEditDialog> createState() => _AccountEditDialogState();
@@ -54,6 +62,31 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   LiabilitySubtype _liabilitySubtype = LiabilitySubtype.creditCard;
   String _currency = 'CNY';
 
+  bool get _isEdit => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.initial;
+    if (a == null) return;
+    _type = a.type;
+    _assetSubtype = a.assetSubtype ?? AssetSubtype.bank;
+    _liabilitySubtype = a.liabilitySubtype ?? LiabilitySubtype.creditCard;
+    _currency = a.currencyCode;
+    _name.text = a.name;
+    _institution.text = a.institution ?? '';
+    _ownership.text = fmtOwnership(a.effectiveOwnership);
+    if (a.hasLocation) {
+      _address.text = a.locationName ?? '';
+      _locatedCity = CityLocation(
+        a.locationName ?? rt('已定位'),
+        a.locationLat!,
+        a.locationLon!,
+      );
+      _geoSource = 'builtin';
+    }
+  }
+
   /// 已定位的城市（地址文本含城市名即自动适配；null = 未定位）。
   CityLocation? _locatedCity;
 
@@ -64,14 +97,15 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   bool _geoBusy = false;
 
   String? get _geoLabel {
+    final t = AppLocalizations.of(context);
     final name = _locatedCity?.name ?? '';
     switch (_geoSource) {
       case 'builtin':
-        return '已定位：$name（内置城市坐标）';
+        return t.locLocatedBuiltin(name);
       case 'ai':
-        return 'AI 已定位：$name（精确位置）';
+        return t.locLocatedAiPrecise(name);
       case 'ai-city':
-        return 'AI 已定位：$name（城市中心）';
+        return t.locLocatedAiCity(name);
     }
     return null;
   }
@@ -101,11 +135,11 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   bool get _showValue => !_isHolding;
 
   String get _valueLabel => _type == AccountType.liability
-      ? '当前欠款'
+      ? AppLocalizations.of(context).liabilityCurrentDebt
       : (Account.valuationMethodOf(_assetSubtype) ==
               ValuationMethod.manualValue
-          ? '当前价值'
-          : '当前余额');
+          ? AppLocalizations.of(context).assetCurrentValue
+          : AppLocalizations.of(context).accountCurrentBalance);
 
   (double, double, String?)? get _location => _locatedCity == null
       ? null
@@ -205,11 +239,12 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   /// 名称 → AI（复用设置里的 AI 绑定）→ 类型/子类型/币种/机构/城市坐标。
   /// 只发送名称文本（隐私边界）；价值永远由用户手动填写。
   Future<void> _aiFill() async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _saving) return;
     final name = _name.text.trim();
     if (name.isEmpty) {
-      showTopNotice(context, '先填写资产名称，AI 才能识别',
+      showTopNotice(context, t.aiFillNameFirst,
           tone: TopNoticeTone.info);
       return;
     }
@@ -217,15 +252,14 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
     final cfg = await ai.config();
     if (!mounted) return;
     if (cfg == null) {
-      showTopNotice(context, '尚未绑定 AI：设置 → AI 服务',
-          tone: TopNoticeTone.info);
+      showTopNotice(context, t.aiNotBound, tone: TopNoticeTone.info);
       return;
     }
     try {
       AiAccountSuggestion? sug;
       await runBusy(
         context,
-        message: 'AI 识别中…',
+        message: t.aiRecognizing,
         origin: _centerOf(_aiKey),
         task: () async {
           sug = await ai.recognize(cfg, name);
@@ -235,7 +269,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
       final g = sug;
       if (g == null) return;
       _applySuggestion(g);
-      showTopNotice(context, 'AI 已填充，请确认价值', tone: TopNoticeTone.info);
+      showTopNotice(context, t.aiFilledConfirmValue, tone: TopNoticeTone.info);
     } catch (_) {
       // 失败详情已由 runBusy 舞台展示
     }
@@ -306,6 +340,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   }
 
   Future<void> _save() async {
+    final t = AppLocalizations.of(context);
     if (_saving) return;
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
@@ -323,21 +358,48 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
       if (valueBad) _valueShake++;
     });
     if (nameEmpty) {
-      showTopNotice(context, '请填写资产名称');
+      showTopNotice(context, t.assetNameRequired);
       return;
     }
     if (locMissing) {
-      showTopNotice(context, '请选择资产位置——保存后将在地球首页点亮对应坐标');
+      showTopNotice(context, t.assetLocationRequired);
       return;
     }
     if (valueBad) {
-      showTopNotice(context, '价值需为正数（如 1280000）');
+      showTopNotice(context, t.assetValuePositiveRequired);
       return;
     }
 
     _saving = true;
     setState(() {});
+    // 粒子化取景与落库并行：按下保存的这一帧就截图采样，落库结束的
+    // 那一帧光束直接起跳——不再有「先静止一拍再爆开」的断层。
+    final dis0 = widget.dissolve;
+    if (dis0 != null && _needLocation && _location != null) {
+      unawaited(dis0.prepare(origin: _centerOf(_saveKey)));
+    }
     final ownership = parseOwnership(_ownership.text) ?? Rational.one;
+    if (_isEdit) {
+      // 编辑模式：只改资料（名称/机构/位置/份额）；类型/币种/价值
+      // 不动，价值维护走资产页详情面板。位置未动时 copyWith 的
+      // null 语义恰好保留原值。
+      final a = widget.initial!;
+      await s.accounts.upsert(
+        a.copyWith(
+          name: _name.text.trim(),
+          institution: _institution.text.trim().isEmpty
+              ? null
+              : _institution.text.trim(),
+          ownership: ownership == Rational.one ? null : ownership,
+          locationLat: _location?.$1,
+          locationLon: _location?.$2,
+          locationName: _location?.$3,
+        ),
+      );
+      ref.invalidate(accountsViewProvider);
+      if (mounted) Navigator.of(context).pop(true);
+      return;
+    }
     final valueMinor = _showValue ? _parseValueMinor() : null;
     final Account acct;
     if (_isHolding) {
@@ -393,6 +455,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
 
   /// 初始价值按估值口径分流（见类注释）。
   Future<void> _writeValue(VaultUnlocked s, Account acct, BigInt? minor) async {
+    final t = AppLocalizations.of(context);
     if (minor == null) return;
     final now = DateTime.now();
     if (_type == AccountType.liability) {
@@ -400,7 +463,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
         account: acct,
         signedChangeMinor: -minor,
         date: now,
-        note: '期初欠款',
+        note: t.assetOpeningDebtNote,
       ));
     } else if (acct.valuationMethod == ValuationMethod.manualValue) {
       await s.meta.saveValuation(ValuationRecord(
@@ -421,6 +484,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
@@ -428,36 +492,29 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
     final motionDur = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 220);
-    return AlertDialog(
-      // 表单列内多为 Expanded 型子件（固有宽度为 0），不给最小宽度
-      // AlertDialog 会把弹窗收缩到 label 宽度——下拉内部 Row 随之溢出。
-      // 窄屏（手机）下会被外层约束自动钳制，不会越界。
-      constraints: const BoxConstraints(minWidth: 432),
-      title: Row(
-        children: [
-          const Expanded(child: Text('新建资产')),
-          Tooltip(
-            message: '资产需选位置——保存后弹窗将碎成光束，飞往地球点亮该坐标',
-            child: Icon(Icons.info_outline, size: 18, color: theme.hintColor),
-          ),
-        ],
-      ),
-      contentPadding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
+    // 弹窗壳走统一 AppDialog（v0.25 粒子弹窗体系：标题旁 info 悬停
+    // 提示、超高内部滚动、进出场由 showAppDialog 粒子化承担）。
+    return AppDialog(
+      title: _isEdit ? t.accountEditProfile : t.assetNew,
+      titleTooltip: _isEdit ? null : t.assetLocationTooltip,
+      width: 480,
+      scroll: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TypeTiles(
-            type: _type,
-            onChanged: (t) => setState(() {
-              _type = t;
-              // 位置区块随类型重建，避免悬空选择。
-              _locatedCity = null;
-              _geoSource = '';
-              _address.clear();
-              _locationError = false;
-            }),
-          ),
+          if (!_isEdit)
+            TypeTiles(
+              type: _type,
+              onChanged: (t) => setState(() {
+                _type = t;
+                // 位置区块随类型重建，避免悬空选择。
+                _locatedCity = null;
+                _geoSource = '';
+                _address.clear();
+                _locationError = false;
+              }),
+            ),
           const SizedBox(height: 16),
           FormShake(
             trigger: _nameShake,
@@ -468,53 +525,57 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                 if (_nameError) setState(() => _nameError = false);
               },
               decoration: InputDecoration(
-                labelText: '名称',
-                suffixIcon: IconButton(
-                  key: _aiKey,
-                  tooltip: 'AI 识别',
-                  icon: Icon(
-                    Icons.auto_awesome,
-                    size: 20,
-                    color: AppColors.brassOf(theme.brightness),
-                  ),
-                  onPressed: _aiFill,
-                ),
+                labelText: t.assetNameLabel,
+                suffixIcon: _isEdit
+                    ? null
+                    : IconButton(
+                        key: _aiKey,
+                        tooltip: t.aiRecognize,
+                        icon: Icon(
+                          Icons.auto_awesome,
+                          size: 20,
+                          color: AppColors.brassOf(theme.brightness),
+                        ),
+                        onPressed: _aiFill,
+                      ),
                 enabledBorder: _nameError ? errorBorder : null,
                 focusedBorder: _nameError ? errorBorder : null,
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: SubtypeField(
-                  type: _type,
-                  assetSubtype: _assetSubtype,
-                  liabilitySubtype: _liabilitySubtype,
-                  onChangedAsset: (v) => setState(() {
-                    _assetSubtype = v;
-                    if (v.isHolding) {
-                      _locatedCity = null;
-                      _geoSource = '';
-                      _address.clear();
-                      _locationError = false;
-                    }
-                  }),
-                  onChangedLiability: (v) =>
-                      setState(() => _liabilitySubtype = v),
+          if (!_isEdit) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: SubtypeField(
+                    type: _type,
+                    assetSubtype: _assetSubtype,
+                    liabilitySubtype: _liabilitySubtype,
+                    onChangedAsset: (v) => setState(() {
+                      _assetSubtype = v;
+                      if (v.isHolding) {
+                        _locatedCity = null;
+                        _geoSource = '';
+                        _address.clear();
+                        _locationError = false;
+                      }
+                    }),
+                    onChangedLiability: (v) =>
+                        setState(() => _liabilitySubtype = v),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: CurrencyField(
-                  currency: _currency,
-                  onChanged: (v) => setState(() => _currency = v),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CurrencyField(
+                    currency: _currency,
+                    onChanged: (v) => setState(() => _currency = v),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          if (_showValue) ...[
+              ],
+            ),
+          ],
+          if (_showValue && !_isEdit) ...[
             const SizedBox(height: 14),
             FormShake(
               trigger: _valueShake,
@@ -570,7 +631,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                           key: const ValueKey('code'),
                           controller: _code,
                           decoration:
-                              const InputDecoration(labelText: '证券代码'),
+                              InputDecoration(labelText: t.securityCodeLabel),
                         )
                       : const SizedBox(
                           width: double.infinity,
@@ -584,7 +645,7 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
               Expanded(
                 child: ParticleTextField(
                   controller: _institution,
-                  decoration: const InputDecoration(labelText: '机构'),
+                  decoration: InputDecoration(labelText: t.institutionLabel),
                 ),
               ),
               const SizedBox(width: 10),
@@ -593,8 +654,8 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                   controller: _ownership,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: '份额',
+                  decoration: InputDecoration(
+                    labelText: t.ownershipShareLabel,
                     suffixText: '%',
                   ),
                 ),
@@ -602,7 +663,8 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
             ],
           ),
           // 每日 AI 估值：仅 manualValue 类资产出现（内容变化的高度桥接）。
-          AnimatedSize(
+          if (!_isEdit)
+            AnimatedSize(
             duration: motionDur,
             curve: Curves.easeOut,
             alignment: Alignment.topCenter,
@@ -627,13 +689,10 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                               color: AppColors.brassOf(theme.brightness),
                             ),
                             const SizedBox(width: 7),
-                            const Text('每日 AI 估值'),
+                            Text(t.aiValDaily),
                             const SizedBox(width: 5),
                             Tooltip(
-                              message: '开启后每天联网检索该资产真实市价并自动'
-                                  '更新价值（房产看成交行情、车辆看二手估值，'
-                                  '多源交叉剔除营销噪音）；你随时可在账户详情'
-                                  '纠正，当日人工值优先',
+                              message: t.aiValDailyTooltip,
                               child: Icon(
                                 Icons.info_outline,
                                 size: 16,
@@ -652,7 +711,6 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
           ),
         ],
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 20, 24, 22),
       actions: [
         Row(
           children: [
@@ -660,9 +718,9 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context, false),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
+                  minimumSize: const Size.fromHeight(48),
                 ),
-                child: const Text('取消'),
+                child: Text(t.cancel),
               ),
             ),
             const SizedBox(width: 10),
@@ -672,9 +730,9 @@ class _AccountEditDialogState extends ConsumerState<AccountEditDialog> {
                 key: _saveKey,
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
+                  minimumSize: const Size.fromHeight(48),
                 ),
-                child: const Text('创建资产'),
+                child: Text(_isEdit ? t.saveChanges : t.assetCreate),
               ),
             ),
           ],

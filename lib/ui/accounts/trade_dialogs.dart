@@ -7,6 +7,7 @@ import '../../domain/ledger/transaction.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/portfolio_service.dart';
 import '../widgets/common.dart';
 import 'accounts_providers.dart';
@@ -26,6 +27,7 @@ Future<void> showTradeDialog(
   final qtyCtrl = TextEditingController();
   final dateCtrl = TextEditingController(text: dateToday());
   final noteCtrl = TextEditingController();
+  final t = AppLocalizations.of(context);
   String? cashAccountId;
 
   final accounts = await s.accounts.all();
@@ -48,15 +50,15 @@ Future<void> showTradeDialog(
       .firstOrNull;
   if (!context.mounted) return;
 
-  final ok = await showDialog<bool>(
-    context: context,
+  final ok = await showAppDialog<bool>(
+    context,
     builder: (dctx) => StatefulBuilder(
-      builder: (ctx, setState) => AlertDialog(
-        title: Text(switch (action) {
-          TradeAction.buy => '买入 · ${account.name}',
-          TradeAction.sell => '卖出 · ${account.name}',
-          TradeAction.dividend => '分红/利息入账',
-        }),
+      builder: (ctx, setState) => AppDialog(
+        title: switch (action) {
+          TradeAction.buy => t.tradeBuyTitle(account.name),
+          TradeAction.sell => t.tradeSellTitle(account.name),
+          TradeAction.dividend => t.tradeDividendTitle,
+        },
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -64,17 +66,20 @@ Future<void> showTradeDialog(
             children: [
               if (!isDividend && snapshot != null) ...[
                 Text(
-                  '持有 ${snapshot.quantity.toDecimalString(6)} 份 · 成本 ${fmtMinor(snapshot.costMinor, account.currencyCode)}',
+                  t.tradeHoldingSummary(snapshot.quantity.toDecimalString(6),
+                      fmtMinor(snapshot.costMinor, account.currencyCode)),
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                     color: Theme.of(ctx).hintColor,
                   ),
                 ),
                 const SizedBox(height: 12),
               ],
-              DropdownButtonFormField<String>(
+              ParticleDropdownField<String>(
                 initialValue: cashAccountId,
                 decoration: InputDecoration(
-                  labelText: isDividend ? '入账现金账户' : '现金账户',
+                  labelText: isDividend
+                      ? t.tradeCashAccountCredited
+                      : t.tradeCashAccount,
                 ),
                 items: [
                   for (final a in cashAccounts)
@@ -89,7 +94,8 @@ Future<void> showTradeDialog(
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(labelText: '数量（份）'),
+                  decoration:
+                      InputDecoration(labelText: t.tradeQuantityLabel),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -97,9 +103,9 @@ Future<void> showTradeDialog(
                 controller: amountCtrl,
                 currencyCode: account.currencyCode,
                 label: switch (action) {
-                  TradeAction.buy => '总花费（含费用）',
-                  TradeAction.sell => '净到账金额',
-                  _ => '分红/利息金额',
+                  TradeAction.buy => t.tradeTotalCostLabel,
+                  TradeAction.sell => t.tradeNetProceedsLabel,
+                  _ => t.tradeDividendAmountLabel,
                 },
               ),
               const SizedBox(height: 12),
@@ -107,7 +113,7 @@ Future<void> showTradeDialog(
               const SizedBox(height: 12),
               ParticleTextField(
                 controller: noteCtrl,
-                decoration: const InputDecoration(labelText: '备注（可选）'),
+                decoration: InputDecoration(labelText: t.tradeNoteLabel),
               ),
             ],
           ),
@@ -115,11 +121,11 @@ Future<void> showTradeDialog(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('取消'),
+            child: Text(t.cancel),
           ),
           ParticleFilledButton(
             onPressed: () => Navigator.pop(dctx, true),
-            child: const Text('保存'),
+            child: Text(t.save),
           ),
         ],
       ),

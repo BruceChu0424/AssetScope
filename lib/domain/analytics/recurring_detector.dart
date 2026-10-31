@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../../l10n/runtime_l10n.dart';
 import '../planning/recurrence.dart';
 
 /// 周期识别输入：同一对手方/名称的一笔历史交易。
@@ -50,11 +51,11 @@ class RecurringSuggestion {
 
   /// 人类可读的周期名。
   String get cadenceLabel {
-    if (intervalDays >= 350 && intervalDays <= 380) return '每年';
-    if (intervalDays >= 28 && intervalDays <= 32) return '每月';
-    if (intervalDays >= 13 && intervalDays <= 15) return '双周';
-    if (intervalDays >= 6 && intervalDays <= 8) return '每周';
-    return '每 $intervalDays 天';
+    if (intervalDays >= 350 && intervalDays <= 380) return rt('每年');
+    if (intervalDays >= 28 && intervalDays <= 32) return rt('每月');
+    if (intervalDays >= 13 && intervalDays <= 15) return rt('双周');
+    if (intervalDays >= 6 && intervalDays <= 8) return rt('每周');
+    return rt('每 $intervalDays 天');
   }
 
   /// 下次预计发生日（按日历周期推进到 now 之后；月付按月历进位避免 31 天漂移）。

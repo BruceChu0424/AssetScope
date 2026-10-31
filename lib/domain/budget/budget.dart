@@ -1,10 +1,13 @@
+import '../../l10n/runtime_l10n.dart';
+
 /// 预算：月度总额度或分类额度。
 enum BudgetScope {
   total('总预算'),
   category('分类预算');
 
-  const BudgetScope(this.labelZh);
-  final String labelZh;
+  const BudgetScope(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 enum RolloverPolicy {
@@ -12,8 +15,9 @@ enum RolloverPolicy {
   all('全额结转'),
   capTo('结转并设上限');
 
-  const RolloverPolicy(this.labelZh);
-  final String labelZh;
+  const RolloverPolicy(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 class Budget {

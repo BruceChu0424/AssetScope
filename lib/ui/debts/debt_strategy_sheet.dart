@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/debt/debt_contract.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/insight_service.dart' show DebtStrategyCompare;
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -18,10 +19,9 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
   if (s == null) return;
   final ctrl = TextEditingController(text: '1000');
 
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  await showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (sheetCtx) => Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -31,6 +31,7 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
       ),
       child: StatefulBuilder(
         builder: (ctx, setState) {
+          final t = AppLocalizations.of(ctx);
           Future<DebtStrategyCompare?> simulate() async {
             final amount = ctrl.text.trim().isEmpty
                 ? BigInt.zero
@@ -49,14 +50,14 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '还款策略对比',
+                t.strategyCompareTitle,
                 style: Theme.of(
                   ctx,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               Text(
-                '在最低还款之外，每月额外拿出一笔钱优先还某一笔债',
+                t.strategySubtitle,
                 style: Theme.of(
                   ctx,
                 ).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).hintColor),
@@ -65,12 +66,12 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
               AppAmountField(
                 controller: ctrl,
                 currencyCode: 'CNY',
-                label: '每月额外还款额',
+                label: t.strategyExtraMonthly,
               ),
               const SizedBox(height: 12),
               ParticleFilledButton(
                 onPressed: () => setState(() {}),
-                child: const Text('重新模拟'),
+                child: Text(t.strategyResimulate),
               ),
               const SizedBox(height: 8),
               FutureBuilder<DebtStrategyCompare?>(
@@ -84,7 +85,7 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
                   }
                   final r = snap.data!;
                   if (r.positions.isEmpty) {
-                    return const Text('没有待还负债');
+                        return Text(t.strategyNoDebt);
                   }
                   final theme = Theme.of(bctx);
                   return Column(
@@ -92,7 +93,7 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
                     children: [
                       _planCard(
                         bctx,
-                        title: '雪崩法 · 高利率优先',
+                        title: t.strategyAvalancheTitle,
                         highlight: r.avalancheSaving > BigInt.zero,
                         plan: r.avalanche,
                         positions: r.positions,
@@ -100,7 +101,7 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
                       const SizedBox(height: 8),
                       _planCard(
                         bctx,
-                        title: '雪球法 · 小额优先',
+                        title: t.strategySnowballTitle,
                         highlight: r.avalancheSaving <= BigInt.zero,
                         plan: r.snowball,
                         positions: r.positions,
@@ -109,8 +110,9 @@ Future<void> showDebtStrategySheet(BuildContext context, WidgetRef ref) async {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            '雪崩法比雪球法少付利息 ${fmtMinor(r.avalancheSaving, 'CNY')}；'
-                            '若你需要"先清掉一笔"的成就感，选雪球也完全合理。',
+                            t.strategyAvalancheSaves(
+                              fmtMinor(r.avalancheSaving, 'CNY'),
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: AppColors.positiveOf(theme.brightness),
                               height: 1.5,
@@ -137,6 +139,7 @@ Widget _planCard(
   required List<DebtPosition> positions,
 }) {
   final theme = Theme.of(context);
+  final t = AppLocalizations.of(context);
   return Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
@@ -169,16 +172,16 @@ Widget _planCard(
         ),
         const SizedBox(height: 6),
         StatRow(
-          label: '还清时间',
-          value: '${plan.months ~/ 12} 年 ${plan.months % 12} 个月',
+          label: t.strategyPayoffTime,
+          value: t.strategyDuration(plan.months ~/ 12, plan.months % 12),
         ),
         StatRow(
-          label: '总利息',
+          label: t.strategyTotalInterest,
           value: fmtMinor(plan.totalInterestMinor, 'CNY'),
           emphasized: true,
         ),
         StatRow(
-          label: '还清顺序',
+          label: t.strategyPayoffOrder,
           value: [
             for (final i in plan.order.take(4)) positions[i].name,
             if (plan.order.length > 4) '…',

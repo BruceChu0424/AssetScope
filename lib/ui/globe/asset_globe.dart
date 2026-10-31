@@ -15,6 +15,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../../services/stats_service.dart';
 import '../widgets/common.dart';
 import 'globe_painter.dart';
@@ -77,6 +79,11 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
   Map<String, AccountValuationItem> _values = const {};
   String _baseCurrency = 'CNY';
   BigInt _maxMarkerValue = BigInt.zero;
+
+  // ── 新标记绽放（reload 差分）──
+  Set<String>? _prevMarkerIds; // null = 首载（入场波已覆盖，不再绽放）
+  Set<String> _spawnIds = const {};
+  double _spawnAt = 0; // 绽放起始（_elapsed 基准）
 
   // 注意：必须在 initState 显式初始化，不能用 late final 字段惰性初始化——
   // 若页面在首次访问 _pulse 前就被销毁（数据未加载即退出），dispose 里的
@@ -193,17 +200,29 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
           valuationMissing: item.valuationMissing,
           kind: GlobeMarker.kindOf(a.assetSubtype),
           institution: a.institution,
-          subtypeLabel: a.assetSubtype?.labelZh ?? '资产',
+          subtypeLabel: a.assetSubtype?.labelZh ?? rt('资产'),
         ),
       );
     }
     markers.sort((x, y) => y.valueBaseMinor.compareTo(x.valueBaseMinor));
     if (!mounted) return;
+    // 新标记绽放：与上一批求差——光束到达 reloadMarkers 时只有**新增**
+    // 的光点自 0 绽放（0.45s，恰被到达闪耀罩住），存量标记纹丝不动
+    // （2026-10 用户指令：阶段衔接要流畅，标记不得瞬间弹出）。
+    final newIds = markers.map((m) => m.accountId).toSet();
+    final bloom = _prevMarkerIds == null
+        ? <String>{}
+        : newIds.difference(_prevMarkerIds!);
+    _prevMarkerIds = newIds;
     setState(() {
       _markers = markers;
       _values = values;
       _maxMarkerValue = maxValue;
       _baseCurrency = nw.baseCurrencyCode;
+      if (bloom.isNotEmpty) {
+        _spawnIds = bloom;
+        _spawnAt = _elapsed;
+      }
     });
   }
 
@@ -445,7 +464,14 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
   /// 是连续缓放），并上报沉浸（整页卡片让位）。
   void _queueWheelZoom(double dy) {
     _idleTimer?.cancel();
-    _idleSpin = false;
+    // 滚轮不打断自转、也不走惯性收敛路径：曾只把 _idleSpin 置 false
+    // 而 _velocity 仍等于 _idleOmega——稳态空闲自转中滚一下，下一帧
+    // _tick 的「惯性收敛并入自转」分支会立即 _notifyImmersive(false)，
+    // 把刚上报的沉浸一帧内撤销（滚轮缩放卡片不消失的根因；拖拽后
+    // 真惯性距 _idleOmega 远、要 ~1.7s 才收敛，所以拖拽路径不犯病）。
+    // 改为直接并入稳态自转：退出沉浸只由 _startIdle 的空闲计时器负责。
+    _velocity = _idleOmega;
+    _idleSpin = true;
     _zoomTarget = (_zoomTarget * math.exp(-dy / 480)).clamp(0.75, 2.2);
     _zoomAnimating = true;
     _notifyImmersive(true);
@@ -741,6 +767,7 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_landDots.isEmpty) {
       return const Center(
         child: OrbitSpinner(size: 44, color: Color(0xFF7EA6D9)),
@@ -793,6 +820,8 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
                             selectedId: _selectedId,
                             appear: _appear,
                             t: _elapsed,
+                            spawnIds: _spawnIds,
+                            spawnAge: _elapsed - _spawnAt,
                           ),
                           size: Size.infinite,
                         ),
@@ -829,14 +858,14 @@ class AssetGlobeState extends ConsumerState<AssetGlobe>
                     child: Row(
                       children: [
                         _overlayIcon(
-                          tooltip: '复位视角',
+                          tooltip: t.globeResetView,
                           icon: Icons.my_location,
                           onTap: _reset,
                         ),
                         if (widget.onOpenFullscreen != null) ...[
                           const SizedBox(width: 8),
                           _overlayIcon(
-                            tooltip: '全屏地球',
+                            tooltip: t.globeFullscreen,
                             icon: Icons.open_in_full,
                             onTap: widget.onOpenFullscreen!,
                           ),

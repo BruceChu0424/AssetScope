@@ -13,6 +13,9 @@ typedef GlobeImmersiveListener = void Function(bool immersed);
 /// - 扩张 760ms / 收回 1100ms，M3 强调曲线 easeInOutCubicEmphasized
 ///   （起步缓、中段快、收势长而柔——「有去有回、去快回慢」更细腻）；
 /// - 地球用同一个实例整体平移缩放，视角/缩放状态全程连续，无跳变；
+/// - [pinned]：外部钉住的沉浸（右上角「清屏地球」钮）——true 时前进
+///   到全屏，且**忽略地球侧的空闲退出上报**（钉住的清屏不因空闲自转
+///   恢复而消退）；翻回 false 时立即收回；
 /// - 「减少动画」时降为 60ms 直达（功能保留，动效取消）；
 /// - [globeChrome] 是槽位左上角的小标签，随沉浸淡出。
 class ImmersiveGlobeHost extends StatefulWidget {
@@ -21,6 +24,7 @@ class ImmersiveGlobeHost extends StatefulWidget {
     required this.builder,
     required this.globeBuilder,
     this.globeChrome,
+    this.pinned = false,
   });
 
   /// 页面主体。接收沉浸进度动画（0=常态 1=全沉浸，已含曲线）与槽位 key；
@@ -34,6 +38,10 @@ class ImmersiveGlobeHost extends StatefulWidget {
 
   /// 构造地球（宿主负责把沉浸回调接进来）。
   final Widget Function(GlobeImmersiveListener onImmersion) globeBuilder;
+
+  /// 外部钉住的沉浸：true = 卡片清场、地球占满整窗，忽略空闲退出；
+  /// false = 交还地球自管（见类注释）。
+  final bool pinned;
 
   final Widget? globeChrome;
 
@@ -58,6 +66,7 @@ class _ImmersiveGlobeHostState extends State<ImmersiveGlobeHost>
 
   Rect? _slotRect;
   bool _reduce = false;
+  bool _remeasureQueued = false;
 
   @override
   void didChangeDependencies() {
@@ -77,8 +86,20 @@ class _ImmersiveGlobeHostState extends State<ImmersiveGlobeHost>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(ImmersiveGlobeHost old) {
+    super.didUpdateWidget(old);
+    // 钉住/解除由按钮直接驱动（与地球侧上报互补，controller 可从当前
+    // 值平滑续走）。
+    if (old.pinned != widget.pinned) {
+      widget.pinned ? _immersion.forward() : _immersion.reverse();
+    }
+  }
+
   void _onImmersed(bool active) {
     if (!mounted) return;
+    // 钉住的清屏不因地球空闲自转恢复而消退。
+    if (!active && widget.pinned) return;
     active ? _immersion.forward() : _immersion.reverse();
   }
 
@@ -94,6 +115,24 @@ class _ImmersiveGlobeHostState extends State<ImmersiveGlobeHost>
       return tl & slotRo.size;
     }
     return null;
+  }
+
+  /// 布局完成后补测槽位（去重排队）。窗口缩放/断点切换时，build 期
+  /// 测到的是**上一帧**的布局：若与 [_slotRect] 恰好相同则不会再有
+  /// 任何东西触发重测，地球会冻结在旧槽位（只在新一轮交互才恢复）。
+  /// 因此每次 build 无条件排一帧补测：测得的最新槽位若有出入就
+  /// setState 更新并再排，直至完全跟住。
+  void _scheduleRemeasure() {
+    if (_remeasureQueued) return;
+    _remeasureQueued = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _remeasureQueued = false;
+      if (!mounted) return;
+      final next = _measureSlot();
+      if (next != null && next != _slotRect) {
+        setState(() => _slotRect = next);
+      }
+    });
   }
 
   @override
@@ -123,27 +162,15 @@ class _ImmersiveGlobeHostState extends State<ImmersiveGlobeHost>
                 ],
               ),
               builder: (context, child) {
-                // 每帧重测槽位（窗口尺寸/布局可能变化）；测不到时
-                // 补一帧 postFrameCallback 触发重量。
-                final measured = _measureSlot() ?? _slotRect;
-                if (measured == null) {
-                  SchedulerBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _slotRect == null) setState(() {});
-                  });
-                  return const SizedBox.shrink(); // 槽位未就绪：暂不显示
-                }
-                if (measured != _slotRect) {
+                // 先吃 build 期测量（常态下已足够），再无条件排一帧
+                // 布局后补测兜住窗口缩放的一帧滞后（见方法注释）。
+                final measured = _measureSlot();
+                if (measured != null && measured != _slotRect) {
                   _slotRect = measured;
-                  // build 期测量发生在布局之前——窗口尺寸刚变化时拿到
-                  // 的是上一帧的槽位（旧位置），且此后无人再触发重建，
-                  // 地球会停在偏位直到下一次交互。这里在布局完成后复
-                  // 测一次，仍有偏差就再排一帧，直至完全跟住槽位。
-                  SchedulerBinding.instance.addPostFrameCallback((_) {
-                    final next = _measureSlot();
-                    if (mounted && next != null && next != _slotRect) {
-                      setState(() {});
-                    }
-                  });
+                }
+                _scheduleRemeasure();
+                if (_slotRect == null) {
+                  return const SizedBox.shrink(); // 槽位未就绪：暂不显示
                 }
                 final rect = Rect.lerp(_slotRect!, full, _curve.value)!;
                 return Positioned.fromRect(rect: rect, child: child!);

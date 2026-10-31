@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:drift/native.dart';
 
 import '../data/app_database.dart';
+import '../l10n/runtime_l10n.dart';
 import '../security/backup.dart';
 import '../security/crypto_suite.dart';
 import '../security/dart_crypto_suite.dart';
@@ -124,7 +125,8 @@ class BackupService {
         if (meta['schemaVersion'] != null &&
             (meta['schemaVersion'] as num).toInt() != probe.schemaVersion) {
           throw BackupException(
-            '备份 schema 版本 ${meta['schemaVersion']} 与当前 ${probe.schemaVersion} 不一致，需要迁移',
+            '${rt('备份 schema 版本 ')}${meta['schemaVersion']}'
+            '${rt(' 与当前 ')}${probe.schemaVersion}${rt(' 不一致，需要迁移')}',
           );
         }
       } finally {

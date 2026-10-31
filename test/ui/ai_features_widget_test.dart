@@ -58,7 +58,7 @@ void main() {
     await tester.pumpWidget(
       widgetHost(
         Scaffold(
-          body: SingleChildScrollView(child: AccountDetailSheet(
+          body: SingleChildScrollView(child: AccountDetailBody(
             account: (await session.accounts.byId('a-estate'))!,
           )),
         ),

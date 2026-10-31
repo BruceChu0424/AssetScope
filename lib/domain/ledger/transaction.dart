@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 import 'account.dart';
 import 'posting.dart';
@@ -21,8 +22,9 @@ enum TxKind {
   dividend('分红派息'),
   adjustment('对账调整');
 
-  const TxKind(this.labelZh);
-  final String labelZh;
+  const TxKind(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 
   /// 是否属于“消费发生”（占用预算）。
   bool get occupiesBudget => this == expense;
@@ -41,8 +43,9 @@ enum TxSource {
   importCsv('CSV 导入'),
   planGenerated('计划生成');
 
-  const TxSource(this.labelZh);
-  final String labelZh;
+  const TxSource(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 /// 交易草稿：由构造器生成，经守恒校验后过账。
@@ -155,13 +158,13 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(assetAccount.type == AccountType.asset, '期初余额只能作用于资产账户');
+    _require(assetAccount.type == AccountType.asset, rt('期初余额只能作用于资产账户'));
     _requirePositive(amountMinor);
     return TransactionDraft(
       date: date,
       kind: TxKind.openingBalance,
       isAdjustment: true,
-      note: note ?? '期初余额',
+      note: note ?? rt('期初余额'),
       postings: [
         Posting.money(
           accountId: assetAccount.id,
@@ -190,8 +193,8 @@ class TxBuilders {
     String? externalId,
     String? importBatchId,
   }) {
-    _require(destAsset.type == AccountType.asset, '收入必须进入资产账户');
-    _require(incomeCategory.type == AccountType.income, '收入分类账户类型错误');
+    _require(destAsset.type == AccountType.asset, rt('收入必须进入资产账户'));
+    _require(incomeCategory.type == AccountType.income, rt('收入分类账户类型错误'));
     _requirePositive(amountMinor);
     final c = destAsset.currencyCode;
     return TransactionDraft(
@@ -235,9 +238,9 @@ class TxBuilders {
     _require(
       payFrom.type == AccountType.asset ||
           payFrom.type == AccountType.liability,
-      '消费必须从资产或负债（信用卡）账户支付',
+      rt('消费必须从资产或负债（信用卡）账户支付'),
     );
-    _require(expenseCategory.type == AccountType.expense, '支出分类账户类型错误');
+    _require(expenseCategory.type == AccountType.expense, rt('支出分类账户类型错误'));
     _requirePositive(amountMinor);
     final c = payFrom.currencyCode;
     return TransactionDraft(
@@ -307,9 +310,9 @@ class TxBuilders {
   }) {
     _require(
       from.type == AccountType.asset && to.type == AccountType.asset,
-      '转账双方必须是资产账户',
+      rt('转账双方必须是资产账户'),
     );
-    _require(from.currencyCode == to.currencyCode, '跨币种请使用换汇');
+    _require(from.currencyCode == to.currencyCode, rt('跨币种请使用换汇'));
     _requirePositive(amountMinor);
     final c = from.currencyCode;
     return TransactionDraft(
@@ -343,9 +346,9 @@ class TxBuilders {
   }) {
     _require(
       from.type == AccountType.asset && to.type == AccountType.asset,
-      '换汇双方必须是资产账户',
+      rt('换汇双方必须是资产账户'),
     );
-    _require(from.currencyCode != to.currencyCode, '同币种请使用转账');
+    _require(from.currencyCode != to.currencyCode, rt('同币种请使用转账'));
     _requirePositive(fromAmountMinor);
     _requirePositive(toAmountMinor);
     return TransactionDraft(
@@ -385,14 +388,14 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(card.type == AccountType.liability, '还款目标必须是负债账户');
-    _require(payFrom.type == AccountType.asset, '还款来源必须是资产账户');
+    _require(card.type == AccountType.liability, rt('还款目标必须是负债账户'));
+    _require(payFrom.type == AccountType.asset, rt('还款来源必须是资产账户'));
     _requirePositive(amountMinor);
     final c = payFrom.currencyCode;
     return TransactionDraft(
       date: date,
       kind: TxKind.creditCardRepay,
-      note: note ?? '偿还 ${card.name}',
+      note: note ?? rt('偿还 ${card.name}'),
       postings: [
         Posting.money(
           accountId: card.id,
@@ -416,8 +419,8 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(loan.type == AccountType.liability, '借入必须是负债账户');
-    _require(toAsset.type == AccountType.asset, '借入必须进入资产账户');
+    _require(loan.type == AccountType.liability, rt('借入必须是负债账户'));
+    _require(toAsset.type == AccountType.asset, rt('借入必须进入资产账户'));
     _requirePositive(principalMinor);
     final c = toAsset.currencyCode;
     return TransactionDraft(
@@ -453,8 +456,8 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(loan.type == AccountType.liability, '贷款还款目标必须是负债账户');
-    _require(payFrom.type == AccountType.asset, '还款来源必须是资产账户');
+    _require(loan.type == AccountType.liability, rt('贷款还款目标必须是负债账户'));
+    _require(payFrom.type == AccountType.asset, rt('还款来源必须是资产账户'));
     final c = payFrom.currencyCode;
     final fee = feeMinor ?? BigInt.zero;
     final postings = <Posting>[
@@ -491,7 +494,7 @@ class TxBuilders {
       date: date,
       kind: TxKind.loanRepay,
       categoryId: interestCategory.id,
-      note: note ?? '还款 ${loan.name}',
+      note: note ?? rt('还款 ${loan.name}'),
       postings: postings,
     );
   }
@@ -505,7 +508,7 @@ class TxBuilders {
     String? counterparty,
     String? note,
   }) {
-    _require(receivable.assetSubtype == AssetSubtype.receivable, '借出必须挂应收款账户');
+    _require(receivable.assetSubtype == AssetSubtype.receivable, rt('借出必须挂应收款账户'));
     _requirePositive(amountMinor);
     final c = fromAsset.currencyCode;
     return TransactionDraft(
@@ -537,7 +540,7 @@ class TxBuilders {
     String? counterparty,
     String? note,
   }) {
-    _require(receivable.assetSubtype == AssetSubtype.receivable, '收回必须冲减应收款账户');
+    _require(receivable.assetSubtype == AssetSubtype.receivable, rt('收回必须冲减应收款账户'));
     _requirePositive(amountMinor);
     final c = toAsset.currencyCode;
     return TransactionDraft(
@@ -569,8 +572,8 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(holdingAccount.isHolding, '买入目标必须是持仓账户');
-    _require(holdingAccount.costBasisAccountId != null, '持仓账户缺少成本镜像账户');
+    _require(holdingAccount.isHolding, rt('买入目标必须是持仓账户'));
+    _require(holdingAccount.costBasisAccountId != null, rt('持仓账户缺少成本镜像账户'));
     _requirePositive(totalPaidMinor);
     final c = holdingAccount.currencyCode;
     return TransactionDraft(
@@ -608,7 +611,7 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(holdingAccount.isHolding, '卖出必须针对持仓账户');
+    _require(holdingAccount.isHolding, rt('卖出必须针对持仓账户'));
     _requirePositive(netProceedsMinor);
     final c = holdingAccount.currencyCode;
     final pnl = netProceedsMinor - costBasisRemovedMinor;
@@ -676,12 +679,12 @@ class TxBuilders {
     required DateTime date,
     String? note,
   }) {
-    _require(signedChangeMinor != BigInt.zero, '调整额不能为 0');
+    _require(signedChangeMinor != BigInt.zero, rt('调整额不能为 0'));
     return TransactionDraft(
       date: date,
       kind: TxKind.adjustment,
       isAdjustment: true,
-      note: note ?? '对账调整',
+      note: note ?? rt('对账调整'),
       postings: [
         Posting.money(
           accountId: account.id,
@@ -702,6 +705,6 @@ class TxBuilders {
   }
 
   static void _requirePositive(BigInt v) {
-    if (v <= BigInt.zero) throw ArgumentError('金额必须为正: $v');
+    if (v <= BigInt.zero) throw ArgumentError(rt('金额必须为正: $v'));
   }
 }

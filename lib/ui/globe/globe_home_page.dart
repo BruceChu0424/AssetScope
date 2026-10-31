@@ -4,9 +4,9 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../accounts/account_edit_dialog.dart';
 import '../dashboard/dashboard_cards.dart';
 import '../dashboard/dashboard_providers.dart';
@@ -14,17 +14,24 @@ import '../dashboard/dashboard_secondary_cards.dart';
 import '../transactions/add_transaction_dialog.dart';
 import '../widgets/common.dart';
 import 'asset_globe.dart';
+import 'home_top_bar.dart';
 import 'glass_card.dart';
 import 'immersive_globe_host.dart';
 import 'space_backdrop.dart';
 
 /// 首页 · 财富指挥舱：整页深空（星野/星云/流星铺满窗口四缘）上的资产
 /// 地球 + 悬浮财务卡。全出血布局，所有界面元素悬浮于背景之上。
-/// 总览兼作账户页——「添加资产」入口在本页右上角（新建即点亮地球）。
+/// 总览兼作账户页——「添加资产」入口在右下角快捷菜单（新建即点亮
+/// 地球）。
 ///
-/// - 左上角：分类菜单入口（属 HomeShell 纯浮层，展开覆盖卡片）；
-/// - 右上角：添加资产（实心强调胶囊）→ 定位 → 全屏 → 刷新，与菜单入口
-///   同一水平线；刷新加载中旋转且防重复触发；
+/// - 左上角：品牌粒子标（[ParticleBrandMark] compact 档：入场汇聚后
+///   行波/闪烁/光晕常驻循环）——导航体系删除后的常驻标识（2026-10-30
+///   用户指令：全站去导航列表，首页即枢纽，其余页面返回键回上层）；
+/// - 右上角操作集群（[HomeTopBar]）：待办（有待办时呼吸+粒子）→ AI
+///   助手 → 设置 ‖ 定位当前位置（系统定位/时区估计）→ 清屏地球 →
+///   刷新（点击即起转，加载中持续旋转且防重复触发）。清屏地球不跳页
+///   ——原地钉住沉浸（左右卡片清场、地球扩张满窗，再点恢复；清屏期
+///   间空闲自转不会把页面带回来）；
 /// - 特大屏（≥1120）：左列核心卡贴窗口左缘 · 中央地球（相对整窗居中）
 ///   · 右列次级卡贴右缘，两侧留协调边距，三区各自滚动；
 /// - 大屏（≥900）：地球居左 + 单列卡片贴右缘；
@@ -47,8 +54,12 @@ class _GlobeHomePageState extends ConsumerState<GlobeHomePage> {
     debugLabel: 'home-globe',
   );
 
+  /// 清屏地球（钉住沉浸）：true = 左右卡片清场、地球占满整窗。
+  bool _globePinned = false;
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final async = ref.watch(dashboardProvider);
     final topPad = MediaQuery.paddingOf(context).top;
     return Scaffold(
@@ -64,7 +75,7 @@ class _GlobeHomePageState extends ConsumerState<GlobeHomePage> {
               ),
               error: (e, _) => Center(
                 child: Text(
-                  '加载失败：$e',
+                  t.homeLoadFailed(e),
                   style: const TextStyle(color: Color(0xFFF0907C)),
                 ),
               ),
@@ -72,51 +83,51 @@ class _GlobeHomePageState extends ConsumerState<GlobeHomePage> {
                 children: [
                   _AutoPostNotice(),
                   const _AiValuationNotice(),
-                  Expanded(child: _RefreshableHomeBody(globeKey: _globeKey)),
+                  Expanded(
+                    child: _RefreshableHomeBody(
+                      globeKey: _globeKey,
+                      pinned: _globePinned,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          // 右上操作集群：定位 → 全屏 → 刷新（与左上 48px 菜单入口垂直居中）。
+          // 左上角品牌粒子标：入场汇聚后常驻行波循环；深空底上恒用深色
+          // 配色（不随浅色主题反转）。
+          Positioned(
+            left: 22,
+            top: topPad + 16,
+            child: Tooltip(
+              message: t.appTitle,
+              waitDuration: const Duration(milliseconds: 500),
+              child: const SizedBox(
+                width: 46,
+                height: 46,
+                child: ParticleBrandMark(
+                  size: 46,
+                  compact: true,
+                  forceDark: true,
+                ),
+              ),
+            ),
+          ),
+          // 右上操作集群（与左上粒子标同一水平线）：待办 → AI → 设置 ‖
+          // 定位 → 清屏 → 刷新。
           Positioned(
             right: 20,
             top: topPad + 18,
-            child: _TopActionCluster(globeKey: _globeKey),
+            child: HomeTopBar(
+              globeKey: _globeKey,
+              pinned: _globePinned,
+              onTogglePinned: () =>
+                  setState(() => _globePinned = !_globePinned),
+            ),
           ),
           // 右下角悬浮添加（果冻菜单）：自带整页磨砂暗纱层。
           _QuickAddFab(globeKey: _globeKey),
         ],
       ),
-    );
-  }
-}
-
-/// 右上操作集群：与菜单入口同一水平线。定位/全屏为玻璃圆钮，刷新为
-/// 钢蓝强调圆钮（加载中旋转、防重复触发）。新建入口在右下角
-/// [_QuickAddFab]（添加资产 / 记一笔）。
-class _TopActionCluster extends ConsumerWidget {
-  const _TopActionCluster({required this.globeKey});
-
-  final GlobalKey<AssetGlobeState> globeKey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        _GlassIconButton(
-          tooltip: '定位：复位地球视角',
-          icon: Icons.my_location,
-          onTap: () => globeKey.currentState?.resetView(),
-        ),
-        const SizedBox(width: 10),
-        _GlassIconButton(
-          tooltip: '全屏地球',
-          icon: Icons.open_in_full,
-          onTap: () => context.go('/globe'),
-        ),
-        const SizedBox(width: 10),
-        _RefreshButton(),
-      ],
     );
   }
 }
@@ -203,16 +214,14 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
     DissolveController? dissolve,
   }) async {
     _toggle(); // 先收起菜单再开弹窗
-    await Navigator.of(context, rootNavigator: true).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: Colors.black54,
-        barrierDismissible: true,
-        transitionDuration: const Duration(milliseconds: 260),
-        reverseTransitionDuration: const Duration(milliseconds: 200),
-        pageBuilder: (_, animation, _) =>
-            _DialogShell(animation: animation, child: dialog),
-      ),
+    // 粒子化弹窗（v0.25 统一体系）：入场四散汇聚成弹窗；保存走光束
+    // 剧场（dissolve），取消粒子化消散。弹窗本体是 AppDialog（自带
+    // 玻璃容器 + 标题行 + 动作区，见 account_edit_dialog）。
+    await showParticleDialog(
+      context,
+      barrierColor: Colors.black54,
+      dissolve: dissolve,
+      builder: (_) => dialog,
     );
     if (!mounted) return;
     unawaited(ref.refresh(dashboardProvider.future));
@@ -229,8 +238,14 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
     final dissolve = DissolveController(
       targetOf: (lat, lon) =>
           widget.globeKey.currentState?.locationScreenPos(lat, lon),
-      onLaunch: (lat, lon) =>
-          widget.globeKey.currentState?.flyToLocation(lat, lon),
+      onLaunch: (lat, lon) => widget.globeKey.currentState?.flyToLocation(
+        lat,
+        lon,
+        // 与光束彗头同程同曲线（kTravelDur=1.15s，easeInOutCubic）：
+        // 两者 1.70s 恰好同时到位——到达闪耀、地球停稳、标记绽放
+        // 同帧发生，不再有「光束先到、地球再挪一下」的错拍。
+        duration: const Duration(milliseconds: 1150),
+      ),
       onArrive: (lat, lon) {
         widget.globeKey.currentState?.reloadMarkers();
         unawaited(ref.refresh(dashboardProvider.future));
@@ -248,6 +263,7 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     // 整棵子树随 _open 逐帧重建：暗纱的 IgnorePointer/提示语必须与
     // 动画值同步求值——否则收起完成后命中态滞留在「可点」，一层无形
     // 暗纱挡住整页交互（曾需再点一次才恢复）。
@@ -309,16 +325,16 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
                       _pill(
                         index: 0,
                         icon: Icons.add_location_alt_outlined,
-                        label: '添加资产',
-                        tooltip: '新建资产/负债账户，为资产选位置即点亮地球',
+                        label: t.homeAddAsset,
+                        tooltip: t.homeAddAssetTooltip,
                         onTap: _addAsset,
                       ),
                       const SizedBox(height: 12),
                       _pill(
                         index: 1,
                         icon: Icons.receipt_long_outlined,
-                        label: '记一笔',
-                        tooltip: '上报消费 / 收入 / 转账等日常流水',
+                        label: t.homeLogTransaction,
+                        tooltip: t.homeLogTransactionTooltip,
                         onTap: () => _addAction(const AddTransactionDialog()),
                       ),
                       const SizedBox(height: 16),
@@ -336,8 +352,9 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
 
   /// 主按钮：钢蓝渐变圆钮，+ 号随开合旋转 45°。
   Widget _fabButton() {
+    final t = AppLocalizations.of(context);
     return Tooltip(
-      message: _open.value > 0.5 ? '收起' : '记一笔 / 添加资产',
+      message: _open.value > 0.5 ? t.homeCollapse : t.homeQuickAdd,
       child: MouseRegion(
         onEnter: (_) => setState(() => _hover = true),
         onExit: (_) => setState(() => _hover = false),
@@ -383,7 +400,7 @@ class _QuickAddFabState extends ConsumerState<_QuickAddFab>
                 shape: const CircleBorder(),
                 child: Semantics(
                   button: true,
-                  label: _open.value > 0.5 ? '收起快捷菜单' : '添加：记一笔或添加资产',
+                  label: _open.value > 0.5 ? t.homeCollapseQuickMenu : t.homeAddSemantic,
                   onTap: _toggle,
                   child: InkWell(
                     customBorder: const CircleBorder(),
@@ -568,9 +585,6 @@ class _FabPillState extends State<_FabPill> {
   }
 }
 
-/// 弹窗外壳：居中、宽度收束到 ≤480（桌面默认弹窗过宽），入场 260ms
-/// 淡入 + 96%→100% 轻放大 + 10px 上浮（easeOutCubic），离场反向；
-/// 深色主题下给 Dialog 补玻璃质感（深底 + 发丝边 + 20px 圆角）。
 /// 快捷菜单氛围粒子：右下角集群四周的钢蓝/香槟微尘——缓慢上升 +
 /// 左右摇曳 + 明暗呼吸，主钮身后一抹钢蓝辉光。固定种子（位置稳定
 /// 不闪跳），hitTest 恒 false 不挡交互。
@@ -621,7 +635,7 @@ class _FabMotesPainter extends CustomPainter {
   bool hitTest(Offset position) => false;
 }
 
-/// 固定种子伪随机（0..1）：粒子布局跨帧稳定（同 floating_nav_rail）。
+/// 固定种子伪随机（0..1）：粒子布局跨帧稳定。
 class _Seeded {
   _Seeded(int seed) : _state = seed;
 
@@ -633,203 +647,16 @@ class _Seeded {
   }
 }
 
-class _DialogShell extends StatelessWidget {
-  const _DialogShell({required this.animation, required this.child});
-
-  final Animation<double> animation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return AnimatedBuilder(
-      animation: curved,
-      builder: (context, child) => Transform.translate(
-        offset: Offset(0, 10 * (1 - curved.value)),
-        child: Transform.scale(scale: 0.96 + 0.04 * curved.value, child: child),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              dialogTheme: DialogThemeData(
-                backgroundColor: dark ? const Color(0xF2141B24) : Colors.white,
-                surfaceTintColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: dark
-                        ? const Color(0x33E7ECF2)
-                        : const Color(0x14273A4D),
-                  ),
-                ),
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 刷新按钮：强调材质；刷新进行中图标旋转且忽略点击（防重复触发）。
-class _RefreshButton extends ConsumerStatefulWidget {
-  const _RefreshButton();
-
-  @override
-  ConsumerState<_RefreshButton> createState() => _RefreshButtonState();
-}
-
-class _RefreshButtonState extends ConsumerState<_RefreshButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _spin = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
-
-  @override
-  void dispose() {
-    _spin.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loading = ref.watch(dashboardProvider).isLoading;
-    if (loading && !_spin.isAnimating) {
-      _spin.repeat();
-    } else if (!loading && _spin.isAnimating) {
-      _spin
-        ..stop()
-        ..value = 0;
-    }
-    return _GlassIconButton(
-      tooltip: loading ? '刷新中…' : '刷新数据',
-      accent: true,
-      onTap: loading
-          ? null
-          : () => unawaited(ref.refresh(dashboardProvider.future)),
-      iconBuilder: (color) => RotationTransition(
-        turns: _spin,
-        child: Icon(Icons.refresh, size: 18, color: color),
-      ),
-    );
-  }
-}
-
-/// 统一材质的玻璃圆钮：局部磨砂 + 发丝边 + hover 提亮 + 按压回缩。
-/// [accent] 为强调款（钢蓝底 + 钢蓝边，用于刷新）。
-class _GlassIconButton extends StatefulWidget {
-  const _GlassIconButton({
-    required this.tooltip,
-    this.icon,
-    this.iconBuilder,
-    this.accent = false,
-    this.onTap,
-  });
-
-  final String tooltip;
-  final IconData? icon;
-  final Widget Function(Color color)? iconBuilder;
-  final bool accent;
-  final VoidCallback? onTap; // null = 禁用（不响应但仍可聚焦读提示）
-
-  @override
-  State<_GlassIconButton> createState() => _GlassIconButtonState();
-}
-
-class _GlassIconButtonState extends State<_GlassIconButton> {
-  bool _hover = false;
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = widget.accent;
-    final base = accent
-        ? const Color(0xFF7EA6D9).withValues(alpha: 0.18)
-        : Colors.white.withValues(alpha: 0.07);
-    final hovered = accent
-        ? const Color(0xFF7EA6D9).withValues(alpha: 0.30)
-        : Colors.white.withValues(alpha: 0.14);
-    final iconColor = accent
-        ? const Color(0xFFBFD9F2)
-        : const Color(0xFF7EA6D9).withValues(alpha: 0.9);
-    return Tooltip(
-      message: widget.tooltip,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: Listener(
-          onPointerDown: (_) => setState(() => _pressed = true),
-          onPointerUp: (_) => setState(() => _pressed = false),
-          onPointerCancel: (_) => setState(() => _pressed = false),
-          child: AnimatedScale(
-            scale: _pressed ? 0.92 : 1,
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _hover ? hovered : base,
-                border: Border.fromBorderSide(
-                  BorderSide(
-                    color: accent
-                        ? const Color(0xFF7EA6D9).withValues(alpha: 0.45)
-                        : const Color(0x2EE7ECF2),
-                    width: 1,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                shape: const CircleBorder(),
-                child: Semantics(
-                  button: true,
-                  label: widget.tooltip,
-                  onTap: widget.onTap,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: widget.onTap,
-                    child: Center(
-                      child:
-                          widget.iconBuilder?.call(iconColor) ??
-                          Icon(widget.icon, size: 18, color: iconColor),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// 刷新包装（下拉或右上角刷新）：仅包卡片滚动区，地球手势不触发。
 class _RefreshableHomeBody extends ConsumerWidget {
-  const _RefreshableHomeBody({required this.globeKey});
+  const _RefreshableHomeBody({required this.globeKey, required this.pinned});
 
   /// 透传给地球实例的钥匙（页面右上角「定位」按钮复位视角用）。
   final GlobalKey<AssetGlobeState> globeKey;
+
+  /// 清屏地球（钉住沉浸），透传给 [ImmersiveGlobeHost.pinned]。
+  final bool pinned;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -837,17 +664,22 @@ class _RefreshableHomeBody extends ConsumerWidget {
     return RefreshIndicator.adaptive(
       onRefresh: () => ref.refresh(dashboardProvider.future),
       edgeOffset: 8,
-      child: _HomeBody(d: d, globeKey: globeKey),
+      child: _HomeBody(d: d, globeKey: globeKey, pinned: pinned),
     );
   }
 }
 
 /// 响应式三区/两区/纵向布局 + 一次性入场编排。
 class _HomeBody extends StatefulWidget {
-  const _HomeBody({required this.d, required this.globeKey});
+  const _HomeBody({
+    required this.d,
+    required this.globeKey,
+    required this.pinned,
+  });
 
   final DashboardData d;
   final GlobalKey<AssetGlobeState> globeKey;
+  final bool pinned;
 
   @override
   State<_HomeBody> createState() => _HomeBodyState();
@@ -866,6 +698,7 @@ class _HomeBodyState extends State<_HomeBody>
   final _nwKey = GlobalKey(debugLabel: 'hero-nw');
   final _flowKey = GlobalKey(debugLabel: 'hero-flow');
   final _healthKey = GlobalKey(debugLabel: 'hero-health');
+  final _assetsKey = GlobalKey(debugLabel: 'hero-assets');
   final _spendKey = GlobalKey(debugLabel: 'hero-spend');
   final _trendKey = GlobalKey(debugLabel: 'hero-trend');
   final _upcomingKey = GlobalKey(debugLabel: 'hero-upcoming');
@@ -905,12 +738,14 @@ class _HomeBodyState extends State<_HomeBody>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final d = widget.d;
     final width = MediaQuery.sizeOf(context).width;
     // 卡片列顶部：窗口栏（WindowChrome 顶衬垫）+ 菜单入口行（48px）+
     // 呼吸间距——与左上入口/右上操作集群落在同一条节奏线上。
     final cardsTop = MediaQuery.paddingOf(context).top + 78;
     return ImmersiveGlobeHost(
+      pinned: widget.pinned,
       globeBuilder: (onImmerse) => FadeTransition(
         opacity: _viewportAnim,
         child: ScaleTransition(
@@ -928,30 +763,36 @@ class _HomeBodyState extends State<_HomeBody>
         final leftCards = [
           _CardLauncher(
             heroKey: _nwKey,
-            path: '/reports',
-            hint: '月报 · 净资产变化分解',
+            path: '/net-worth',
+            hint: t.homeNwCardHint,
             child: NetWorthHeroCard(d: d, animateNumber: true),
           ),
           _CardLauncher(
             heroKey: _flowKey,
-            path: '/transactions',
-            hint: '流水 · 本月全部收支',
+            path: '/cash-flow',
+            hint: t.homeFlowCardHint,
             child: MonthFlowCard(d: d),
           ),
           _CardLauncher(
             heroKey: _healthKey,
-            path: '/reports',
-            hint: '月报 · 体检与构成明细',
+            path: '/health',
+            hint: t.homeHealthCardHint,
             child: HealthCard(d: d),
           ),
         ];
-        // 右列：次级卡（可支配/洞察/走势/未来/待处理）。会自缩为空的卡
+        // 右列：次级卡（资产负债表/可支配/洞察/走势/未来/待处理）。会自缩为空的卡
         // 在此按数据条件剔除——避免给空壳包玻璃面板。
         final rightCards = [
           _CardLauncher(
+            heroKey: _assetsKey,
+            path: '/balance-sheet',
+            hint: t.homeAssetsCardHint,
+            child: AssetsSheetCard(d: d),
+          ),
+          _CardLauncher(
             heroKey: _spendKey,
-            path: '/budgets',
-            hint: '预算 · 额度与配速',
+            path: '/spendable',
+            hint: t.homeBudgetCardHint,
             child: SpendableCard(d: d),
           ),
           if (d.insights.insights.isNotEmpty)
@@ -959,21 +800,18 @@ class _HomeBodyState extends State<_HomeBody>
           if (d.series.isNotEmpty)
             _CardLauncher(
               heroKey: _trendKey,
-              path: '/reports',
-              hint: '月报 · 历史走势与归因',
+              path: '/trend',
+              hint: t.homeTrendCardHint,
               child: TrendCard(d: d),
             ),
           _CardLauncher(
             heroKey: _upcomingKey,
-            path: '/plans',
-            hint: '计划 · 固定开销与预定支出',
+            path: '/upcoming',
+            hint: t.homePlansCardHint,
             child: UpcomingCard(d: d),
           ),
-          if (d.pendingDueCount > 0 ||
-              d.nw.missingValuations > 0 ||
-              d.nw.staleValuations > 0 ||
-              d.report.attribution.hasResidual)
-            IssuesCard(d: d),
+          // 待处理事项不再占卡片（2026-10-30 用户指令）：右上「待办」钮
+          // 有待办时呼吸变色+粒子，入口即状态。
         ];
         if (width >= 1120) {
           // 对称双翼：卡片贴窗口两缘（20px 协调边距），地球槽位占据中央
@@ -1320,12 +1158,13 @@ class _AiValuationNoticeState extends ConsumerState<_AiValuationNotice> {
       unawaited(ref.refresh(dashboardProvider.future));
       if (!mounted) return;
       final failed = n < 0;
+      final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             failed
-                ? 'AI 已更新 ${-n} 项资产估值（部分失败，可在账户详情查看）'
-                : 'AI 已更新 $n 项资产估值（来源可审计，可在账户详情纠正）',
+                ? t.aiValuationsUpdatedFailed(-n)
+                : t.aiValuationsUpdated(n),
           ),
         ),
       );
@@ -1356,9 +1195,10 @@ class _AutoPostNoticeState extends ConsumerState<_AutoPostNotice> {
       if (s == null || s.autoPostedCount <= 0) return;
       final n = s.autoPostedCount;
       s.autoPostedCount = 0;
+      final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('已按计划自动记入 $n 笔交易，可在流水中查看（来源：计划）')));
+      ).showSnackBar(SnackBar(content: Text(t.homeAutoPosted(n))));
     });
   }
 

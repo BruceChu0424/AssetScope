@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../../services/ai/ai_chat.dart';
 import '../../services/ai/ai_usage.dart';
 import '../theme/app_theme.dart';
-import '../widgets/particle_interactive.dart';
+import '../widgets/common.dart';
 
 /// AI 服务配置弹层：预设（智谱/Kimi/千问/DeepSeek/OpenAI/Claude/自定义）
 /// + Base URL + 模型 + API Key + 联网搜索开关 + 测试连接。
 Future<void> showAiConfigSheet(BuildContext context, VaultUnlocked s) {
-  return showDialog<void>(
-    context: context,
+  return showAppDialog<void>(
+    context,
     builder: (_) => const _AiConfigDialog(),
   );
 }
@@ -79,10 +81,17 @@ class _AiConfigDialogState extends ConsumerState<_AiConfigDialog> {
     });
   }
 
-  /// 旧存档里的模型名可能已被服务商下线（如智谱 glm-4-flash，2026-01
-  /// 起 404），静默升到该预设现行默认，避免「配置看着对、一直连不上」。
+  /// 旧存档里的模型名可能已被服务商下线（如智谱 glm-4.7-flash 及更早
+  /// 的 4.x flash，2026-10 起模型列表只剩 GLM-5.x 系列），静默升到该
+  /// 预设现行默认，避免「配置看着对、一直连不上」。
   void _migrateStaleModel() {
-    const dead = {'glm-4-flash', 'glm-4.5-flash', 'glm-4-flash-250414'};
+    const dead = {
+      'glm-4-flash',
+      'glm-4.5-flash',
+      'glm-4-flash-250414',
+      'glm-4.6-flash',
+      'glm-4.7-flash',
+    };
     if (dead.contains(_model.text.trim())) {
       _model.text = AiProviderPresets.byCode(_presetId)!.defaultModel;
     }
@@ -104,11 +113,20 @@ class _AiConfigDialogState extends ConsumerState<_AiConfigDialog> {
   );
 
   Future<void> _test() async {
-    final cfg = _build();
+    final t = AppLocalizations.of(context);
+    var cfg = _build();
     if (cfg.apiKey.isEmpty || cfg.baseUrl.isEmpty) {
-      setState(() => _testResult = '请先填写 Base URL 与 API Key');
+      setState(() => _testResult = t.aiCfgTestMissingInput);
       return;
     }
+    // 连通性测试不带联网工具：工具参数的兼容问题不该伪装成「连不上」。
+    cfg = AiConfig(
+      presetId: cfg.presetId,
+      baseUrl: cfg.baseUrl,
+      apiKey: cfg.apiKey,
+      model: cfg.model,
+      enableWebSearch: false,
+    );
     setState(() {
       _testing = true;
       _testResult = null;
@@ -121,10 +139,20 @@ class _AiConfigDialogState extends ConsumerState<_AiConfigDialog> {
       );
       setState(
         () => _testResult =
-            '连接成功：${reply.trim().substring(0, reply.trim().length.clamp(0, 40))}',
+            t.aiCfgTestConnected(reply.trim().substring(0, reply.trim().length.clamp(0, 40))),
       );
     } catch (e) {
-      setState(() => _testResult = '失败：$e');
+      var msg = t.settingsFailed(e);
+      // 智谱两类 Key 端点不通用（套餐 Key 打普通端点报「令牌已过期」，
+      // 普通 Key 打套餐端点同样 401）：按形态提示换对服务商预设。
+      if (msg.contains('401') || msg.contains('令牌') || msg.contains('token')) {
+        if (_presetId == 'glm') {
+          msg += '\n${t.aiCfgGlmCodingPlanKeyHint}';
+        } else if (_presetId == 'glmCoding') {
+          msg += '\n${t.aiCfgGlmRegularKeyHint}';
+        }
+      }
+      setState(() => _testResult = msg);
     } finally {
       if (mounted) setState(() => _testing = false);
     }
@@ -156,117 +184,122 @@ class _AiConfigDialogState extends ConsumerState<_AiConfigDialog> {
     }
   }
 
+  /// 标题旁 icon 的悬停提示（提示语规范：静态说明文字一律收进悬停
+  /// 弹窗，页面不留常驻副标题）。内容随所选服务商与联网开关联动。
+  String _tipsText(AiProviderPreset preset) {
+    final t = AppLocalizations.of(context);
+    return [
+      t.aiCfgKeyPrivacyTip,
+      '${rt(preset.label)}：${preset.note != null ? rt(preset.note!) : t.aiCfgOpenAiCompatibleNote}',
+      preset.supportsWebSearch
+          ? (_webSearch ? t.aiCfgWebSearchOnTip : t.aiCfgWebSearchOffTip)
+          : t.aiCfgNoWebSearchSupportTip,
+    ].join('\n\n');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final preset = AiProviderPresets.byCode(_presetId)!;
-    return AlertDialog(
-      title: const Text('AI 服务配置'),
-      content: SizedBox(
-        width: 460,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppDialog(
+      title: t.aiCfgDialogTitle,
+      scroll: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                'API Key 加密存储在本地账本库中，仅用于行情/汇率联网抓取；'
-                '抓取时只发送查询名称与币种对，绝不发送余额与金额。',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.hintColor,
-                  height: 1.5,
+              Expanded(
+                child: ParticleDropdownField<String>(
+                  // initialValue 仅首帧生效；换 key 让 _load 异步回来后重建生效。
+                  key: ValueKey('preset-$_presetId'),
+                  initialValue: _presetId,
+                  decoration: InputDecoration(labelText: t.aiCfgProvider),
+                  items: [
+                    for (final p in AiProviderPresets.all)
+                      DropdownMenuItem(value: p.id, child: Text(rt(p.label))),
+                  ],
+                  onChanged: (v) => setState(() {
+                    _presetId = v!;
+                    _applyPreset(v);
+                  }),
                 ),
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                // initialValue 仅首帧生效；换 key 让 _load 异步回来后重建生效。
-                key: ValueKey('preset-$_presetId'),
-                initialValue: _presetId,
-                decoration: const InputDecoration(labelText: '服务商'),
-                items: [
-                  for (final p in AiProviderPresets.all)
-                    DropdownMenuItem(value: p.id, child: Text(p.label)),
-                ],
-                onChanged: (v) => setState(() {
-                  _presetId = v!;
-                  _applyPreset(v);
-                }),
-              ),
-              if (preset.note != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  preset.note!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: preset.supportsWebSearch
-                        ? theme.hintColor
-                        : AppColors.brass,
+              const SizedBox(width: 10),
+              // 悬停提示原在标题行；AppDialog 标题是纯文本，收到首字段旁。
+              Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: Tooltip(
+                  message: _tipsText(preset),
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: theme.hintColor,
                   ),
                 ),
-              ],
-              const SizedBox(height: 10),
-              ParticleTextField(
-                controller: _baseUrl,
-                decoration: const InputDecoration(
-                  labelText: 'Base URL（https://…，不含 /chat/completions）',
-                ),
-              ),
-              const SizedBox(height: 10),
-              ParticleTextField(
-                controller: _model,
-                decoration: const InputDecoration(labelText: '模型（须支持联网搜索）'),
-              ),
-              const SizedBox(height: 10),
-              ParticleTextField(
-                controller: _apiKey,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText: 'API Key',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
-                ),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('联网搜索'),
-                subtitle: Text(
-                  preset.supportsWebSearch
-                      ? '行情抓取必须开启（否则价格可能来自模型记忆）'
-                      : '该服务商 API 不支持联网，抓取结果可能是过时数据',
-                ),
-                value: _webSearch,
-                onChanged: preset.supportsWebSearch
-                    ? (v) => setState(() => _webSearch = v)
-                    : null,
-              ),
-              if (_testResult != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  _testResult!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _testResult!.startsWith('失败')
-                        ? AppColors.negative
-                        : AppColors.positive,
-                  ),
-                ),
-              ],
-              const Divider(height: 28),
-              _UsagePanel(
-                usage: _usage,
-                isGlm: preset.id == 'glm',
-                balance: _balance,
-                balanceBusy: _balanceBusy,
-                balanceError: _balanceError,
-                onRefreshBalance: _fetchBalance,
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 10),
+          ParticleTextField(
+            controller: _baseUrl,
+            decoration: InputDecoration(
+              labelText: t.aiCfgBaseUrlLabel,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ParticleTextField(
+            controller: _model,
+            decoration: InputDecoration(labelText: t.aiCfgModelLabel),
+          ),
+          const SizedBox(height: 10),
+          ParticleTextField(
+            controller: _apiKey,
+            obscureText: _obscure,
+            decoration: InputDecoration(
+              labelText: 'API Key',
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscure
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(t.aiCfgWebSearch),
+            value: _webSearch,
+            onChanged: preset.supportsWebSearch
+                ? (v) => setState(() => _webSearch = v)
+                : null,
+          ),
+          if (_testResult != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _testResult!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: _testResult!.startsWith(t.settingsFailedPrefix)
+                      ? AppColors.negative
+                      : AppColors.positive,
+                ),
+            ),
+          ],
+          const Divider(height: 28),
+          _UsagePanel(
+            usage: _usage,
+            isGlm: preset.id == 'glm',
+            balance: _balance,
+            balanceBusy: _balanceBusy,
+            balanceError: _balanceError,
+            onRefreshBalance: _fetchBalance,
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -277,13 +310,13 @@ class _AiConfigDialogState extends ConsumerState<_AiConfigDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('测试连接'),
+              : Text(t.aiCfgTestConnection),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(t.settingsCancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.settingsSave)),
       ],
     );
   }
@@ -311,6 +344,7 @@ class _UsagePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -318,15 +352,14 @@ class _UsagePanel extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '用量与额度',
+                t.aiCfgUsageTitle,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Tooltip(
-              message: '调用次数由本应用本地统计（设置页关闭后重新打开刷新）；'
-                  '额度来自服务商接口，免费模型不扣费',
+              message: t.aiCfgUsageTooltip,
               child: Icon(Icons.info_outline, size: 16, color: theme.hintColor),
             ),
           ],
@@ -334,15 +367,15 @@ class _UsagePanel extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            _stat(context, '今日调用', '${usage?.todayCalls ?? 0} 次'),
+            _stat(context, t.aiCfgStatToday, t.aiCfgCalls(usage?.todayCalls ?? 0)),
             const SizedBox(width: 10),
-            _stat(context, '近 7 天', '${usage?.last7DaysCalls ?? 0} 次'),
+            _stat(context, t.aiCfgStatLast7Days, t.aiCfgCalls(usage?.last7DaysCalls ?? 0)),
             const SizedBox(width: 10),
-            _stat(context, '累计', '${usage?.totalCalls ?? 0} 次'),
+            _stat(context, t.aiCfgStatTotal, t.aiCfgCalls(usage?.totalCalls ?? 0)),
           ],
         ),
         const SizedBox(height: 12),
-        if (isGlm) _balanceRow(context) else Text('该服务商暂无余额查询接口，可到其控制台查看',
+        if (isGlm) _balanceRow(context) else Text(t.aiCfgNoBalanceApi,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
       ],
     );
@@ -383,6 +416,7 @@ class _UsagePanel extends StatelessWidget {
 
   Widget _balanceRow(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final b = balance;
     return Row(
       children: [
@@ -391,7 +425,7 @@ class _UsagePanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '服务商余额（智谱）',
+                t.aiCfgBalanceGlm,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -400,11 +434,11 @@ class _UsagePanel extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   [
-                    if (b.total != null) '总额度 ¥${_trim(b.total!)}',
-                    if (b.voucher != null) '免费额度 ¥${_trim(b.voucher!)}',
-                    if (b.cash != null) '现金 ¥${_trim(b.cash!)}',
+                    if (b.total != null) t.aiCfgBalanceTotal(_trim(b.total!)),
+                    if (b.voucher != null) t.aiCfgBalanceVoucher(_trim(b.voucher!)),
+                    if (b.cash != null) t.aiCfgBalanceCash(_trim(b.cash!)),
                     if (b.total == null && b.voucher == null && b.cash == null)
-                      '接口未返回额度字段',
+                      t.aiCfgBalanceNoFields,
                   ].join(' · '),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
@@ -412,7 +446,7 @@ class _UsagePanel extends StatelessWidget {
                 ),
               ] else if (balanceError != null)
                 Text(
-                  '查询失败：$balanceError',
+                  t.aiCfgBalanceQueryFailed(balanceError ?? ''),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.negative,
                   ),
@@ -429,7 +463,7 @@ class _UsagePanel extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.refresh, size: 18),
-          label: Text(b == null ? '查询' : '刷新'),
+          label: Text(b == null ? t.aiCfgBalanceQuery : t.aiCfgBalanceRefresh),
         ),
       ],
     );

@@ -1,17 +1,27 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/runtime_l10n.dart';
+import '../ui/accounts/accounts_page.dart';
 import '../ui/ai/assistant_page.dart';
 import '../ui/budget/budgets_page.dart';
 import '../ui/debts/debts_page.dart';
 import '../ui/goals/goals_page.dart';
 import '../ui/globe/globe_home_page.dart';
 import '../ui/globe/globe_page.dart';
-import '../ui/home_shell.dart';
 import '../ui/lock/lock_page.dart';
+import '../ui/overview/balance_sheet_page.dart';
+import '../ui/overview/cash_flow_page.dart';
+import '../ui/overview/health_page.dart';
+import '../ui/overview/inbox_page.dart';
+import '../ui/overview/net_worth_page.dart';
+import '../ui/overview/spendable_page.dart';
+import '../ui/overview/trend_page.dart';
+import '../ui/overview/upcoming_page.dart';
 import '../ui/planning/plans_page.dart';
 import '../ui/reports/report_page.dart';
 import '../ui/settings/settings_page.dart';
@@ -30,19 +40,28 @@ import 'providers.dart';class AssetScopeApp extends ConsumerWidget {
     final locked = vault is! VaultUnlocked;
     final router = _routers.putIfAbsent(locked, () => _buildRouter(locked));
     return MaterialApp.router(
-      title: '资观 AssetScope',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
       themeMode: ref.watch(themeModeProvider),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('zh'), Locale('en')],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      // 跟随系统语言：支持中文/英文，其余一律回落中文（产品主语言）。
+      localeResolutionCallback: (locale, supported) {
+        if (locale != null) {
+          for (final l in supported) {
+            if (l.languageCode == locale.languageCode) return l;
+          }
+        }
+        return const Locale('zh');
+      },
       routerConfig: router,
       builder: (context, child) {
+        // 语言侧同步：Intl 日期/数字格式与领域层 rt() 跟随解析结果。
+        final lang = Localizations.localeOf(context).languageCode;
+        if (Intl.defaultLocale != lang) Intl.defaultLocale = lang;
+        RuntimeL10n.english = lang == 'en';
         // 无边框窗口框体（拖拽条 + 红绿灯）置于最外层：锁屏与正常页面
         // 顶部都不再有原生标题条。触摸观察走全局 PointerRoute（无渲染
         // 对象）——用 Listener 会给整棵树盖上 RenderPointerListener，让
@@ -70,20 +89,27 @@ import 'providers.dart';class AssetScopeApp extends ConsumerWidget {
       routes: [
         GoRoute(path: '/lock', builder: (_, _) => const LockPage()),
         GoRoute(path: '/globe', builder: (_, _) => const GlobePage()),
-        ShellRoute(
-          builder: (_, _, child) => HomeShell(body: child),
-          routes: [
-            _fadeThrough('/', (_, _) => const GlobeHomePage()),
-            _page('/transactions', (_, _) => const TransactionsPage()),
-            _page('/budgets', (_, _) => const BudgetsPage()),
-            _page('/plans', (_, _) => const PlansPage()),
-            _page('/goals', (_, _) => const GoalsPage()),
-            _page('/debts', (_, _) => const DebtsPage()),
-            _page('/reports', (_, _) => const ReportPage()),
-            _page('/ai', (_, _) => const AssistantPage()),
-            _page('/settings', (_, _) => const SettingsPage()),
-          ],
-        ),
+        // 扁平路由（2026-10-30 用户指令：删除导航菜单，首页即枢纽——
+        // 功能入口集中在首页右上集群/卡片，其余页面一律返回键回上层）。
+        _fadeThrough('/', (_, _) => const GlobeHomePage()),
+        _page('/assets', (_, _) => const AccountsPage()),
+        _page('/transactions', (_, _) => const TransactionsPage()),
+        _page('/budgets', (_, _) => const BudgetsPage()),
+        _page('/plans', (_, _) => const PlansPage()),
+        _page('/goals', (_, _) => const GoalsPage()),
+        _page('/debts', (_, _) => const DebtsPage()),
+        _page('/reports', (_, _) => const ReportPage()),
+        _page('/ai', (_, _) => const AssistantPage()),
+        _page('/settings', (_, _) => const SettingsPage()),
+        // 沉浸式详情页（v0.26 Orbital Finance）：首页卡片的目的地。
+        _page('/net-worth', (_, _) => const NetWorthPage()),
+        _page('/cash-flow', (_, _) => const CashFlowPage()),
+        _page('/health', (_, _) => const HealthPage()),
+        _page('/balance-sheet', (_, _) => const BalanceSheetPage()),
+        _page('/spendable', (_, _) => const SpendablePage()),
+        _page('/trend', (_, _) => const TrendPage()),
+        _page('/upcoming', (_, _) => const UpcomingPage()),
+        _page('/inbox', (_, _) => const InboxPage()),
       ],
     );
   }

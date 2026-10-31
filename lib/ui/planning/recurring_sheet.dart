@@ -4,15 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/analytics/recurring_detector.dart';
 import '../../domain/planning/recurrence.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'plan_edit_dialog.dart';
 
 /// 周期识别建议弹层：流水里识别出的固定收支 → 一键固化为计划。
 Future<void> showRecurringSheet(BuildContext context, WidgetRef ref) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
+  return showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (_) => const _RecurringSheet(),
   );
 }
@@ -36,6 +37,7 @@ class _RecurringSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final async = ref.watch(_recurringProvider);
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.72,
@@ -45,7 +47,7 @@ class _RecurringSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
             child: Text(
-              '识别到的固定收支',
+              t.recurringTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -54,8 +56,7 @@ class _RecurringSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              '从近 18 个月流水中识别（同对手方、间隔规整、≥3 次）。'
-              '转为计划后将计入现金预测与预算的"已计划"。',
+              t.recurringIntro,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -66,7 +67,7 @@ class _RecurringSheet extends ConsumerWidget {
           Expanded(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+              error: (e, _) => ErrorPlaceholder(t.loadFailed(e.toString())),
               data: (data) {
                 final (suggestions, existing) = data;
                 if (suggestions.isEmpty) {
@@ -74,7 +75,7 @@ class _RecurringSheet extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        '暂未识别到固定收支。多记录几个月的房租/订阅/工资等\n规律流水后再来试试。',
+                        t.recurringEmpty,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.hintColor,
@@ -110,6 +111,7 @@ class _SuggestionTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final s = suggestion;
     final now = DateTime.now();
     return ListTile(
@@ -119,20 +121,20 @@ class _SuggestionTile extends ConsumerWidget {
       ),
       title: Text(s.label, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        '${s.cadenceLabel} · ${s.occurrences} 次 · 置信 ${(s.confidence * 100).toStringAsFixed(0)}%\n'
-        '中位 ${fmtMinor(s.medianAmountMinor, 'CNY')} · 下次预计 ${s.nextExpected(now).month}/${s.nextExpected(now).day}',
+        '${t.recurringStatLine1(s.cadenceLabel, s.occurrences, (s.confidence * 100).toStringAsFixed(0))}\n'
+        '${t.recurringStatLine2(fmtMinor(s.medianAmountMinor, 'CNY'), s.nextExpected(now).month, s.nextExpected(now).day)}',
         style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
       ),
       isThreeLine: true,
       trailing: exists
           ? Chip(
-              label: const Text('已建计划'),
+              label: Text(t.recurringAlreadyPlanned),
               visualDensity: VisualDensity.compact,
               labelStyle: theme.textTheme.bodySmall,
             )
           : FilledButton.tonal(
               onPressed: () => _convert(context, ref),
-              child: const Text('转计划'),
+              child: Text(t.recurringConvertToPlan),
             ),
     );
   }
@@ -154,8 +156,8 @@ class _SuggestionTile extends ConsumerWidget {
       anchorDate: suggestion.nextExpected(now),
       amountMinor: suggestion.medianAmountMinor,
     );
-    final ok = await showDialog<bool>(
-      context: context,
+    final ok = await showAppDialog<bool>(
+      context,
       builder: (_) => PlanEditDialog(initial: draft),
     );
     if (ok == true) ref.invalidate(_recurringProvider);

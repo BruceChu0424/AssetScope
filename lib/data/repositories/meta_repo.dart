@@ -245,6 +245,49 @@ class MetaRepo {
         SettingsCompanion.insert(key: key, valueJson: jsonEncode(value)),
       );
 
+  // ---------- 安全事件日志（设置页「最近安全操作」） ----------
+
+  /// 追加一条安全事件（解锁/锁定/改口令/换恢复码/改安全配置）。
+  /// 存 settings 表 `securityLog` 键（JSON 数组，新事件在前，上限 40 条），
+  /// 与账本同库加密。写入失败静默——事件日志绝不阻塞安全操作本身。
+  Future<void> appendSecurityEvent(String kind) async {
+    try {
+      final events = await securityEvents();
+      events.insert(
+        0,
+        SecurityEvent(kind: kind, at: DateTime.now()),
+      );
+      if (events.length > 40) events.removeRange(40, events.length);
+      await setSetting(
+        'securityLog',
+        [for (final e in events) {'k': e.kind, 't': e.at.millisecondsSinceEpoch}],
+      );
+    } catch (_) {}
+  }
+
+  /// 读取安全事件（新在前）；无记录返回空表。
+  Future<List<SecurityEvent>> securityEvents() async {
+    // securityLog 存的是 JSON 数组（非字符串），直接读原始行解析。
+    final rows = await (_db.select(
+      _db.settings,
+    )..where((s) => s.key.equals('securityLog'))).getSingleOrNull();
+    if (rows == null) return [];
+    try {
+      final list = jsonDecode(rows.valueJson);
+      if (list is! List) return [];
+      return [
+        for (final e in list)
+          if (e is Map && e['k'] is String && e['t'] is int)
+            SecurityEvent(
+              kind: e['k'] as String,
+              at: DateTime.fromMillisecondsSinceEpoch(e['t'] as int),
+            ),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
   // ---------- 数据指纹（统计缓存失效判断） ----------
 
   /// 关键表内容摘要：任一影响统计口径的数据变化（过账/作废/删除、
@@ -299,4 +342,13 @@ class MetaRepo {
 
     return parts.join('/');
   }
+}
+
+/// 一条安全事件（设置页「最近安全操作」数据源；与账本同库加密存储）。
+class SecurityEvent {
+  const SecurityEvent({required this.kind, required this.at});
+
+  /// unlock / lock / pass / recovery / config。
+  final String kind;
+  final DateTime at;
 }

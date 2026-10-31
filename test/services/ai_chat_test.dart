@@ -9,9 +9,12 @@ void main() {
   group('预设', () {
     test('国内主流预设齐全且带联网搜索能力标注', () {
       final ids = AiProviderPresets.all.map((p) => p.id).toSet();
-      expect(ids, containsAll(['glm', 'moonshot', 'qwen', 'openai', 'anthropic']));
+      expect(ids, containsAll(
+          ['glm', 'glmCoding', 'moonshot', 'qwen', 'openai', 'anthropic']));
       expect(
           AiProviderPresets.byCode('glm')!.supportsWebSearch, isTrue);
+      // 智谱默认模型须为现行模型（4.x flash 系列已下线）。
+      expect(AiProviderPresets.byCode('glm')!.defaultModel, 'glm-5.3-flash');
       // DeepSeek API 无服务端联网搜索：明确标注不可用于行情
       final ds = AiProviderPresets.all.firstWhere((p) => p.id.contains('deepseek'));
       expect(ds.supportsWebSearch, isFalse);
@@ -39,6 +42,23 @@ void main() {
       expect((b['tools'] as List).first,
           containsPair('type', 'web_search'));
       expect((b['messages'] as List).length, 2);
+    });
+
+    test('GLM Coding Plan：套餐专用端点 + 不注入联网工具', () {
+      final preset = AiProviderPresets.byCode('glmCoding')!;
+      expect(preset.defaultBaseUrl,
+          'https://open.bigmodel.cn/api/coding/paas/v4');
+      // 存量配置可能残留 enableWebSearch=true：套餐端点也绝不注入工具。
+      final cfg = AiConfig(
+          presetId: 'glmCoding',
+          baseUrl: preset.defaultBaseUrl,
+          apiKey: 'k',
+          model: 'glm-5.3-flash',
+          enableWebSearch: true);
+      final (uri, _, body) = AiChat.buildOpenAiRequest(cfg, 'S', 'U');
+      expect(uri.toString(),
+          'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions');
+      expect(body['tools'], isNull);
     });
 
     test('Kimi：builtin_function \$web_search', () {

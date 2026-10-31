@@ -30,6 +30,7 @@ import 'package:assetscope/services/scenario_service.dart';
 import 'package:assetscope/services/stats_service.dart';
 import 'package:assetscope/services/year_report_service.dart';
 import 'package:assetscope/ui/theme/app_theme.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// Widget 测试公共 harness：内存库 + 真实全服务栈 + 固定已解锁会话。
 /// 各测试文件共用；运行需要宿主可加载 sqlite3，不可用时自行跳过。
@@ -133,5 +134,8 @@ class FixedVault extends VaultNotifier {
 Widget widgetHost(Widget child, VaultUnlocked session) => ProviderScope(
       overrides: [vaultProvider.overrideWith(() => FixedVault(session))],
       child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
           theme: buildAppTheme(Brightness.light), home: child),
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/reports/year_report.dart';
 import '../../domain/utils/dates.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -25,29 +26,30 @@ class YearView extends StatelessWidget {
   }
 
   Widget _summaryCard(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final base = report.baseCurrencyCode;
     final rate = report.savingsRate;
     return SectionCard(
-      title: '${report.year} 年总览',
+      title: t.yearSummaryTitle(report.year),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '全年收入',
+                  label: t.yearTotalIncome,
                   amount: fmtMinor(report.totalIncomeMinor, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '全年消费',
+                  label: t.yearTotalExpense,
                   amount: fmtMinor(report.totalExpenseMinor, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '结余',
+                  label: t.surplus,
                   amount: fmtMinor(report.totalSurplusMinor, base),
                   color: report.totalSurplusMinor.isNegative
                       ? AppColors.negativeOf(Theme.of(context).brightness)
@@ -61,24 +63,24 @@ class YearView extends StatelessWidget {
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '储蓄率',
+                  label: t.savingsRate,
                   amount: rate == null
                       ? '—'
                       : '${(rate * 100).toStringAsFixed(0)}%',
-                  tooltip: '结余 / 收入',
+                  tooltip: t.savingsRateTooltip,
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '结余为正的月份',
+                  label: t.positiveSurplusMonths,
                   amount: '${report.savingsMonths} / 12',
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '支付利息',
+                  label: t.interestPaid,
                   amount: fmtMinor(report.debtInterestPaidMinor, base),
-                  tooltip: '全年债务成本',
+                  tooltip: t.interestPaidTooltip,
                 ),
               ),
             ],
@@ -88,28 +90,28 @@ class YearView extends StatelessWidget {
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '已实现投资损益',
+                  label: t.realizedPnl,
                   amount: fmtMinor(report.realizedPnlMinor, base),
                   color: report.realizedPnlMinor.isNegative
                       ? AppColors.negativeOf(Theme.of(context).brightness)
                       : AppColors.positiveOf(Theme.of(context).brightness),
-                  tooltip: '卖出落袋（账面口径）',
+                  tooltip: t.realizedPnlTooltip,
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '分红派息',
+                  label: t.dividends,
                   amount: fmtMinor(report.dividendMinor, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '投资净收益',
+                  label: t.netInvestmentGain,
                   amount: fmtMinor(
                     report.realizedPnlMinor + report.dividendMinor,
                     base,
                   ),
-                  tooltip: '已实现 + 分红',
+                  tooltip: t.netInvestmentGainTooltip,
                 ),
               ),
             ],
@@ -121,6 +123,7 @@ class YearView extends StatelessWidget {
 
   Widget _monthlyChartCard(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final base = report.baseCurrencyCode;
     var maxV = 0.0;
     for (final m in report.months) {
@@ -129,13 +132,13 @@ class YearView extends StatelessWidget {
     }
     if (maxV == 0) return const SizedBox.shrink();
     return SectionCard(
-      title: '月度收支',
+      title: t.monthlyCashflow,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _legend(context, theme.colorScheme.primary, '收入'),
+          _legend(context, theme.colorScheme.primary, t.incomeLabel),
           const SizedBox(width: 8),
-          _legend(context, AppColors.negativeOf(theme.brightness), '支出'),
+          _legend(context, AppColors.negativeOf(theme.brightness), t.expenseLabel),
         ],
       ),
       child: SizedBox(
@@ -148,7 +151,10 @@ class YearView extends StatelessWidget {
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
                 getTooltipItem: (group, gi, rod, ri) => BarTooltipItem(
-                  '${group.x} 月\n${fmtMinor(BigInt.from(rod.toY.round() * 100), base)}',
+                  t.barTooltipMonth(
+                    group.x,
+                    fmtMinor(BigInt.from(rod.toY.round() * 100), base),
+                  ),
                   const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -224,12 +230,13 @@ class YearView extends StatelessWidget {
   );
 
   Widget _categoryCard(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final base = report.baseCurrencyCode;
     final tops = report.topExpenseCategories;
     if (tops.isEmpty) return const SizedBox.shrink();
     final total = report.totalExpenseMinor;
     return SectionCard(
-      title: '全年消费排行',
+      title: t.yearExpenseRanking,
       child: Column(
         children: [
           for (final c in tops.take(10))
@@ -274,11 +281,12 @@ class YearView extends StatelessWidget {
 
   Widget _highlightsCard(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final base = report.baseCurrencyCode;
     final b = report.biggestExpense;
     final incomes = report.topIncomeCategories;
     return SectionCard(
-      title: '年度亮点',
+      title: t.yearHighlights,
       child: Column(
         children: [
           if (b != null)
@@ -289,9 +297,9 @@ class YearView extends StatelessWidget {
                 Icons.local_fire_department_outlined,
                 color: AppColors.brass,
               ),
-              title: Text('最大单笔：${b.label}'),
+              title: Text(t.biggestExpense(b.label)),
               subtitle: Text(
-                '${dateKey(b.date)} · ${report.categoryNames[b.categoryId] ?? '消费'}',
+                '${dateKey(b.date)} · ${report.categoryNames[b.categoryId] ?? t.expenseFallback}',
               ),
               trailing: Text(
                 fmtMinor(b.amountMinor, base),
@@ -305,7 +313,7 @@ class YearView extends StatelessWidget {
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.account_balance, size: 20),
-            title: const Text('全年还贷本金'),
+            title: Text(t.loanPrincipalRepaid),
             trailing: Text(
               fmtMinor(report.debtPrincipalRepaidMinor, base),
               style: const TextStyle(
@@ -322,7 +330,7 @@ class YearView extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
-              title: Text('收入 · ${c.name}'),
+              title: Text(t.incomeCategoryEntry(c.name)),
               trailing: Text(
                 fmtMinor(c.totalMinor, base),
                 style: const TextStyle(

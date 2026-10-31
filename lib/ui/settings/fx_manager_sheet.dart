@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../widgets/common.dart';
@@ -13,10 +14,9 @@ Future<void> showFxManagerSheet(
   WidgetRef ref,
   VaultUnlocked s,
 ) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  await showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (sheetCtx) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.6,
@@ -24,20 +24,21 @@ Future<void> showFxManagerSheet(
         future: s.meta.latestFxRates(),
         builder: (bctx, snap) {
           final theme = Theme.of(bctx);
+          final t = AppLocalizations.of(bctx);
           final rates = snap.data ?? const <FxRate>[];
           return ListView(
             controller: controller,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             children: [
               Text(
-                '汇率管理',
+                t.fxManagerTitle,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '净值折算取"当日或之前最近"的一条；倒序存入即可覆盖历史。',
+                t.fxManagerHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -45,13 +46,13 @@ Future<void> showFxManagerSheet(
               const SizedBox(height: 12),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('新增汇率'),
+                label: Text(t.fxAddRate),
                 onPressed: () => _editRate(bctx, s),
               ),
               const SizedBox(width: 8),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.travel_explore, size: 18),
-                label: const Text('AI 抓取'),
+                label: Text(t.fxAiFetch),
                 onPressed: () => showQuoteFetchSheet(bctx, ref),
               ),
               const SizedBox(height: 8),
@@ -59,7 +60,7 @@ Future<void> showFxManagerSheet(
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    '还没有汇率记录。多币种账户折算需要至少一条对该币种的汇率。',
+                    t.fxNoRatesHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -101,25 +102,26 @@ Future<void> _editRate(
   String? from,
   String? to,
 }) async {
+  final loc = AppLocalizations.of(context);
   final fromCtrl = TextEditingController(text: from ?? 'USD');
   final toCtrl = TextEditingController(text: to ?? 'CNY');
   final rateCtrl = TextEditingController();
   final currencies = CurrencyInfo.builtin.map((c) => c.code).toList();
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (dctx) => AlertDialog(
-      title: const Text('录入汇率'),
+  final ok = await showAppDialog<bool>(
+    context,
+    builder: (dctx) => AppDialog(
+      title: loc.fxEditRateTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
+                child: ParticleDropdownField<String>(
                   initialValue: currencies.contains(fromCtrl.text)
                       ? fromCtrl.text
                       : currencies.first,
-                  decoration: const InputDecoration(labelText: '原币种'),
+                  decoration: InputDecoration(labelText: loc.fxFromCurrency),
                   items: [
                     for (final c in currencies)
                       DropdownMenuItem(value: c, child: Text(c)),
@@ -132,11 +134,11 @@ Future<void> _editRate(
                 child: Icon(Icons.arrow_forward, size: 18),
               ),
               Expanded(
-                child: DropdownButtonFormField<String>(
+                child: ParticleDropdownField<String>(
                   initialValue: currencies.contains(toCtrl.text)
                       ? toCtrl.text
                       : currencies.first,
-                  decoration: const InputDecoration(labelText: '目标币种'),
+                  decoration: InputDecoration(labelText: loc.fxToCurrency),
                   items: [
                     for (final c in currencies)
                       DropdownMenuItem(value: c, child: Text(c)),
@@ -150,8 +152,8 @@ Future<void> _editRate(
           ParticleTextField(
             controller: rateCtrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: '1 原币种 = ? 目标币种（如 7.25）',
+            decoration: InputDecoration(
+              labelText: loc.fxRateLabel,
             ),
           ),
         ],
@@ -159,11 +161,11 @@ Future<void> _editRate(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dctx, false),
-          child: const Text('取消'),
+          child: Text(loc.settingsCancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dctx, true),
-          child: const Text('保存'),
+          child: Text(loc.settingsSave),
         ),
       ],
     ),
@@ -181,13 +183,13 @@ Future<void> _editRate(
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('汇率已保存')));
+      ).showSnackBar(SnackBar(content: Text(loc.fxRateSaved)));
     }
   } on FormatException {
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('汇率格式不正确')));
+      ).showSnackBar(SnackBar(content: Text(loc.fxRateInvalid)));
     }
   }
 }

@@ -1,3 +1,5 @@
+import '../l10n/runtime_l10n.dart';
+
 /// 合并计数（预览与结果共用同一口径）。
 class MergeCounts {
   MergeCounts({
@@ -48,19 +50,28 @@ class MergeCounts {
   /// 人读摘要（结果弹层用）。
   String summarize() {
     final parts = <String>[
-      if (newTransactions > 0) '新增 $newTransactions 笔交易',
-      if (updatedTransactions > 0) '更新 $updatedTransactions 笔交易',
-      if (newAccounts > 0) '新增 $newAccounts 个账户',
-      if (newSecurities > 0) '新增 $newSecurities 个证券',
-      if (newEvents > 0) '新增 $newEvents 条计划',
-      if (mergedEventSets > 0) '合并 $mergedEventSets 条计划的跳过/覆盖',
-      if (newBudgets > 0) '新增 $newBudgets 个预算',
-      if (newGoals > 0) '新增 $newGoals 个目标',
-      if (newContracts > 0) '新增 $newContracts 份贷款合同',
-      if (newValuations > 0) '新增 $newValuations 条估值',
-      if (newFxRates > 0) '新增 $newFxRates 条汇率',
-      if (newSettings > 0) '补齐 $newSettings 项设置',
+      if (newTransactions > 0)
+        '${rt('新增 ')}$newTransactions${rt(' 笔交易')}',
+      if (updatedTransactions > 0)
+        '${rt('更新 ')}$updatedTransactions${rt(' 笔交易')}',
+      if (newAccounts > 0)
+        '${rt('新增 ')}$newAccounts${rt(' 个账户')}',
+      if (newSecurities > 0)
+        '${rt('新增 ')}$newSecurities${rt(' 个证券')}',
+      if (newEvents > 0) '${rt('新增 ')}$newEvents${rt(' 条计划')}',
+      if (mergedEventSets > 0)
+        '${rt('合并 ')}$mergedEventSets${rt(' 条计划的跳过/覆盖')}',
+      if (newBudgets > 0) '${rt('新增 ')}$newBudgets${rt(' 个预算')}',
+      if (newGoals > 0) '${rt('新增 ')}$newGoals${rt(' 个目标')}',
+      if (newContracts > 0)
+        '${rt('新增 ')}$newContracts${rt(' 份贷款合同')}',
+      if (newValuations > 0)
+        '${rt('新增 ')}$newValuations${rt(' 条估值')}',
+      if (newFxRates > 0) '${rt('新增 ')}$newFxRates${rt(' 条汇率')}',
+      if (newSettings > 0) '${rt('补齐 ')}$newSettings${rt(' 项设置')}',
     ];
-    return parts.isEmpty ? '两份账本已一致，没有需要合并的内容' : parts.join('；');
+    return parts.isEmpty
+        ? rt('两份账本已一致，没有需要合并的内容')
+        : parts.join(rt('；'));
   }
 }

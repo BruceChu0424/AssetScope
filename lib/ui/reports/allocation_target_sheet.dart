@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/invest/allocation.dart';
+import '../../l10n/app_localizations.dart';
 import 'allocation_card.dart';
-import '../widgets/particle_interactive.dart';
+import '../widgets/common.dart';
 
 /// 目标配置编辑：逐类整数百分比（0–100），合计 ≤ 100%，
 /// 未设目标的类不参与再平衡建议。
@@ -13,9 +14,9 @@ Future<void> showAllocationTargetSheet(
   WidgetRef ref,
   TargetAllocation current,
 ) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
+  return showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (_) => _TargetSheet(current: current),
   ).then((_) => ref.invalidate(allocationProvider));
 }
@@ -65,6 +66,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -76,10 +78,10 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('目标配置', style: theme.textTheme.titleMedium),
+          Text(t.targetAllocationTitle, style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
-            '各类占全部资产的百分比，合计 ≤ 100%。留空 = 不设目标（不参与再平衡提醒）。',
+            t.targetAllocationHint,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
           const SizedBox(height: 12),
@@ -119,8 +121,8 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
             children: [
               Text(
                 _sum > 100
-                    ? '合计 $_sum%（超过 100%）'
-                    : '合计 $_sum% · 未设目标/未分配 ${100 - _sum}%',
+                    ? t.targetSumExceeded(_sum)
+                    : t.targetSumRemaining(_sum, 100 - _sum),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: _sum > 100 ? theme.colorScheme.error : theme.hintColor,
                 ),
@@ -128,7 +130,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
               const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('取消'),
+                child: Text(t.reportCancel),
               ),
               ParticleFilledButton(
                 onPressed: _valid
@@ -141,7 +143,7 @@ class _TargetSheetState extends ConsumerState<_TargetSheet> {
                         if (context.mounted) Navigator.pop(context);
                       }
                     : null,
-                child: const Text('保存'),
+                child: Text(t.reportSave),
               ),
             ],
           ),

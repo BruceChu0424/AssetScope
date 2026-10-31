@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../domain/import/category_rules.dart';
 import '../../domain/ledger/account.dart';
-import '../widgets/particle_interactive.dart';
+import '../widgets/common.dart';
 
 /// 分类与规则管理：收支分类增删改 + 商户关键词规则。
 Future<void> showCategoryManagerSheet(
@@ -12,10 +13,9 @@ Future<void> showCategoryManagerSheet(
   WidgetRef ref,
   VaultUnlocked s,
 ) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  await showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (sheetCtx) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
@@ -31,6 +31,7 @@ Future<void> showCategoryManagerSheet(
           final accounts = snap.data![0] as List<Account>;
           var rules = [...snap.data![1] as List<CategoryRule>];
           final theme = Theme.of(bctx);
+          final t = AppLocalizations.of(bctx);
           return StatefulBuilder(
             builder: (ctx, setState) {
               final expenses = accounts
@@ -44,14 +45,14 @@ Future<void> showCategoryManagerSheet(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 children: [
                   Text(
-                    '分类与规则',
+                    t.categoryManagerTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '关键词规则在导入时优先于历史学习命中。',
+                    t.categoryRulePriorityHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -59,7 +60,7 @@ Future<void> showCategoryManagerSheet(
                   const SizedBox(height: 14),
                   _groupHeader(
                     ctx,
-                    '支出分类',
+                    t.categoryExpenseGroup,
                     () => _addCategory(
                       ctx,
                       s,
@@ -80,7 +81,7 @@ Future<void> showCategoryManagerSheet(
                     ),
                   _groupHeader(
                     ctx,
-                    '收入分类',
+                    t.categoryIncomeGroup,
                     () => _addCategory(
                       ctx,
                       s,
@@ -102,7 +103,7 @@ Future<void> showCategoryManagerSheet(
                   const Divider(height: 28),
                   _groupHeader(
                     ctx,
-                    '关键词规则',
+                    t.categoryKeywordRules,
                     () => _addRule(
                       ctx,
                       s,
@@ -113,7 +114,7 @@ Future<void> showCategoryManagerSheet(
                   ),
                   if (rules.isEmpty)
                     Text(
-                      '还没有显式规则。导入与日常记账会自动学习对手方→分类的对应关系。',
+                      t.categoryNoRulesHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.hintColor,
                       ),
@@ -123,7 +124,7 @@ Future<void> showCategoryManagerSheet(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       leading: Text(
-                        '「${r.keyword}」',
+                        t.categoryRuleKeyword(r.keyword),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       title: Text(
@@ -179,20 +180,23 @@ Future<void> _addCategory(
   AccountType type,
   VoidCallback refresh,
 ) async {
+  final t = AppLocalizations.of(ctx);
   final ctrl = TextEditingController();
-  final ok = await showDialog<bool>(
-    context: ctx,
-    builder: (dctx) => AlertDialog(
-      title: Text(type == AccountType.expense ? '新增支出分类' : '新增收入分类'),
+  final ok = await showAppDialog<bool>(
+    ctx,
+    builder: (dctx) => AppDialog(
+      title: type == AccountType.expense
+          ? t.categoryAddExpense
+          : t.categoryAddIncome,
       content: ParticleTextField(controller: ctrl, autofocus: true),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dctx, false),
-          child: const Text('取消'),
+          child: Text(t.settingsCancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dctx, true),
-          child: const Text('保存'),
+          child: Text(t.settingsSave),
         ),
       ],
     ),
@@ -213,20 +217,21 @@ Future<void> _renameCategory(
   Account account,
   VoidCallback refresh,
 ) async {
+  final t = AppLocalizations.of(ctx);
   final ctrl = TextEditingController(text: account.name);
-  final ok = await showDialog<bool>(
-    context: ctx,
-    builder: (dctx) => AlertDialog(
-      title: const Text('重命名分类'),
+  final ok = await showAppDialog<bool>(
+    ctx,
+    builder: (dctx) => AppDialog(
+      title: t.categoryRename,
       content: ParticleTextField(controller: ctrl, autofocus: true),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dctx, false),
-          child: const Text('取消'),
+          child: Text(t.settingsCancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dctx, true),
-          child: const Text('保存'),
+          child: Text(t.settingsSave),
         ),
       ],
     ),
@@ -251,6 +256,7 @@ Future<void> _addRule(
   List<CategoryRule> rules, {
   required void Function(List<CategoryRule>) onSave,
 }) async {
+  final t = AppLocalizations.of(ctx);
   final kw = TextEditingController();
   String? catId;
   final cats = accounts
@@ -260,23 +266,23 @@ Future<void> _addRule(
             !a.isSystem,
       )
       .toList();
-  final ok = await showDialog<bool>(
-    context: ctx,
+  final ok = await showAppDialog<bool>(
+    ctx,
     builder: (dctx) => StatefulBuilder(
-      builder: (d2, setState) => AlertDialog(
-        title: const Text('新增关键词规则'),
+      builder: (d2, setState) => AppDialog(
+        title: t.categoryAddRule,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ParticleTextField(
               controller: kw,
               autofocus: true,
-              decoration: const InputDecoration(labelText: '关键词（如 美团、NETFLIX）'),
+              decoration: InputDecoration(labelText: t.categoryRuleKeywordLabel),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            ParticleDropdownField<String>(
               initialValue: catId,
-              decoration: const InputDecoration(labelText: '命中后归类到'),
+              decoration: InputDecoration(labelText: t.categoryRuleTargetLabel),
               items: [
                 for (final c in cats)
                   DropdownMenuItem(value: c.id, child: Text(c.name)),
@@ -288,11 +294,11 @@ Future<void> _addRule(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('取消'),
+            child: Text(t.settingsCancel),
           ),
           ParticleFilledButton(
             onPressed: () => Navigator.pop(dctx, true),
-            child: const Text('保存'),
+            child: Text(t.settingsSave),
           ),
         ],
       ),

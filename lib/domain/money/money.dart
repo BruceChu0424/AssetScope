@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import 'currency.dart';
 import 'fx_rate.dart';
 
@@ -28,7 +29,7 @@ class Money implements Comparable<Money> {
     RoundingMode mode = RoundingMode.halfEven,
   }) {
     var s = input.trim().replaceAll(',', '').replaceAll(currency.symbol, '');
-    if (s.isEmpty) throw const FormatException('空金额');
+    if (s.isEmpty) throw FormatException(rt('空金额'));
     var neg = false;
     if (s.startsWith('-')) {
       neg = true;
@@ -47,7 +48,7 @@ class Money implements Comparable<Money> {
       fracPart = s.substring(dot + 1);
     }
     if (intPart.isEmpty && fracPart.isEmpty) {
-      throw const FormatException('空金额');
+      throw FormatException(rt('空金额'));
     }
     final digits = currency.minorUnitDigits;
     if (fracPart.length > digits) {

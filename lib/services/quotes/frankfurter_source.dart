@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/runtime_l10n.dart';
 
 /// frankfurter 汇率（欧洲央行参考汇率，开源免费无 key，每工作日更新）。
 ///
@@ -26,15 +27,15 @@ class FrankfurterFx {
     try {
       decoded = jsonDecode(body);
     } on FormatException {
-      throw const FormatException('frankfurter 应答不是 JSON');
+      throw FormatException(rt('frankfurter 应答不是 JSON'));
     }
     if (decoded is! Map<String, Object?>) {
-      throw const FormatException('frankfurter 应答不是对象');
+      throw FormatException(rt('frankfurter 应答不是对象'));
     }
     final rates = decoded['rates'];
     final dateRaw = decoded['date'];
     if (rates is! Map<String, Object?>) {
-      throw const FormatException('frankfurter 应答缺少 rates');
+      throw FormatException(rt('frankfurter 应答缺少 rates'));
     }
     final eur = <String, Rational>{};
     rates.forEach((k, v) {

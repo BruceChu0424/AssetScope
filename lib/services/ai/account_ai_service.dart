@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../data/repositories/meta_repo.dart';
 import '../../domain/ledger/account.dart';
+import '../../l10n/runtime_l10n.dart';
 import 'ai_chat.dart';
 import 'ai_json.dart';
 
@@ -204,12 +205,14 @@ String buildGeocodePrompt(String address) {
 AiGeocode parseGeocode(String content) {
   final decoded = decodeAiJsonObject(content);
   if (decoded['error'] is String) {
-    throw FormatException('AI 无法识别该地址：${decoded['error']}');
+    throw FormatException(
+      '${rt('AI 无法识别该地址：')}${decoded['error']}',
+    );
   }
   final lat = _coordOf(decoded['lat'], -90, 90);
   final lon = _coordOf(decoded['lon'], -180, 180);
   if (lat == null || lon == null) {
-    throw const FormatException('AI 应答缺少有效坐标');
+    throw FormatException(rt('AI 应答缺少有效坐标'));
   }
   final formatted = decoded['formatted'];
   final city = decoded['city'];

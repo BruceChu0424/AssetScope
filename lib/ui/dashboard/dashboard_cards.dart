@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/utils/dates.dart';
 import '../../../services/insight_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_providers.dart';
 import '../widgets/common.dart';
@@ -23,6 +24,7 @@ class NetWorthHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final delta = d.report.attribution.netChange;
     final assetRatio = d.nw.totalAssets + d.nw.totalLiabilities == BigInt.zero
@@ -40,14 +42,14 @@ class NetWorthHeroCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '净资产',
+                    t.dashNetWorth,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    '截至 ${dateKey(d.nw.asOf)}',
+                    t.dashAsOf(dateKey(d.nw.asOf)),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -69,9 +71,9 @@ class NetWorthHeroCard extends StatelessWidget {
               if (d.nw.hasSharedAccounts) ...[
                 const SizedBox(height: 4),
                 Text(
-                  '我的份额 ${fmtMinor(d.nw.myNetWorth, d.nw.baseCurrencyCode)}'
-                  ' · 资产 ${fmtMinor(d.nw.myTotalAssets, d.nw.baseCurrencyCode)}'
-                  ' · 负债 ${fmtMinor(d.nw.myTotalLiabilities, d.nw.baseCurrencyCode)}',
+                  '${t.dashMyShare(fmtMinor(d.nw.myNetWorth, d.nw.baseCurrencyCode))}'
+                  ' · ${t.dashAssetsAmount(fmtMinor(d.nw.myTotalAssets, d.nw.baseCurrencyCode))}'
+                  ' · ${t.dashLiabAmount(fmtMinor(d.nw.myTotalLiabilities, d.nw.baseCurrencyCode))}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.brassOf(theme.brightness),
                     fontFeatures: [FontFeature.tabularFigures()],
@@ -85,7 +87,7 @@ class NetWorthHeroCard extends StatelessWidget {
                   if (d.report.attribution.hasResidual) ...[
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: '差额非 0 通常意味着缺估值、漏记或导入重复（月报页有明细）',
+                      message: t.dashResidualTooltip,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -98,7 +100,7 @@ class NetWorthHeroCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          '待核对 ${fmtMinor(d.report.attribution.residual, d.report.baseCurrencyCode)}',
+                          t.dashPendingReview(fmtMinor(d.report.attribution.residual, d.report.baseCurrencyCode)),
                           style: TextStyle(
                             color: AppColors.brassOf(theme.brightness),
                             fontSize: 12,
@@ -137,13 +139,13 @@ class NetWorthHeroCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: AmountTile(
-                      label: '总资产',
+                      label: t.dashTotalAssets,
                       amount: fmtMinor(d.nw.totalAssets, d.nw.baseCurrencyCode),
                     ),
                   ),
                   Expanded(
                     child: AmountTile(
-                      label: '总负债',
+                      label: t.dashTotalLiabilities,
                       amount: fmtMinor(
                         d.nw.totalLiabilities,
                         d.nw.baseCurrencyCode,
@@ -167,29 +169,30 @@ class MonthFlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final base = d.report.baseCurrencyCode;
     final a = d.report.attribution;
     return SectionCard(
-      title: '本月收支（${d.report.month} 月）',
+      title: t.dashMonthFlow(d.report.month),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '收入',
+                  label: t.dashIncome,
                   amount: fmtMinor(d.income, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '消费与费用',
+                  label: t.dashSpendFees,
                   amount: fmtMinor(d.expense, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '结余',
+                  label: t.dashSurplus,
                   amount: fmtMinor(d.surplus, base),
                   color: d.surplus.isNegative
                       ? AppColors.negativeOf(Theme.of(context).brightness)
@@ -203,19 +206,19 @@ class MonthFlowCard extends StatelessWidget {
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '投资损益',
+                  label: t.dashInvestPnl,
                   amount: fmtMinor(a.investTotal, base, sign: true),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '还贷本金',
+                  label: t.dashPrincipalRepaid,
                   amount: fmtMinor(d.report.debtPrincipalRepaidMinor, base),
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '支付利息',
+                  label: t.dashInterestPaid,
                   amount: fmtMinor(d.report.debtInterestPaidMinor, base),
                 ),
               ),
@@ -234,44 +237,45 @@ class SpendableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final base = d.nw.baseCurrencyCode;
     final proj = d.projection;
     final pace = d.insights.pace;
     return SectionCard(
-      title: '还能花多少（未来 ${d.projectionDays} 天）',
+      title: t.dashSpendable(d.projectionDays),
       trailing: Tooltip(
-        message: '现金流预测截至 ${dateKey(proj.throughDate)}',
+        message: t.dashForecastThrough(dateKey(proj.throughDate)),
         child: Icon(Icons.info_outline, size: 15, color: theme.hintColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AmountTile(
-            label: '计划外可支配上限',
+            label: t.dashDiscretionaryCap,
             amount: fmtMinor(proj.discretionaryBaseMinor, base),
-            tooltip: '已扣除固定计划、还款、准备金与现金底线',
+            tooltip: t.dashDiscretionaryCapHint,
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: AmountTile(
-                  label: '本月消费预测',
+                  label: t.dashMonthSpendForecast,
                   amount: fmtMinor(pace.projectedMinor, base),
-                  tooltip: '按当前速度外推到月末',
+                  tooltip: t.dashMonthSpendForecastHint,
                 ),
               ),
               Expanded(
                 child: AmountTile(
-                  label: '剩余日均可花',
+                  label: t.dashDailyAllowance,
                   amount: fmtMinor(
                     pace.dailyAvgMinor > BigInt.zero
                         ? pace.dailyAvgMinor
                         : BigInt.zero,
                     base,
                   ),
-                  tooltip: '本月已过 ${pace.daysElapsed} 天',
+                  tooltip: t.dashDaysElapsed(pace.daysElapsed),
                 ),
               ),
             ],
@@ -279,7 +283,7 @@ class SpendableCard extends StatelessWidget {
           if (proj.minBalanceDate != null) ...[
             const SizedBox(height: 10),
             AmountTile(
-              label: '现金最低点',
+              label: t.dashCashLowPoint,
               amount:
                   '${fmtMinor(proj.minBalanceBaseMinor, base)} · ${dateKey(proj.minBalanceDate!)}',
               color: proj.hasShortfall
@@ -293,7 +297,7 @@ class SpendableCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text(
-                  '⚠ ${sf.label}（${dateKey(sf.date)}）短缺',
+                  '⚠ ${t.dashShortfall(sf.label, dateKey(sf.date))}',
                   style: TextStyle(
                     color: AppColors.negativeOf(theme.brightness),
                   ),
@@ -313,33 +317,34 @@ class HealthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final h = d.insights.health;
     // 静态说明文字不直接展示：各格标签旁 info 图标悬停弹提示
     // （提示语规范，与 SpendableCard 的 AmountTile 同一模式）。
     return SectionCard(
-      title: '财务体检',
+      title: t.dashHealthTitle,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: AmountTile(
-              label: '储蓄率',
+              label: t.dashSavingsRate,
               amount: _pct(h.savingsRate),
-              tooltip: '本月（收入−消费）/收入',
+              tooltip: t.dashSavingsRateHint,
             ),
           ),
           Expanded(
             child: AmountTile(
-              label: '应急月数',
+              label: t.dashEmergencyMonths,
               amount: _num(h.emergencyMonths),
-              tooltip: '流动资产/月均消费',
+              tooltip: t.dashEmergencyMonthsHint,
             ),
           ),
           Expanded(
             child: AmountTile(
-              label: '资产负债率',
+              label: t.dashDebtToAsset,
               amount: _pct(h.debtToAsset),
-              tooltip: '总负债/总资产',
+              tooltip: t.dashDebtToAssetHint,
             ),
           ),
         ],
@@ -359,10 +364,11 @@ class InsightsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (insights.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return SectionCard(
-      title: '智慧洞察',
+      title: t.dashInsights,
       child: Column(
         children: [
           for (var i = 0; i < insights.length; i++) ...[

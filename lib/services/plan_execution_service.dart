@@ -5,6 +5,7 @@ import '../domain/ledger/account.dart';
 import '../domain/ledger/transaction.dart';
 import '../domain/planning/recurrence.dart';
 import '../domain/utils/dates.dart';
+import '../l10n/runtime_l10n.dart';
 
 /// 一笔到期待落地的计划发生。
 class DueOccurrence {
@@ -116,7 +117,7 @@ class PlanExecutionService {
     String? categoryId,
   }) async {
     if (await ledger.externalIdExists(d.externalId)) {
-      throw StateError('这笔计划发生已入账');
+      throw StateError(rt('这笔计划发生已入账'));
     }
     final all = await accounts.all();
     final byId = {for (final a in all) a.id: a};
@@ -148,11 +149,11 @@ class PlanExecutionService {
     final e = d.event;
     final all = accountsById ?? {for (final a in await accounts.all()) a.id: a};
     final payId = payAccountId ?? e.paymentAccountId;
-    if (payId == null) throw StateError('未设置支付账户');
+    if (payId == null) throw StateError(rt('未设置支付账户'));
     final pay = all[payId];
-    if (pay == null) throw StateError('支付账户不存在：$payId');
+    if (pay == null) throw StateError('${rt('支付账户不存在：')}$payId');
     final amount = (amountOverrideMinor ?? o.amountMinor).abs();
-    if (amount <= BigInt.zero) throw StateError('计划金额无效');
+    if (amount <= BigInt.zero) throw StateError(rt('计划金额无效'));
 
     final isIncome = e.direction == EventDirection.inflow;
     final catId =
@@ -160,7 +161,7 @@ class PlanExecutionService {
         e.categoryId ??
         (isIncome ? 'cat:i:other' : 'cat:e:other');
     final cat = all[catId];
-    if (cat == null) throw StateError('分类不存在：$catId');
+    if (cat == null) throw StateError('${rt('分类不存在：')}$catId');
 
     final draft = isIncome
         ? TxBuilders.income(
@@ -168,7 +169,7 @@ class PlanExecutionService {
             incomeCategory: cat,
             amountMinor: amount,
             date: o.date,
-            note: '${e.name} · 计划',
+            note: '${e.name}${rt(' · 计划')}',
             tags: const ['计划'],
             source: TxSource.planGenerated,
             externalId: d.externalId,
@@ -178,7 +179,7 @@ class PlanExecutionService {
             expenseCategory: cat,
             amountMinor: amount,
             date: o.date,
-            note: '${e.name} · 计划',
+            note: '${e.name}${rt(' · 计划')}',
             tags: const ['计划'],
             source: TxSource.planGenerated,
             externalId: d.externalId,
@@ -194,22 +195,24 @@ class PlanExecutionService {
     Map<String, Account> accountsById,
   ) {
     final payId = e.paymentAccountId;
-    if (payId == null) return (false, '未设置支付账户');
+    if (payId == null) return (false, rt('未设置支付账户'));
     final pay = accountsById[payId];
-    if (pay == null) return (false, '支付账户不存在');
-    if (pay.currencyCode != e.currencyCode) return (false, '账户币种与计划不一致');
-    if (pay.isHolding) return (false, '支付账户不能是持仓账户');
+    if (pay == null) return (false, rt('支付账户不存在'));
+    if (pay.currencyCode != e.currencyCode) {
+      return (false, rt('账户币种与计划不一致'));
+    }
+    if (pay.isHolding) return (false, rt('支付账户不能是持仓账户'));
     if (pay.assetSubtype == AssetSubtype.receivable) {
-      return (false, '支付账户不能是应收款账户');
+      return (false, rt('支付账户不能是应收款账户'));
     }
     final isIncome = e.direction == EventDirection.inflow;
     if (isIncome && pay.type != AccountType.asset) {
-      return (false, '收入计划必须入账到资产账户');
+      return (false, rt('收入计划必须入账到资产账户'));
     }
     if (!isIncome &&
         pay.type != AccountType.asset &&
         pay.type != AccountType.liability) {
-      return (false, '支出计划的支付账户须为资产或信用卡/负债');
+      return (false, rt('支出计划的支付账户须为资产或信用卡/负债'));
     }
     return (e.autoPost, null);
   }

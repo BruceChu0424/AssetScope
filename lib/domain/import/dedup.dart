@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../l10n/runtime_l10n.dart';
 import '../ledger/transaction.dart';
 import '../utils/hashing.dart';
 
@@ -95,7 +96,7 @@ class Deduper {
     if (row.rowKey != null && knownExternalIds.contains(row.rowKey)) {
       return DedupMatch(
         decision: DedupDecision.exactDuplicate,
-        reason: '外部 ID 已存在：${row.rowKey}',
+        reason: rt('外部 ID 已存在：${row.rowKey}'),
       );
     }
     final fp = row.fingerprint();
@@ -104,7 +105,7 @@ class Deduper {
       return DedupMatch(
         decision: DedupDecision.fingerprintDuplicate,
         existingTxId: hit,
-        reason: '同日同金额同对手方（指纹一致）',
+        reason: rt('同日同金额同对手方（指纹一致）'),
       );
     }
     return const DedupMatch(decision: DedupDecision.isNew);

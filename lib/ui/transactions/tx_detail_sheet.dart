@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/ledger_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -25,12 +26,12 @@ Future<void> showTxDetail(
   };
   if (!context.mounted) return;
 
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  await showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (ctx) {
       final theme = Theme.of(ctx);
+      final t = AppLocalizations.of(ctx);
       return SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -54,7 +55,7 @@ Future<void> showTxDetail(
               if (tx.status == TxStatus.voided) ...[
                 const SizedBox(height: 6),
                 Chip(
-                  label: const Text('已作废'),
+                  label: Text(t.txVoidedBadge),
                   backgroundColor: AppColors.negativeOf(
                     theme.brightness,
                   ).withValues(alpha: 0.12),
@@ -62,7 +63,7 @@ Future<void> showTxDetail(
               ],
               const SizedBox(height: 12),
               Text(
-                '分录（借贷平衡）',
+                t.txPostingsTitle,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -74,7 +75,7 @@ Future<void> showTxDetail(
                       '${nameOf[p.accountId] ?? p.accountId}${p.memo != null ? ' · ${p.memo}' : ''}',
                   value: p.amountMinor != null
                       ? fmtMinor(p.amountMinor!, p.currencyCode ?? 'CNY')
-                      : '${p.quantity!.toDecimalString(6)} 份',
+                      : t.txShares(p.quantity!.toDecimalString(6)),
                   valueColor: p.amountMinor != null
                       ? (p.amountMinor!.isNegative
                             ? AppColors.negativeOf(theme.brightness)
@@ -85,7 +86,7 @@ Future<void> showTxDetail(
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    '外部 ID：${tx.externalId}',
+                    t.txExternalId(tx.externalId!),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -107,11 +108,11 @@ Future<void> showTxDetail(
                       Expanded(
                         child: FilledButton.tonalIcon(
                           icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: const Text('编辑'),
+                          label: Text(t.commonEdit),
                           onPressed: () async {
                             Navigator.pop(ctx); // 先关详情再开编辑，避免弹层叠层
-                            final ok = await showDialog<bool>(
-                              context: context,
+                            final ok = await showAppDialog<bool>(
+                              context,
                               builder: (_) => AddTransactionDialog(editing: tx),
                             );
                             if (ok == true) ref.invalidate(txListProvider);
@@ -122,7 +123,7 @@ Future<void> showTxDetail(
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.undo, size: 18),
-                        label: const Text('作废'),
+                        label: Text(t.commonVoid),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.negativeOf(
                             theme.brightness,
@@ -131,9 +132,9 @@ Future<void> showTxDetail(
                         onPressed: () async {
                           final ok = await confirmDialog(
                             ctx,
-                            title: '作废此交易？',
-                            message: '作废后分录不再计入余额与统计，但保留审计痕迹。',
-                            confirmLabel: '作废',
+                            title: t.txVoidConfirmTitle,
+                            message: t.txVoidConfirmMessage,
+                            confirmLabel: t.commonVoid,
                             destructive: true,
                           );
                           if (ok != true) return;

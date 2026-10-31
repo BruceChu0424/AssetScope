@@ -3,9 +3,7 @@ import 'dart:convert';
 import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
 import 'package:assetscope/ui/globe/globe_home_page.dart';
-import 'package:assetscope/ui/home_shell.dart';
 import 'package:assetscope/ui/transactions/add_transaction_dialog.dart';
-import 'package:assetscope/ui/widgets/floating_nav_rail.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widget_host.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 首页右下角快捷添加（果冻菜单）回归：
 /// ① 点击胶囊后弹窗（记一笔/添加资产）必须真正弹出；
@@ -78,18 +77,17 @@ void main() {
   GoRouter router() => GoRouter(
         initialLocation: '/',
         routes: [
-          ShellRoute(
-            builder: (_, _, child) => HomeShell(body: child),
-            routes: [
-              GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
-            ],
-          ),
-        ],
+          GoRoute(path: '/', builder: (_, _) => const GlobeHomePage()),
+      ],
       );
 
   Widget shellHost() => ProviderScope(
         overrides: [vaultProvider.overrideWith(() => FixedVault(session))],
-        child: MaterialApp.router(routerConfig: router()),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          routerConfig: router()),
       );
 
   /// 首页常驻动画不 settle，一律定时泵帧。
@@ -171,42 +169,6 @@ void main() {
       tester.widget<IgnorePointer>(scrimIgnorePointer()).ignoring,
       isTrue,
       reason: '收起动画结束后暗纱必须恢复忽略指针，否则整页被透明层挡住',
-    );
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-  });
-
-  testWidgets('导航展开时点击外部：只收起导航，不误触添加按钮', (tester) async {
-    if (!dbAvailable) {
-      markTestSkipped('宿主环境无可用 sqlite3，跳过');
-      return;
-    }
-    tester.view.physicalSize = const Size(1440, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(shellHost());
-    await pumpMs(tester, 1200);
-
-    // 展开分类菜单（桌面浮层导航）。
-    final rail = find.byType(FloatingNavRail);
-    expect(rail, findsOneWidget);
-    await tester.tap(find.byTooltip('展开分类菜单'));
-    await pumpMs(tester, 500);
-    expect(tester.widget<FloatingNavRail>(rail).expanded, isTrue);
-
-    // 在添加按钮（右下角）上点击：导航应收起，添加菜单不得被这一击
-    // 顺势打开（旧版透明 Listener 会放行穿透）。胶囊文本常驻树中，
-    // 开合状态用暗纱命中态判定。
-    await tester.tap(find.byTooltip('记一笔 / 添加资产'), warnIfMissed: false);
-    await pumpMs(tester, 400);
-    expect(tester.widget<FloatingNavRail>(rail).expanded, isFalse,
-        reason: '点外部应收起导航');
-    expect(
-      tester.widget<IgnorePointer>(scrimIgnorePointer()).ignoring,
-      isTrue,
-      reason: '首击被收起屏障吸收：快捷菜单未打开，暗纱保持忽略指针',
     );
 
     await tester.pumpWidget(const SizedBox.shrink());

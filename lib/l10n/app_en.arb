@@ -1,0 +1,2848 @@
+{
+ "@@locale": "en",
+ "appTitle": "AssetScope",
+ "aiCfgTestMissingInput": "Enter the Base URL and API key first",
+ "aiCfgTestConnected": "Connected: {reply}",
+ "@aiCfgTestConnected": {
+  "placeholders": {
+   "reply": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgGlmCodingPlanKeyHint": "If this is a Coding Plan key, switch to the \"Zhipu GLM Coding Plan\" preset",
+ "aiCfgGlmRegularKeyHint": "The Coding Plan endpoint only accepts Coding Plan keys; for a regular API key switch to the \"Zhipu GLM\" preset",
+ "aiCfgKeyPrivacyTip": "The API key is stored encrypted in the local ledger and used only for quote/FX fetching and the AI assistant; fetching sends only the queried names and currency pairs, never balances or amounts.",
+ "aiCfgOpenAiCompatibleNote": "OpenAI-compatible endpoint",
+ "aiCfgWebSearchOnTip": "Web search on: quote fetching carries web tools, prices come from live pages",
+ "aiCfgWebSearchOffTip": "Web search off: quotes may come from model memory",
+ "aiCfgNoWebSearchSupportTip": "This provider's chat API does not support web tools; quotes may come from model memory",
+ "aiCfgDialogTitle": "AI service setup",
+ "aiCfgProvider": "Provider",
+ "aiCfgBaseUrlLabel": "Base URL (https://…, without /chat/completions)",
+ "aiCfgModelLabel": "Model (must support web search)",
+ "aiCfgWebSearch": "Web search",
+ "aiCfgTestConnection": "Test connection",
+ "aiCfgUsageTitle": "Usage & quota",
+ "aiCfgUsageTooltip": "Call counts are tallied locally by the app (reopen the settings page to refresh); quota comes from the provider API — free models are not charged",
+ "aiCfgStatToday": "Today",
+ "aiCfgStatLast7Days": "Last 7 days",
+ "aiCfgStatTotal": "Total",
+ "aiCfgCalls": "{n} calls",
+ "@aiCfgCalls": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiCfgNoBalanceApi": "No balance API for this provider; check its console",
+ "aiCfgBalanceGlm": "Provider balance (Zhipu)",
+ "aiCfgBalanceTotal": "Total quota ¥{v}",
+ "@aiCfgBalanceTotal": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceVoucher": "Free quota ¥{v}",
+ "@aiCfgBalanceVoucher": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceCash": "Cash ¥{v}",
+ "@aiCfgBalanceCash": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceNoFields": "The API returned no quota fields",
+ "aiCfgBalanceQueryFailed": "Query failed: {e}",
+ "@aiCfgBalanceQueryFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceQuery": "Query",
+ "aiCfgBalanceRefresh": "Refresh",
+ "aiCfgServiceHint": "Zhipu/Kimi/Qwen/OpenAI/Claude/custom; the key is stored encrypted locally",
+ "categoryManagerTitle": "Categories & rules",
+ "categoryRulePriorityHint": "Keyword rules take priority over learned history on import.",
+ "categoryExpenseGroup": "Expense categories",
+ "categoryIncomeGroup": "Income categories",
+ "categoryKeywordRules": "Keyword rules",
+ "categoryNoRulesHint": "No explicit rules yet. Imports and everyday bookkeeping learn counterparty-to-category mappings automatically.",
+ "categoryRuleKeyword": "\"{kw}\"",
+ "@categoryRuleKeyword": {
+  "placeholders": {
+   "kw": {
+    "type": "String"
+   }
+  }
+ },
+ "categoryAddExpense": "New expense category",
+ "categoryAddIncome": "New income category",
+ "categoryRename": "Rename category",
+ "categoryAddRule": "New keyword rule",
+ "categoryRuleKeywordLabel": "Keyword (e.g. Meituan, NETFLIX)",
+ "categoryRuleTargetLabel": "Categorize matches as",
+ "categoryManagerHint": "Manage income/expense categories and merchant→category keyword rules",
+ "fxManagerTitle": "FX rates",
+ "fxManagerHint": "NAV conversion uses the latest rate on or before each date; save back-dated entries to override history.",
+ "fxAddRate": "Add rate",
+ "fxAiFetch": "AI fetch",
+ "fxNoRatesHint": "No FX rates yet. Converting multi-currency accounts needs at least one rate per currency.",
+ "fxEditRateTitle": "Enter FX rate",
+ "fxFromCurrency": "From currency",
+ "fxToCurrency": "To currency",
+ "fxRateLabel": "1 from-currency = ? to-currency (e.g. 7.25)",
+ "fxRateSaved": "FX rate saved",
+ "fxRateInvalid": "Invalid FX rate format",
+ "fxManualHint": "Enter per-currency rates against the base currency by hand",
+ "mergeDecryptFailed": "Could not decrypt the backup (wrong passphrase or corrupted file): {e}",
+ "@mergeDecryptFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergeSchemaTooNew": "This backup is from a newer app version (schema {v}); upgrade before merging",
+ "@mergeSchemaTooNew": {
+  "placeholders": {
+   "v": {
+    "type": "num"
+   }
+  }
+ },
+ "mergeLineageMismatch": "This backup belongs to a different ledger (lineage fingerprint mismatch) and cannot be merged. Use \"Restore from backup\" instead.",
+ "mergeVerifyFailed": "Backup integrity check failed: {e}",
+ "@mergeVerifyFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergeNothingToMerge": "The two ledgers are already identical; nothing to merge",
+ "mergeDone": "Merge complete",
+ "mergeSafetyBackupNote": "Pre-merge safety backup:\n{path}\nPages refresh automatically when they return to the foreground.",
+ "@mergeSafetyBackupNote": {
+  "placeholders": {
+   "path": {
+    "type": "String"
+   }
+  }
+ },
+ "mergeFailed": "Merge failed (ledger unchanged, fully rolled back): {e}",
+ "@mergeFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergePassphraseLabel": "Passphrase this .asbk was exported with",
+ "mergeConfirmTitle": "Confirm merge",
+ "mergeWillImport": "Will merge in: {summary}.",
+ "@mergeWillImport": {
+  "placeholders": {
+   "summary": {
+    "type": "String"
+   }
+  }
+ },
+ "mergeConfirmNote": "Transactions merge with \"newest update wins\"; other tables follow per-table policy. A safety backup is created first, so you can revert anytime with \"Restore from backup\".",
+ "mergeLegacyWarning": "Note: this backup was exported by an older version and carries no ledger identity. Make sure it really comes from the same ledger.",
+ "mergeBackupAndMerge": "Back up and merge",
+ "quoteAppliedCount": "Wrote {n} quotes/rates",
+ "@quoteAppliedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "quoteWriteFailed": "Write failed: {e}",
+ "@quoteWriteFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "quoteFetchTitle": "Quotes / FX fetch",
+ "quoteFetchIntro": "Direct official quote sources (free, no key, instant); fall back to AI web search for anything missing. Nothing is written until you approve the preview, and sources stay auditable. Either way, only ticker symbols and currency pairs are sent.",
+ "quoteQueryingDirect": "Querying official quote sources…",
+ "quoteQueryingAi": "AI is searching the web for quotes — this takes about 10–60 seconds…",
+ "quoteNoWebSearchWarning": "Web search is off in the current AI config; the model may return stale prices from memory — review carefully.",
+ "quoteWillQuery": "Will query:",
+ "quoteNoTargets": "No security holdings and no foreign-currency accounts to convert.",
+ "quoteHoldingPrices": "· Holding prices ({n}): {names}",
+ "@quoteHoldingPrices": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "names": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteFxPairs": "· FX rates ({n}): {pairs} → {base}",
+ "@quoteFxPairs": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "pairs": {
+    "type": "String"
+   },
+   "base": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteRoutingHint": "Direct routing: A-shares / listed funds → Tencent Quotes; HK / US stocks → stooq; FX → ECB. Tickers are set in each holding account's details (e.g. 600519 / 00700 / AAPL).",
+ "quoteDirectFetchButton": "Direct official sources (recommended · free · instant)",
+ "quoteAiFetchFallback": "AI web search (fallback)",
+ "quoteAiFetchNeedsConfig": "AI web search (configure AI first)",
+ "quoteAssetPrices": "Asset prices",
+ "quoteFxRates": "FX rates",
+ "quoteNotes": "Warnings",
+ "quoteSelectedCount": "{p} prices + {r} rates selected",
+ "@quoteSelectedCount": {
+  "placeholders": {
+   "p": {
+    "type": "num"
+   },
+   "r": {
+    "type": "num"
+   }
+  }
+ },
+ "quoteBack": "Back",
+ "quoteApplyButton": "Apply",
+ "quoteUnmatchedTooltip": "Not matched to a holding account; will not be posted",
+ "quoteCurrencyMismatchTooltip": "Currency mismatch ({ccy} vs account currency); unchecked by default",
+ "@quoteCurrencyMismatchTooltip": {
+  "placeholders": {
+   "ccy": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteFetchHint": "AI web search for the latest prices and FX rates; posted only after preview confirmation",
+ "settingsFailed": "Failed: {e}",
+ "@settingsFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsFailedPrefix": "Failed",
+ "settingsCancel": "Cancel",
+ "settingsSave": "Save",
+ "settingsGotIt": "Got it",
+ "settingsBackupFileType": "Backup",
+ "settingsBackupPassphraseTitle": "Enter backup passphrase",
+ "settingsVerify": "Verify",
+ "settingsChangePassphrase": "Change master passphrase",
+ "settingsCurrentPassphrase": "Current passphrase",
+ "settingsNewPassphraseLabel": "New passphrase (≥12 chars is safer)",
+ "settingsConfirm": "Confirm",
+ "settingsPassphraseUpdated": "Master passphrase updated",
+ "settingsNewRecoveryCode": "New recovery code (store offline)",
+ "settingsBackupPassphrase": "Backup passphrase",
+ "settingsBackupPassphraseLabel": "Backup file passphrase (≥8 chars; 12+ recommended)",
+ "settingsExport": "Export",
+ "settingsExportedTo": "Exported to: {path}",
+ "@settingsExportedTo": {
+  "placeholders": {
+   "path": {
+    "type": "String"
+   }
+  }
+ },
+ "settingsExportFailed": "Export failed: {e}",
+ "@settingsExportFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsVerifyAndRestore": "Verify and restore",
+ "settingsRestoreDone": "Restore complete; locked with the new data — unlock with your master passphrase (the original database is kept as .bak)",
+ "settingsRestoreFailed": "Restore failed (original ledger untouched): {e}",
+ "@settingsRestoreFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsBaseCurrency": "Base currency",
+ "settingsBaseCurrencySet": "Base currency set to {code}",
+ "@settingsBaseCurrencySet": {
+  "placeholders": {
+   "code": {
+    "type": "String"
+   }
+  }
+ },
+ "settingsNotUnlocked": "Locked",
+ "settingsGroupSecurity": "Security",
+ "settingsGroupBackup": "Backup & restore",
+ "settingsGroupPreferences": "Preferences",
+ "settingsGroupData": "Data management",
+ "settingsGroupAiQuotes": "AI & quotes",
+ "settingsGroupAbout": "About",
+ "settingsLockNow": "Lock now",
+ "settingsLockNowHint": "Closes the database and clears in-memory keys; also auto-locks when idle",
+ "settingsChangePassphraseHint": "Only re-wraps the keys; data is not re-encrypted",
+ "settingsRegenRecoveryCode": "Regenerate recovery code",
+ "settingsRegenRecoveryCodeHint": "The old recovery code stops working immediately",
+ "settingsExportBackup": "Export encrypted backup",
+ "settingsExportBackupHint": "Creates an encrypted .asbk container; use a separate passphrase and store it offline",
+ "settingsRestoreBackup": "Restore from backup",
+ "settingsRestoreBackupHint": "Verifies in isolation first; replaces the current ledger only after it passes (original kept as .bak)",
+ "settingsMergeBackup": "Merge from backup (multi-device)",
+ "settingsMergeBackupHint": "Merges another device's .asbk into this ledger: newest transaction wins, safety backup created first",
+ "settingsBaseCurrencyHint": "The reporting currency for stats, net worth and projections",
+ "settingsImportCsv": "Import bill CSV",
+ "settingsImportCsvHint": "UTF-8/GBK auto-detection, idempotent de-duplication, smart category suggestions",
+ "settingsExportJson": "Export full JSON",
+ "settingsExportJsonHint": "A plaintext snapshot of accounts/valuations/transactions/plans/budgets (no keys); auditable and portable",
+ "settingsPageTitle": "Settings",
+ "settingsFullJsonExported": "Full JSON exported (plaintext, no keys)",
+ "settingsAboutTagline": "A local-first system for personal assets, liabilities and financial planning. Data is encrypted at rest, and every online feature is off by default.",
+ "settingsAppearance": "Appearance",
+ "settingsAppearanceHint": "Light mist white / dark wealth terminal; follows the system automatically",
+ "settingsThemeSystem": "Follow system",
+ "settingsThemeLight": "Light",
+ "settingsThemeDark": "Dark",
+ "settingsAutoLock": "Auto-lock",
+ "settingsAutoLockHint": "Locks the ledger after this much idle time",
+ "settingsMinutes": "{n} min",
+ "@settingsMinutes": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsAutoLockDialogTitle": "Idle auto-lock",
+ "settingsAutoLockSet": "Auto-lock set to {n} min",
+ "@settingsAutoLockSet": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashHorizon": "Cash projection horizon",
+ "settingsCashHorizonHint": "Days projected behind the home \"how much can I spend\" figure",
+ "settingsDays": "{n} days",
+ "@settingsDays": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashHorizonSet": "Cash projection horizon set to {n} days",
+ "@settingsCashHorizonSet": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashFloor": "Cash floor",
+ "settingsCashFloorHint": "Falling below this counts as a cash shortage (deducted from projections and the spendable ceiling)",
+ "settingsCashFloorSaved": "Cash floor saved",
+ "cancel": "Cancel",
+ "confirm": "Confirm",
+ "save": "Save",
+ "edit": "Edit",
+ "delete": "Delete",
+ "remove": "Remove",
+ "loadFailed": "Failed to load: {error}",
+ "@loadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "yearsN": "{n} yrs",
+ "@yearsN": {
+  "placeholders": {
+   "n": {
+    "type": "String"
+   }
+  }
+ },
+ "monthsN": "{n} mo",
+ "@monthsN": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "daysLaterN": "In {n} days",
+ "@daysLaterN": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "lifeEventAddTitle": "Add a life event",
+ "lifeEventBuyHome": "Buy a home (with mortgage)",
+ "lifeEventChildRearing": "Having a child / raising",
+ "lifeEventIncomeChangeOption": "Income jump (promotion / job loss)",
+ "lifeEventRetirement": "Retirement",
+ "lifeEventBigPurchaseOption": "Major purchase (e.g. a car)",
+ "lifeEventLumpSum": "One-off large inflow or outflow",
+ "lifeEventIncomeChange": "Income jump",
+ "lifeEventBigPurchase": "Major purchase",
+ "lifeEventYearsLater": "Years from now",
+ "lifeEventTotalPrice": "Total price (¥)",
+ "lifeEventDownPayment": "Down payment (¥)",
+ "lifeEventAnnualRateHint": "Annual rate % (e.g. 3.6)",
+ "lifeEventLoanTerm": "Loan term",
+ "lifeEventYearsUntilBirth": "Years until birth",
+ "lifeEventMonthlyRearingCost": "Monthly child-rearing cost (¥)",
+ "lifeEventCollegeExtra": "Extra monthly in college years (¥, optional)",
+ "lifeEventChangePctHint": "Change % (+30 = up 30% / −100 = to zero)",
+ "lifeEventYearsUntilRetire": "Years until retirement",
+ "lifeEventRetirementNote": "After retirement: income ×0.4 (pension replacement rate), spending ×0.75",
+ "lifeEventPurchaseCost": "Purchase cost (¥)",
+ "lifeEventResidualValue": "Residual value counted as fixed assets (¥, optional)",
+ "lifeEventAmountInOut": "Amount (¥; negative = outflow)",
+ "lifePlanTitle": "Life planning · Multi-year projection",
+ "lifePlanIntro": "Put the big moves — home, children, car, retirement — on one timeline and project the next {years} years of cash flow and net worth month by month (nominal; income and spending grow with inflation). Read-only simulation; nothing is written to the ledger.",
+ "@lifePlanIntro": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   }
+  }
+ },
+ "lifePlanRerun": "Re-run projection",
+ "lifePlanInvestableAssets": "Investable net worth (¥)",
+ "lifePlanFixedAssets": "Fixed assets etc. (¥)",
+ "lifePlanMonthlyIncome": "Monthly income (¥)",
+ "lifePlanMonthlyExpense": "Monthly spending (¥)",
+ "lifePlanNominalReturn": "Nominal return %/yr",
+ "lifePlanInflation": "Inflation %/yr",
+ "lifePlanHorizonYears": "Projection horizon",
+ "lifePlanEvents": "Life events",
+ "lifePlanAddEvent": "Add event",
+ "lifePlanNoEvents": "No events yet. Try one: buy a home in three years, a baby next year…",
+ "lifePlanResults": "Projection results",
+ "lifePlanNetWorthInYears": "Net worth in {years} yrs",
+ "@lifePlanNetWorthInYears": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   }
+  }
+ },
+ "lifePlanPeakNetWorth": "Peak net worth",
+ "lifePlanNewLoanInterest": "Total interest on new loans",
+ "lifePlanCashExhaustionRisk": "Cash exhaustion risk",
+ "lifePlanNoGap": "No gap within the horizon ✓",
+ "lifePlanExhaustedAt": "Year {year} (around {date})",
+ "@lifePlanExhaustedAt": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "lifePlanNetWorthCurve": "Net worth curve (¥ ×10k)",
+ "lifePlanCurveTooltip": "Year {year}  {value}",
+ "@lifePlanCurveTooltip": {
+  "placeholders": {
+   "year": {
+    "type": "String"
+   },
+   "value": {
+    "type": "String"
+   }
+  }
+ },
+ "planNew": "New plan",
+ "planEdit": "Edit plan",
+ "planNameLabel": "Name (e.g. rent / salary)",
+ "planOutflow": "Expense",
+ "planInflow": "Income",
+ "planCadence": "Cadence",
+ "planAnchorMonthly": "Start date (same day each month)",
+ "planAnchorDate": "Start date",
+ "planEndDate": "End date (optional)",
+ "planAutoPostTitle": "Auto-post to the ledger when due",
+ "planAutoPostSubtitle": "Posts automatically when the app is unlocked; posted or voided items are never duplicated",
+ "planPayAccount": "Payment account",
+ "planIncomeAccount": "Receiving account",
+ "planNoAccountForCurrency": "No {currency} account to choose from — create one first",
+ "@planNoAccountForCurrency": {
+  "placeholders": {
+   "currency": {
+    "type": "String"
+   }
+  }
+ },
+ "planCategory": "Category",
+ "planPostTitle": "Post to ledger · {name}",
+ "@planPostTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostDateNote": "Posting date {date} (occurrence date)",
+ "@planPostDateNote": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostEstimateNote": " · Estimated amount uses the median; you can edit it",
+ "planAccountsLoadFailed": "Failed to load accounts: {error}",
+ "@planAccountsLoadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostFailed": "Failed to post: {error}",
+ "@planPostFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "planSkipOnce": "Skip this one",
+ "planPostNow": "Post to ledger",
+ "planPosting": "Posting…",
+ "plansPageTitle": "Plans",
+ "planMonthlyRhythm": "This month at a glance",
+ "planDueUnposted": "Due, unposted",
+ "planCount": "{n} items",
+ "@planCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planDueTooltip": "Scheduled events past due and unposted — post them one by one or all at once",
+ "planNext30Days": "Next 30 days",
+ "planNext30Tooltip": "All occurrences, posted and unposted",
+ "planNext30Net": "Next 30-day net flow",
+ "planNetSignTooltip": "Positive is net inflow, negative is net outflow",
+ "planDueTitle": "To post · {n} due",
+ "@planDueTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planPostAll": "Post all",
+ "planEstimateTooltip": "Estimated amount; you can edit it when confirming",
+ "planEstimateBadge": "Est.",
+ "planMoreDue": "…{n} more — \"Post all\" handles them in one go",
+ "@planMoreDue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planNetEffect": "Net effect {amount}",
+ "@planNetEffect": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "planBlockedCount": " · {n} need an account picked on the confirm step",
+ "@planBlockedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planPostedCount": "Posted {n} scheduled items",
+ "@planPostedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planNothingToPost": "Nothing ready to post (pick an account on the confirm step first)",
+ "planNoUpcoming": "No scheduled expenses yet",
+ "planAllPlans": "All plans",
+ "planEmptyHint": "Tap \"New plan\" at the bottom right, or generate plans from detected recurring flows.",
+ "planEstimateAmount": " · Estimated amount",
+ "planActions": "Plan actions",
+ "planPause": "Pause",
+ "planResume": "Resume",
+ "planMarkFinished": "Mark finished",
+ "planDeleteTitle": "Delete plan",
+ "planDeleteMessage": "Deleting \"{name}\" does not affect posted transactions.",
+ "@planDeleteMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "recurringTitle": "Detected recurring flows",
+ "recurringIntro": "Detected from the last 18 months of transactions (same counterparty, regular intervals, ≥3 times). Once converted, the plan counts as \"planned\" in cash projection and budgets.",
+ "recurringOpenTooltip": "Detect recurring flows from transactions",
+ "recurringEmpty": "No recurring flows detected yet. Record a few months of regular flows — rent, subscriptions, salary —\nthen come back and try again.",
+ "recurringStatLine1": "{cadence} · {n} times · {pct}% confidence",
+ "@recurringStatLine1": {
+  "placeholders": {
+   "cadence": {
+    "type": "String"
+   },
+   "n": {
+    "type": "num"
+   },
+   "pct": {
+    "type": "String"
+   }
+  }
+ },
+ "recurringStatLine2": "Median {amount} · next expected {m}/{d}",
+ "@recurringStatLine2": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   },
+   "m": {
+    "type": "num"
+   },
+   "d": {
+    "type": "num"
+   }
+  }
+ },
+ "recurringAlreadyPlanned": "Already planned",
+ "recurringConvertToPlan": "Convert to plan",
+ "scenarioTitle": "Scenario simulation · Cash stress test",
+ "scenarioIntro": "Put \"what if\" into a 180-day cash projection: plans, debt payments and reserves stay fixed while only income and spending take the hit — see how deep the trough gets and whether cash holds. Nothing is written to the ledger.",
+ "scenarioExtraMonthlyLabel": "Scenario: extra monthly spending",
+ "scenarioOneOffLabel": "Scenario: one-off expense",
+ "scenarioRunFailed": "Simulation failed: {error}",
+ "@scenarioRunFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioRun": "Run simulation",
+ "scenarioRunning": "Simulating…",
+ "scenarioExtrasTitle": "Add custom shocks (optional)",
+ "scenarioExtraMonthlyAmount": "Extra monthly spending (¥/mo)",
+ "scenarioMonthsCount": "Months",
+ "scenarioOneOffAmount": "One-off expense (¥)",
+ "scenarioOccursOn": "Occurs",
+ "scenarioResultTitle": "Result · {name}",
+ "@scenarioResultTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioMinCashBaseline": "Minimum cash · Baseline",
+ "scenarioMinCashScenario": "Minimum cash · Scenario",
+ "scenarioTroughDelta": "Trough change",
+ "scenarioWorstDay": "Worst day (vs baseline)",
+ "scenarioCashOutDate": "Cash-out date",
+ "scenarioCashOutValue": "{date} ({days} days left)",
+ "@scenarioCashOutValue": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   },
+   "days": {
+    "type": "num"
+   }
+  }
+ },
+ "scenarioNoCashOut": "Not exhausted within the horizon",
+ "scenarioNewShortfalls": "New shortfalls (absent in baseline, triggered by the scenario)",
+ "scenarioBelowReserve": "Below reserves and floor",
+ "scenarioShortfallCount": "…{n} in total",
+ "@scenarioShortfallCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "scenarioSurvives": "The scenario is survivable: no new shortfalls and cash never runs out. Headroom above the floor: {amount}.",
+ "@scenarioSurvives": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioHurts": "This scenario would hurt: consider raising reserves, deferring optional spending, or arranging a backup credit line.",
+ "scenarioMethodNote": "Method: replayed on the same engine as the cash projection (docs/05 §12); reserves, debt payments and the floor unchanged.",
+ "saveChanges": "Save changes",
+ "allReady": "All up to date",
+ "assetsTitle": "Assets",
+ "assetsTitleHint": "Ledger and net value of all accounts: tap any account to view its value, edit details, record valuations and trades",
+ "assetAdd": "Add asset",
+ "assetNew": "New asset",
+ "assetCreate": "Create asset",
+ "assetsEmptyTitle": "No assets or liabilities yet",
+ "assetsEmptyMessage": "Add your first asset: cash, bank account, property, stock holdings… once saved, its coordinates light up on the globe home.",
+ "assetNameLabel": "Name",
+ "assetNameRequired": "Please enter an asset name",
+ "assetValuePositiveRequired": "Value must be positive (e.g. 1280000)",
+ "assetLocationRequired": "Please pick a location — it lights up on the globe home after saving",
+ "assetLocationTooltip": "Assets need a location — on save the dialog dissolves into a beam that flies to the globe",
+ "assetCurrentValue": "Current value",
+ "assetOpeningDebtNote": "Opening debt",
+ "accountEditProfile": "Edit details",
+ "accountUpdateValuation": "Update valuation",
+ "accountOpeningBalance": "Opening balance",
+ "accountOpeningBalanceTitle": "Record opening balance (backdated; not counted as income)",
+ "accountReconcileAdjust": "Reconcile",
+ "accountReconcileAdjustTitle": "Reconcile adjustment (enter the difference; negatives allowed)",
+ "accountQuoteCode": "Ticker symbol",
+ "accountQuoteCodeTitle": "Ticker symbol (for direct quote sources)",
+ "accountQuoteCodeHint": "A-shares 600519 / HK 00700 / US AAPL",
+ "accountQuoteCodeHelp": "A-share tickers (6 digits) resolve the exchange automatically; HK stocks use digits; US stocks use letters. Changes only affect quote lookups, never your ledger.",
+ "accountArchive": "Archive",
+ "accountUnarchive": "Unarchive",
+ "accountArchived": "Archived",
+ "accountArchivedHint": "Excluded from net worth",
+ "accountValuationMissing": "Missing valuation",
+ "accountMissingValuationHint": "No valuation on record; excluded from net worth — tap \"Update valuation\" to add one",
+ "accountMissingValuationTip": "Missing valuation: excluded from net worth",
+ "accountValuationStale": "Stale valuation",
+ "accountStaleValuationHint": "Not updated in over 30 days",
+ "accountStaleValuationTip": "Stale (>30 days)",
+ "accountDebtBaseLabel": "Current debt (base currency)",
+ "accountValueBaseLabel": "Current value (base currency)",
+ "accountOriginalBalance": "Original balance {amount}",
+ "@accountOriginalBalance": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "accountMyShareDetail": "My share {value} ({share}%)",
+ "@accountMyShareDetail": {
+  "placeholders": {
+   "value": {
+    "type": "String"
+   },
+   "share": {
+    "type": "String"
+   }
+  }
+ },
+ "accountMineShare": "Mine {share}%",
+ "@accountMineShare": {
+  "placeholders": {
+   "share": {
+    "type": "String"
+   }
+  }
+ },
+ "accountRecentTransactions": "Recent transactions",
+ "accountUnitPriceLabel": "Unit price (per unit)",
+ "accountTotalValueLabel": "Current total value",
+ "accountCurrentBalance": "Current balance",
+ "accountLocated": "Located",
+ "accountGroupCash": "Cash & checking",
+ "accountGroupSteady": "Steady investments",
+ "accountGroupHoldings": "Holdings",
+ "accountGroupReal": "Real assets & equity",
+ "accountGroupLiabilities": "Liabilities",
+ "liabilityCurrentDebt": "Current debt",
+ "netWorth": "Net worth",
+ "netWorthMyShare": "Net worth (my share)",
+ "netWorthMyShareHint": "Some accounts are held below 100%, so this shows your share; household-wide totals are on the right",
+ "totalAssets": "Total assets",
+ "totalLiabilities": "Total liabilities",
+ "valuationStatusLabel": "Valuation status",
+ "itemsMissingValuation": "{count} missing valuation",
+ "@itemsMissingValuation": {
+  "placeholders": {
+   "count": {
+    "type": "num"
+   }
+  }
+ },
+ "itemsStaleValuation": "{count} outdated",
+ "@itemsStaleValuation": {
+  "placeholders": {
+   "count": {
+    "type": "num"
+   }
+  }
+ },
+ "selectAccountHint": "Select an account on the left to see details",
+ "subtypeLabel": "Type",
+ "currencyLabel": "Currency",
+ "locationLabel": "Location",
+ "institutionLabel": "Institution",
+ "securityCodeLabel": "Ticker symbol",
+ "ownershipTitle": "Ownership share",
+ "ownershipMyShareLabel": "My share (%)",
+ "ownershipShareLabel": "Share",
+ "ownershipHelper": "100 = fully yours; joint spousal accounts 50 each. Affects net worth and share statistics only, never transactions.",
+ "ownershipRangeError": "Share must be between 0 and 100 (e.g. 50 or 33.3)",
+ "tradeBuy": "Buy",
+ "tradeSell": "Sell",
+ "tradeDividendInterest": "Dividend/interest",
+ "tradeBuyTitle": "Buy · {name}",
+ "@tradeBuyTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeSellTitle": "Sell · {name}",
+ "@tradeSellTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeDividendTitle": "Dividend/interest entry",
+ "tradeHoldingSummary": "Holding {qty} units · cost {cost}",
+ "@tradeHoldingSummary": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   },
+   "cost": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeCashAccount": "Cash account",
+ "tradeCashAccountCredited": "Cash account to credit",
+ "tradeQuantityLabel": "Quantity (units)",
+ "tradeTotalCostLabel": "Total cost (fees included)",
+ "tradeNetProceedsLabel": "Net proceeds",
+ "tradeDividendAmountLabel": "Dividend/interest amount",
+ "tradeNoteLabel": "Note (optional)",
+ "lotSectionTitle": "Cost lots (FIFO)",
+ "lotRealizedTotal": "Realized total {amount}",
+ "@lotRealizedTotal": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "lotRealizedYear": "Realized in {year}: {amount}",
+ "@lotRealizedYear": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "lotLineItem": "{qty} units × unit cost {price}",
+ "@lotLineItem": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   },
+   "price": {
+    "type": "String"
+   }
+  }
+ },
+ "lotShortfall": "⚠ {qty} units sold before the first purchase (historical gap, matched at zero cost)",
+ "@lotShortfall": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   }
+  }
+ },
+ "lotMethodologyNote": "Method: first-in-first-out lot matching, disclosed alongside the book average-cost method (docs/05 §11)",
+ "aiRecognize": "Recognize with AI",
+ "aiFillNameFirst": "Enter an asset name first so AI can recognize it",
+ "aiNotBound": "No AI connected: Settings → AI services",
+ "aiRecognizing": "Recognizing with AI…",
+ "aiFilledConfirmValue": "AI filled in — please confirm the value",
+ "aiValTitle": "AI valuation",
+ "aiValDaily": "Daily AI valuation",
+ "aiValDailyTooltip": "When enabled, live market prices for this asset are fetched daily and the value updated automatically (homes from transaction listings, cars from resale estimates, cross-checked across sources to strip marketing noise). You can correct it anytime in account details — manual values win for the day.",
+ "aiValSectionTooltip": "After each unlock, live market prices are fetched and the value updated; valuations you set manually take priority for the day and are never overwritten by AI.",
+ "aiValQueryLabel": "Search clues (estate/building/unit · year, model)",
+ "aiValSaveQuery": "Save query",
+ "aiValSearching": "Searching…",
+ "aiValEstimateNow": "Estimate now",
+ "aiValQueryFallback": "Empty query = \"{query}\"",
+ "@aiValQueryFallback": {
+  "placeholders": {
+   "query": {
+    "type": "String"
+   }
+  }
+ },
+ "aiValQuerySaved": "AI valuation query saved",
+ "aiValBindKeyFirst": "Bind your AI key first: Settings → AI services",
+ "aiValUpdated": "Valuation updated: {value}",
+ "@aiValUpdated": {
+  "placeholders": {
+   "value": {
+    "type": "String"
+   }
+  }
+ },
+ "aiValError": "AI valuation: {error}",
+ "@aiValError": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "aiValResultTitle": "AI valuation result",
+ "aiValRange": "Range",
+ "aiValConfidence": "Confidence",
+ "aiValRationale": "Rationale",
+ "aiValSource": "Source",
+ "aiValDismiss": "No thanks",
+ "aiValAdopt": "Adopt",
+ "aiValNoRecords": "No valuation records yet",
+ "locSet": "Set location",
+ "locChange": "Change location",
+ "locClear": "Clear location",
+ "locLocatedBuiltin": "Located: {name} (built-in city coordinates)",
+ "@locLocatedBuiltin": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedAiPrecise": "AI located: {name} (precise location)",
+ "@locLocatedAiPrecise": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedAiCity": "AI located: {name} (city center)",
+ "@locLocatedAiCity": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedFallback": "Located: {name}",
+ "@locLocatedFallback": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locDialogTitle": "Location of \"{name}\"",
+ "@locDialogTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locDialogSubtitle": "Once set, this asset appears as a breathing marker on the 3D asset globe",
+ "locNameLabel": "Location name (e.g. Shanghai · Qiantan)",
+ "locLatitudeLabel": "Latitude (-90 ~ 90)",
+ "locLongitudeLabel": "Longitude (-180 ~ 180)",
+ "locCoordNote": "Coordinates are WGS84; for domestic assets, quick-pick a city, then fine-tune with estate coordinates from a maps app",
+ "loadFailedReports": "Failed to load: {e}",
+ "@loadFailedReports": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "reportCancel": "Cancel",
+ "reportSave": "Save",
+ "assetAllocation": "Asset allocation",
+ "setTargetAllocation": "Set target allocation",
+ "allocNoAssetsHint": "No assets yet. Record transactions and your asset mix will appear here.",
+ "allocMissingValuations": "⚠ {n} accounts missing valuations (counted as 0)",
+ "@allocMissingValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "rebalanceAdviceTitle": "Rebalancing advice (5/25 band method)",
+ "rebalanceAdviceNote": "Alerts when drift exceeds max(5 percentage points, 25% of target); trades return to the band edge rather than the target to reduce turnover.",
+ "allocWithinBand": "All allocations within target bands ✓",
+ "allocTargetPct": "Target {n}%",
+ "@allocTargetPct": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "rebalanceBuy": "Buy",
+ "rebalanceSell": "Sell",
+ "rebalanceAdviceDetail": "Current {current}% → back to band edge {target}%±band",
+ "@rebalanceAdviceDetail": {
+  "placeholders": {
+   "current": {
+    "type": "String"
+   },
+   "target": {
+    "type": "String"
+   }
+  }
+ },
+ "targetAllocationTitle": "Target allocation",
+ "targetAllocationHint": "Percentage of total assets per class, summing to ≤ 100%. Leave blank = no target (excluded from rebalancing alerts).",
+ "targetSumExceeded": "Total {n}% (over 100%)",
+ "@targetSumExceeded": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "targetSumRemaining": "Total {sum}% · no target/unallocated {rest}%",
+ "@targetSumRemaining": {
+  "placeholders": {
+   "sum": {
+    "type": "num"
+   },
+   "rest": {
+    "type": "num"
+   }
+  }
+ },
+ "fireTitle": "Financial independence (FIRE)",
+ "fireTuneTooltip": "Adjust assumptions & simulate",
+ "fireEmptyHint": "Once you have tracked income and spending for a while, this estimates \"how much it takes to be financially free\".\nDefinitions: FI number = annual spend ÷ withdrawal rate (4% rule); investable net worth = net worth − fixed assets − long-term equity.",
+ "fiNumberToday": "FI number (today’s money)",
+ "investableCoverage": "Investable net worth coverage",
+ "coverageHistoryMonths": " ({n} months of history)",
+ "@coverageHistoryMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fiTimeToReach": "Time to FI (defaults)",
+ "fiUnreachable": "Unreachable (raise savings or return assumptions)",
+ "fiReached": "FI reached 🎉",
+ "fiYearsAway": "≈ {n} yr",
+ "@fiYearsAway": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fireDefaultsNote": "Defaults: 5% nominal return · 2.5% inflation · 4% withdrawal rate · savings from the trailing 12 months. Use the top-right button to adjust and run Monte Carlo.",
+ "firePlannerTitle": "Financial independence (FIRE) planner",
+ "firePlannerNote": "FI number = annual spend ÷ withdrawal rate; the accumulation phase compounds month by month (nominal returns, target grows with inflation). Monte Carlo is in real terms (net of inflation) with a fixed seed for reproducibility.",
+ "recalculate": "Recalculate",
+ "investableNetWorthField": "Investable net worth (¥)",
+ "annualSavingsField": "Annual savings (¥, can be negative)",
+ "targetAnnualSpendField": "Target annual spend (¥)",
+ "nominalReturnField": "Nominal return %/yr",
+ "inflationField": "Inflation %/yr",
+ "withdrawalRateField": "Withdrawal rate % (4 = 4% rule)",
+ "withdrawalVolPct": "Withdrawal-phase volatility {v}%",
+ "@withdrawalVolPct": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "calcResults": "Results",
+ "currentCoverage": "Current coverage",
+ "timeToFi": "Time to FI",
+ "fiUnreachableWithin": "Not reachable (within {n} years)",
+ "@fiUnreachableWithin": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fiYearsMonths": "≈ {years} yr ({months} mo)",
+ "@fiYearsMonths": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   },
+   "months": {
+    "type": "num"
+   }
+  }
+ },
+ "requiredSavingsTitle": "Work backwards: annual savings needed to reach FI in N years",
+ "fiWithinYears": "FI within {n} years",
+ "@fiWithinYears": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "mcTitle": "Monte Carlo · 30 years of withdrawal after FI",
+ "mcSurvivalLabel": "Survival rate (1,000 paths)",
+ "mcPercentileLabel": "Ending-balance percentiles (× annual spend)",
+ "mcNote": "Starting point = FI number (annual spend × the inverse of the withdrawal rate); withdraw 1× each year and grow at random real returns; volatility {vol}%. A heuristic reference, not investment advice.",
+ "@mcNote": {
+  "placeholders": {
+   "vol": {
+    "type": "String"
+   }
+  }
+ },
+ "fiUnreachableShort": "Unreachable",
+ "fiReachedShort": "Reached",
+ "yearsShort": "{n} yr",
+ "@yearsShort": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "sensitivityTitle": "Sensitivity: returns ±1pp × spend ±10%",
+ "baseline": "Baseline",
+ "sensReturnRow": "Return {sign}{n} pp",
+ "@sensReturnRow": {
+  "placeholders": {
+   "sign": {
+    "type": "String"
+   },
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "sensitivityColsNote": "Columns: spend ×0.9 / ×1.0 / ×1.1 (saving 10% beats earning 1pp more)",
+ "portfolioTitle": "Portfolio",
+ "noHoldingsHint": "No holdings yet. Create a holding account via “Add asset” on the dashboard, then log your first investment with “Buy”.",
+ "holdingQtyShares": "{q} shares",
+ "@holdingQtyShares": {
+  "placeholders": {
+   "q": {
+    "type": "String"
+   }
+  }
+ },
+ "holdingCostHint": " · cost {cost}",
+ "@holdingCostHint": {
+  "placeholders": {
+   "cost": {
+    "type": "String"
+   }
+  }
+ },
+ "missingPrice": "No price",
+ "skippedFxFlows": "⚠ {n} foreign-currency flows excluded from XIRR (missing historical FX rates)",
+ "@skippedFxFlows": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "xirrTwrTooltip": "XIRR is money-weighted (includes the timing of your trades); TWR is time-weighted (strips out cash flows to measure the asset’s performance)",
+ "annualizedXirr": "Annualized XIRR {v}%",
+ "@annualizedXirr": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "annualizedTwr": "Annualized TWR {v}%",
+ "@annualizedTwr": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "myCpiTitle": "My inflation · trailing 12 months",
+ "myCpiEmptyHint": "After 6 months of records, this measures your personal cost-of-living inflation from your own consumption basket (fixed-basket basis: how much more the base-period basket costs today).",
+ "aboveAssumedInflation": "Above assumed inflation {v}%",
+ "@aboveAssumedInflation": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "notAboveAssumedInflation": "Not above assumed inflation {v}%",
+ "@notAboveAssumedInflation": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "basketCoverageWarning": "⚠ Basket coverage {v}% (spending mix has shifted; interpret with care)",
+ "@basketCoverageWarning": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "cpiMethodNote": "Monthly average spend over a {base}-month base period vs the recent {recent} months; a price-index approximation holding the base-period consumption mix fixed (fixed-basket Laspeyres).",
+ "@cpiMethodNote": {
+  "placeholders": {
+   "base": {
+    "type": "num"
+   },
+   "recent": {
+    "type": "num"
+   }
+  }
+ },
+ "basketShareHint": "{share}% of basket · recent/base ×{ratio}",
+ "@basketShareHint": {
+  "placeholders": {
+   "share": {
+    "type": "String"
+   },
+   "ratio": {
+    "type": "String"
+   }
+  }
+ },
+ "reportYearTitle": "Yearly · {year}",
+ "@reportYearTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   }
+  }
+ },
+ "reportMonthTitle": "Monthly · {year}.{month}",
+ "@reportMonthTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "month": {
+    "type": "num"
+   }
+  }
+ },
+ "prevPeriod": "Previous period",
+ "nextPeriod": "Next period",
+ "nwChangeBreakdown": "Net worth change breakdown",
+ "residualTooltip": "A non-zero residual usually means missing valuations, omissions, or duplicate imports",
+ "pendingReviewChip": "Unreconciled {v}",
+ "@pendingReviewChip": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "netWorthOpening": "Opening net worth",
+ "attributionIncomeExpense": "Income & expense contribution",
+ "attributionRealized": "Investment P&L · realized",
+ "attributionDividend": "Investment P&L · dividends",
+ "attributionUnrealizedDelta": "Investment P&L · unrealized change",
+ "attributionFx": "FX effect",
+ "attributionOtherValuation": "Other valuation changes",
+ "attributionCorrection": "Scope/history corrections",
+ "attributionResidual": "Unreconciled difference",
+ "netWorthClosing": "Closing net worth",
+ "incomeMix": "Income mix",
+ "expenseMix": "Spending mix",
+ "closingBalanceSheetMix": "Closing assets & liabilities",
+ "valuationMissingSuffix": " (no valuation)",
+ "valuationStaleSuffix": " (stale valuation)",
+ "monthlyReport": "Monthly",
+ "yearlyReport": "Yearly",
+ "riskTitle": "Risk & risk-adjusted returns",
+ "riskFreeRateTooltip": "Risk-free rate (Sharpe/Sortino parameter)",
+ "riskNeedMorePoints": "Needs at least 2 valid month-end valuation points ({n} available).\nUpdate holding prices monthly to unlock drawdown, volatility and other risk metrics.",
+ "@riskNeedMorePoints": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "riskSmallSample": "⚠ Only {n} months of valid samples (< 6); metrics are volatile, treat as reference only",
+ "@riskSmallSample": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "annualizedReturnTwr": "Annualized return (TWR)",
+ "annualizedVolatility": "Annualized volatility",
+ "sharpeRatio": "Sharpe ratio",
+ "sharpeFormulaHint": "(annualized return − risk-free) / volatility",
+ "sortinoRatio": "Sortino ratio",
+ "sortinoHint": "Downside-deviation Sharpe",
+ "bestWorstMonth": "Best / worst month",
+ "monthWinRate": "Monthly win rate",
+ "riskBasisNote": "Based on {periods} monthly sub-periods ({points} valid month-end valuations over the last 36 months) · risk-free rate {rf}%",
+ "@riskBasisNote": {
+  "placeholders": {
+   "periods": {
+    "type": "num"
+   },
+   "points": {
+    "type": "num"
+   },
+   "rf": {
+    "type": "String"
+   }
+  }
+ },
+ "drawdownSpan": "{peak} peak → {trough} trough",
+ "@drawdownSpan": {
+  "placeholders": {
+   "peak": {
+    "type": "String"
+   },
+   "trough": {
+    "type": "String"
+   }
+  }
+ },
+ "maxDrawdown": "Max drawdown",
+ "riskFreeRateDialogTitle": "Risk-free rate (annualized %)",
+ "riskFreeRateHint": "e.g. 2.0 (near the 10-year government bond yield)",
+ "yearSummaryTitle": "{year} in review",
+ "@yearSummaryTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   }
+  }
+ },
+ "yearTotalIncome": "Annual income",
+ "yearTotalExpense": "Annual spending",
+ "surplus": "Surplus",
+ "savingsRate": "Savings rate",
+ "savingsRateTooltip": "Surplus / income",
+ "positiveSurplusMonths": "Months with positive surplus",
+ "interestPaid": "Interest paid",
+ "interestPaidTooltip": "Annual debt cost",
+ "realizedPnl": "Realized investment P&L",
+ "realizedPnlTooltip": "Locked in on sale (book basis)",
+ "dividends": "Dividends",
+ "netInvestmentGain": "Net investment gain",
+ "netInvestmentGainTooltip": "Realized + dividends",
+ "monthlyCashflow": "Monthly income & spending",
+ "incomeLabel": "Income",
+ "expenseLabel": "Spending",
+ "barTooltipMonth": "Month {n}\n{amount}",
+ "@barTooltipMonth": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "yearExpenseRanking": "Top spending of the year",
+ "yearHighlights": "Year highlights",
+ "biggestExpense": "Largest expense: {label}",
+ "@biggestExpense": {
+  "placeholders": {
+   "label": {
+    "type": "String"
+   }
+  }
+ },
+ "expenseFallback": "Expense",
+ "loanPrincipalRepaid": "Loan principal repaid",
+ "incomeCategoryEntry": "Income · {name}",
+ "@incomeCategoryEntry": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "globeTitle": "Asset globe",
+ "globeBackToOverview": "Back to overview",
+ "globeResetView": "Reset view",
+ "globeFullscreen": "Fullscreen globe",
+ "globeAssetCategory": "Asset category",
+ "globeInstitution": "Institution",
+ "globeCurrentValue": "Current value",
+ "globeValuationMissingExcluded": "No valuation (excluded from net worth)",
+ "globeValuationStale": "Stale (not updated in >30 days)",
+ "globeDenominationCurrency": "Valuation currency",
+ "globeViewAndEdit": "View & edit",
+ "globeMoreSameLocation": "{n} more assets here",
+ "@globeMoreSameLocation": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "globeValuationMissing": "No valuation",
+ "homeLoadFailed": "Failed to load: {error}",
+ "@homeLoadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "homeTodoTooltip": "To-dos",
+ "homeTodoPending": "To-dos · {n} pending — click to review",
+ "@homeTodoPending": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "homeAiTooltip": "AI assistant",
+ "homeSettingsTooltip": "Settings",
+ "homeLocateCurrentTooltip": "Locate current position",
+ "homeLocating": "Locating…",
+ "homeLocatedExact": "Current position located: {city}",
+ "@homeLocatedExact": {
+  "placeholders": {
+   "city": {
+    "type": "String"
+   }
+  }
+ },
+ "homeLocatedEstimate": "Location service unavailable — estimated from time zone: {city}",
+ "@homeLocatedEstimate": {
+  "placeholders": {
+   "city": {
+    "type": "String"
+   }
+  }
+ },
+ "homeAddAsset": "Add asset",
+ "homeAddAssetTooltip": "Create an asset or liability account; set a location to light it up on the globe",
+ "homeLogTransaction": "Log a transaction",
+ "homeLogTransactionTooltip": "Record spending, income and transfers",
+ "homeCollapse": "Collapse",
+ "homeQuickAdd": "Log a transaction / add asset",
+ "homeCollapseQuickMenu": "Collapse quick menu",
+ "homeAddSemantic": "Add: log a transaction or add an asset",
+ "homeRefreshing": "Refreshing…",
+ "homeRefreshData": "Refresh data",
+ "homeNwCardHint": "Reports · net worth change breakdown",
+ "homeFlowCardHint": "Transactions · all income and spending this month",
+ "homeHealthCardHint": "Reports · health checks and composition",
+ "homeAssetsCardHint": "Assets · full account ledger and editing",
+ "homeBudgetCardHint": "Budgets · limits and pacing",
+ "homeTrendCardHint": "Reports · trends and attribution",
+ "homePlansCardHint": "Plans · recurring and upcoming spending",
+ "homeAutoPosted": "{n} planned transactions posted automatically — see Transactions (source: Plans)",
+ "@homeAutoPosted": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashNetWorth": "Net worth",
+ "dashAsOf": "As of {date}",
+ "@dashAsOf": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashMyShare": "My share {amount}",
+ "@dashMyShare": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashAssetsAmount": "Assets {amount}",
+ "@dashAssetsAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashLiabAmount": "Liabilities {amount}",
+ "@dashLiabAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashResidualTooltip": "A non-zero residual usually means missing valuations, missed entries or duplicate imports (details in the monthly report)",
+ "dashPendingReview": "Review {amount}",
+ "@dashPendingReview": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashTotalAssets": "Total assets",
+ "dashTotalLiabilities": "Total liabilities",
+ "dashMonthFlow": "Cash flow (month {m})",
+ "@dashMonthFlow": {
+  "placeholders": {
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "dashIncome": "Income",
+ "dashSpendFees": "Spend & fees",
+ "dashSurplus": "Surplus",
+ "dashInvestPnl": "Investment P&L",
+ "dashPrincipalRepaid": "Principal repaid",
+ "dashInterestPaid": "Interest paid",
+ "dashSpendable": "Spendable (next {n} days)",
+ "@dashSpendable": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashForecastThrough": "Cash flow forecast through {date}",
+ "@dashForecastThrough": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashDiscretionaryCap": "Discretionary cap",
+ "dashDiscretionaryCapHint": "Net of fixed plans, repayments, reserves and your cash floor",
+ "dashMonthSpendForecast": "Projected month spend",
+ "dashMonthSpendForecastHint": "Extrapolated to month end at the current pace",
+ "dashDailyAllowance": "Daily allowance left",
+ "dashDaysElapsed": "{n} days into the month",
+ "@dashDaysElapsed": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashCashLowPoint": "Cash low point",
+ "dashShortfall": "{label} shortfall ({date})",
+ "@dashShortfall": {
+  "placeholders": {
+   "label": {
+    "type": "String"
+   },
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashHealthTitle": "Financial health",
+ "dashSavingsRate": "Savings rate",
+ "dashSavingsRateHint": "This month: (income − spend) / income",
+ "dashEmergencyMonths": "Emergency months",
+ "dashEmergencyMonthsHint": "Liquid assets / average monthly spend",
+ "dashDebtToAsset": "Debt-to-asset ratio",
+ "dashDebtToAssetHint": "Total liabilities / total assets",
+ "dashInsights": "Insights",
+ "dashNwTrend": "Net worth trend",
+ "dashNwTrendMonths": "Net worth trend (last {n} months)",
+ "@dashNwTrendMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashNwTrendHint": "Hold and drag the bottom roller to range from 1 to {n} months",
+ "@dashNwTrendHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashRollerHint": "Hold and drag the roller: 1 ~ {n} months",
+ "@dashRollerHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashUpcomingTitle": "Spending due in the next 30 days",
+ "dashNoUpcoming": "No planned spending yet",
+ "dashPendingDue": "{n} matured plans to post (one tap from Plans)",
+ "@dashPendingDue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashMissingValuations": "{n} accounts without valuations (not counted as zero — edit to add)",
+ "@dashMissingValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashStaleValuations": "{n} accounts with stale valuations (>30 days)",
+ "@dashStaleValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashResidualIssue": "This month's attribution has an unreconciled residual: {amount}",
+ "@dashResidualIssue": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashIssuesTitle": "Needs attention",
+ "dashBalanceSheet": "Balance sheet",
+ "dashAssetsTotal": "Total assets",
+ "dashLiabilitiesTotal": "Total liabilities",
+ "dashIncludedAccounts": "Accounts included",
+ "dashAccountCount": "{n}",
+ "@dashAccountCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashValuationStatus": "Valuation status",
+ "dashMissingCount": "{n} unvalued",
+ "@dashMissingCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashStaleCount": "{n} stale",
+ "@dashStaleCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiAssistant": "AI assistant",
+ "aiHistorySessions": "Chat history",
+ "aiBindKeyFirst": "First bind your own AI key in Settings → AI services",
+ "aiAssistantError": "AI assistant: {error}",
+ "@aiAssistantError": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "aiSessions": "Chats",
+ "aiNewChat": "New chat",
+ "aiNoSessionsHint": "No chats yet — tap “+” at the top right to start.",
+ "aiDeleteChat": "Delete chat",
+ "aiLedgerContextOn": "Ledger overview attached: net worth and month totals are sent to the AI (no individual transactions)",
+ "aiLedgerContextOff": "No ledger data attached: the AI answers generically",
+ "aiAskSomething": "Ask anything, or start below",
+ "aiInputHint": "Ask your private banker… (Enter to send)",
+ "aiSend": "Send",
+ "aiPromptSpendWhere": "Where is my money going?",
+ "aiPromptNwTrend": "How has my net worth been trending?",
+ "aiPromptSaveMonth": "How can I save more this month?",
+ "aiPromptPrepay": "Is now a good time to prepay my loans?",
+ "aiValuationsUpdated": "AI updated valuations for {n} assets (auditable sources; correct in account details)",
+ "@aiValuationsUpdated": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiValuationsUpdatedFailed": "AI updated valuations for {n} assets (some failed — see account details)",
+ "@aiValuationsUpdatedFailed": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "commonCancel": "Cancel",
+ "commonSave": "Save",
+ "commonEdit": "Edit",
+ "commonVoid": "Void",
+ "commonGotIt": "Got it",
+ "fieldType": "Type",
+ "dirIncome": "Income",
+ "dirExpense": "Expense",
+ "txAddTitle": "Add transaction",
+ "txEditTitle": "Edit transaction",
+ "txPageTitle": "Transactions",
+ "txExportCsvTooltip": "Export CSV (plain text, choose location)",
+ "txImportCsvTooltip": "Import statement CSV",
+ "txSearchHint": "Search the whole ledger: notes, counterparties, tags",
+ "txEmptyTitle": "No transactions yet",
+ "txNoMatchTitle": "No matching transactions",
+ "txEmptyHint": "Tap \"Add transaction\" at the bottom corner, or import a statement CSV from settings.",
+ "txNoMatchHint": "Try another keyword, or clear the type filter.",
+ "txNoMatchHintWide": "Try another keyword, or clear the type filter on the right.",
+ "txExportedToast": "Ledger CSV exported (with BOM, opens directly in Excel)",
+ "txAccountLabel": "Account",
+ "txAccountPayFrom": "Paying account",
+ "txAccountDeposit": "Deposit account",
+ "txAccountTransferFrom": "Transfer from",
+ "txAccountTransferTo": "Transfer to",
+ "txAccountRepayCard": "Card to repay",
+ "txAccountRepayFrom": "Repay from",
+ "txAccountLoan": "Loan account",
+ "txAccountBorrowTo": "Borrow into",
+ "txAccountBorrowToAsset": "Borrow into (asset account)",
+ "txAccountLendReceivable": "Lend (as receivable)",
+ "txAccountReceiveBackTo": "Receive back into",
+ "txAccountCounterpartyCash": "Counterparty cash account",
+ "txAccountB": "Account B",
+ "txInterestCategory": "Interest category",
+ "txCategory": "Category",
+ "txNoteOptional": "Note (optional)",
+ "txVoidedBadge": "Voided",
+ "txPostingsTitle": "Entries (debits = credits)",
+ "txShares": "{q} shares",
+ "@txShares": {
+  "placeholders": {
+   "q": {
+    "type": "String"
+   }
+  }
+ },
+ "txExternalId": "External ID: {id}",
+ "@txExternalId": {
+  "placeholders": {
+   "id": {
+    "type": "String"
+   }
+  }
+ },
+ "txVoidConfirmTitle": "Void this transaction?",
+ "txVoidConfirmMessage": "Voided entries no longer count toward balances or statistics, but the audit trail is kept.",
+ "monthExpense": "Expenses this month",
+ "monthIncome": "Income this month",
+ "monthSurplus": "Surplus this month",
+ "monthThis": "This month",
+ "monthSpent": "Spent",
+ "monthCnyOnlyTooltip": "CNY transactions only, to avoid distorted mixed-currency totals",
+ "filterPanelHint": "Filter the ledger by transaction type; search is unaffected",
+ "importTitle": "Import statements",
+ "importFileTypeBills": "Statements",
+ "importStepHeader": "Step {n}/4 · {title}",
+ "@importStepHeader": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "title": {
+    "type": "String"
+   }
+  }
+ },
+ "importStepPickFile": "Choose file",
+ "importStepChooseAccount": "Choose account",
+ "importStepPreview": "Preview & categories",
+ "importStepDone": "Done",
+ "importParsePreview": "Parse & preview",
+ "importConfirm": "Post to ledger",
+ "importPickFileHint": "WeChat / Alipay native exports (CSV, GBK or UTF-8) are recognized automatically by column names and transaction IDs, so no header edits are needed. Other CSV files must include date, type and amount columns.",
+ "importChooseCsvFile": "Choose CSV file",
+ "importParseFailed": "Parse failed: {error}",
+ "@importParseFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "importTargetAccount": "Which account to import into",
+ "importFileName": "File: {file}",
+ "@importFileName": {
+  "placeholders": {
+   "file": {
+    "type": "String"
+   }
+  }
+ },
+ "importRowsDetected": "{n} rows detected",
+ "@importRowsDetected": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importDefaultExpenseCategory": "Default expense category",
+ "importDefaultIncomeCategory": "Default income category",
+ "importReadyToPost": "Ready to post",
+ "importLineCount": "{n} rows",
+ "@importLineCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importExactDuplicates": "Exact duplicates skipped",
+ "importCategoryHits": "Smart categorization hits",
+ "importCategoryHitsDetail": "{n} rows (rules + learned history)",
+ "@importCategoryHitsDetail": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importParserSkipped": "Skipped by native parser",
+ "importTransferSuggestions": "Transfer pair suggestions",
+ "importTransferSuggestionDetail": "{n} items (merge manually on the ledger page after import)",
+ "@importTransferSuggestionDetail": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importNoCounterparty": "(no counterparty)",
+ "importPostedCount": "{n} entries posted",
+ "@importPostedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importDoneHint": "Re-importing the same file is skipped automatically (external ID idempotency). Counterparty categories have been learned and will be suggested on the next import.",
+ "strategyCompareTitle": "Repayment strategy comparison",
+ "strategySubtitle": "Beyond the minimum payment, commit extra money each month to one debt first",
+ "strategyExtraMonthly": "Extra monthly payment",
+ "strategyResimulate": "Re-run simulation",
+ "strategyNoDebt": "No outstanding debt",
+ "strategyAvalancheTitle": "Avalanche · highest rate first",
+ "strategySnowballTitle": "Snowball · smallest balance first",
+ "strategyAvalancheSaves": "Avalanche saves {amount} in interest versus snowball. If the quick win of clearing one debt first matters to you, snowball is a perfectly sound choice.",
+ "@strategyAvalancheSaves": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "strategyPayoffTime": "Debt-free in",
+ "strategyDuration": "{years} yr {months} mo",
+ "@strategyDuration": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   },
+   "months": {
+    "type": "num"
+   }
+  }
+ },
+ "strategyTotalInterest": "Total interest",
+ "strategyPayoffOrder": "Payoff order",
+ "debtPageTitle": "Debts",
+ "debtStrategyTooltip": "Avalanche vs snowball",
+ "debtNew": "New debt",
+ "debtEmptyTitle": "No debts yet",
+ "debtEmptyHint": "Register credit cards, mortgages, Huabei and other debts to see repayment plans and stress simulations.",
+ "debtOverviewTitle": "Debt overview",
+ "debtTotalBase": "Total debt (base currency)",
+ "debtTotalBaseTooltip": "Summed in base currency at the latest ledger FX rate; foreign currencies without a rate count as zero",
+ "debtCountLabel": "Items",
+ "debtCountValue": "{n} items",
+ "@debtCountValue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtWorstApr": "Highest effective APR",
+ "debtWorstAprTooltip": "IRR-based; fee-driven debts run well above the nominal rate",
+ "debtRepayMethod": "Repayment method",
+ "debtNominalApr": "Nominal APR",
+ "debtNominalAprField": "Nominal APR % (e.g. 3.85)",
+ "debtTermLabel": "Installments",
+ "debtTermCount": "{n} installments",
+ "@debtTermCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtTermMonthsField": "Term (months)",
+ "debtEffectiveApr": "Effective APR",
+ "debtEffectiveAprTooltip": "IRR-based; fee-driven debts run notably higher",
+ "debtNextRepay": "Next {month}/{day}: pay {total} (principal {principal} + interest {interest})",
+ "@debtNextRepay": {
+  "placeholders": {
+   "month": {
+    "type": "num"
+   },
+   "day": {
+    "type": "num"
+   },
+   "total": {
+    "type": "String"
+   },
+   "principal": {
+    "type": "String"
+   },
+   "interest": {
+    "type": "String"
+   }
+  }
+ },
+ "debtRepayNext": "Pay next installment",
+ "debtPrepaySim": "Prepayment simulator",
+ "debtNoScheduleSnackBar": "No installment due (or a manual plan)",
+ "debtPrepaySimTitle": "Prepayment simulator · {name}",
+ "@debtPrepaySimTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "debtRemainingPrincipal": "Current remaining principal {amount}",
+ "@debtRemainingPrincipal": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "debtExtraPayment": "Extra payment",
+ "debtSimulate": "Simulate",
+ "debtSimResultTitle": "Simulation result",
+ "debtSimFee": "Fee: {fee}",
+ "@debtSimFee": {
+  "placeholders": {
+   "fee": {
+    "type": "String"
+   }
+  }
+ },
+ "debtSimInterestSaved": "Interest saved: {saved}",
+ "@debtSimInterestSaved": {
+  "placeholders": {
+   "saved": {
+    "type": "String"
+   }
+  }
+ },
+ "debtSimRemaining": "Installments remaining: {n}",
+ "@debtSimRemaining": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtSimMonthsSaved": " ({n} fewer)",
+ "@debtSimMonthsSaved": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtNameField": "Name",
+ "debtPrincipal": "Principal",
+ "debtStartDate": "Start date",
+ "wdgCancel": "Cancel",
+ "wdgConfirm": "Confirm",
+ "wdgSave": "Save",
+ "wdgDelete": "Delete",
+ "wdgLoadFailed": "Failed to load: {e}",
+ "@wdgLoadFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "wdgBack": "Back",
+ "wdgAmount": "Amount",
+ "wdgDate": "Date",
+ "wdgCloseEsc": "Close (Esc)",
+ "wdgDialogBarrier": "Close dialog",
+ "wdgSheetBarrier": "Close panel",
+ "wdgMinimize": "Minimize",
+ "wdgRestoreDown": "Restore down",
+ "wdgMaximize": "Maximize",
+ "wdgClose": "Close",
+ "wdgDeltaWithPercent": "{amount} ({arrow} {pct}%)",
+ "@wdgDeltaWithPercent": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   },
+   "arrow": {
+    "type": "String"
+   },
+   "pct": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetPageTitle": "Budgets",
+ "budgetCreate": "New budget",
+ "budgetEmptyTitle": "No budgets yet",
+ "budgetEmptyMessage": "Start with a monthly total budget, or set separate limits for categories like dining and shopping — Home will project whether the month ends over budget at your current pace.",
+ "budgetMonthTitle": "Budget this month",
+ "budgetOverspentHero": "Over budget",
+ "budgetRemainingHero": "Left to spend",
+ "budgetTotalLimit": "Total limit",
+ "budgetSpent": "Spent",
+ "budgetOverEnvelopes": "Over-budget envelopes",
+ "budgetEnvelopeCount": "{n}",
+ "@budgetEnvelopeCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "budgetTotalUsagePct": "Total used {v}%",
+ "@budgetTotalUsagePct": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetMonthTotalLimit": "Month total limit",
+ "budgetRemaining": "Remaining",
+ "budgetOverAmount": "Over {amount}",
+ "@budgetOverAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetRemainingAmount": "Left {amount}",
+ "@budgetRemainingAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetEnvelopeActions": "Envelope actions",
+ "budgetDelete": "Delete budget",
+ "budgetLimit": "Limit",
+ "budgetPlanned": "Planned",
+ "budgetPlannedTooltip": "Amount from upcoming plans that will land in this envelope",
+ "budgetDeleteConfirmTitle": "Delete budget?",
+ "budgetDeleteConfirmMessage": "The limit record for \"{name}\" will be deleted; spending that already happened is unaffected.",
+ "@budgetDeleteConfirmMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetForecastExceed": "At this pace you'll spend {projected} by month end ({over} over)",
+ "@budgetForecastExceed": {
+  "placeholders": {
+   "projected": {
+    "type": "String"
+   },
+   "over": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetForecastOk": "At this pace you'll spend about {projected} by month end; {daily} per day left",
+ "@budgetForecastOk": {
+  "placeholders": {
+   "projected": {
+    "type": "String"
+   },
+   "daily": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetMonthlyTotalName": "Monthly total budget",
+ "budgetCategoryBudget": "Category budget",
+ "budgetScopeTotal": "Total budget",
+ "budgetCategoryField": "Category",
+ "budgetMonthlyLimitField": "Monthly limit (¥)",
+ "budgetNameOptionalField": "Name (optional)",
+ "goalsPageTitle": "Goals & reserves",
+ "goalNew": "New goal",
+ "goalEmptyTitle": "No goals yet",
+ "goalEmptyMessage": "Set money aside ahead of big expenses with goals: travel, insurance premiums, tuition, gear…",
+ "goalSummaryTitle": "All goals",
+ "goalSummaryHint": "An overview of reserves set aside for large upcoming expenses",
+ "goalReserved": "Reserved",
+ "goalTotalTarget": "Total target",
+ "goalTotalGap": "Total gap",
+ "goalCount": "Goals",
+ "goalItems": "{n}",
+ "@goalItems": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalActions": "Goal actions",
+ "goalAddReserve": "Add reserve",
+ "goalDelete": "Delete goal",
+ "goalTarget": "Target",
+ "goalGap": "Gap",
+ "goalMonthlyNeed": "Monthly need",
+ "goalMonthlyNeedTooltip": "Target date passed or goal fully funded — nothing more to set aside",
+ "goalDaysLeft": "{n} days left",
+ "@goalDaysLeft": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalOverdueBy": "Overdue by {n} days",
+ "@goalOverdueBy": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalDeleteConfirmTitle": "Delete goal?",
+ "goalDeleteConfirmMessage": "Reserve records for \"{name}\" will be deleted; transfers already made are unaffected.",
+ "@goalDeleteConfirmMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "goalReserveTitle": "Add reserve for \"{name}\"",
+ "@goalReserveTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "goalNameField": "Name",
+ "goalAmountField": "Target amount",
+ "goalDateField": "Target date",
+ "lockOpeningLedger": "Opening encrypted ledger…",
+ "lockWelcome": "Welcome to AssetScope",
+ "lockOpenFailed": "Failed to open: {e}",
+ "@lockOpenFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockCreateFailed": "Failed to create: {e}",
+ "@lockCreateFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockPassphraseRule": "Master passphrase must be at least 8 characters; 12 or more as a passphrase is recommended",
+ "lockPassMismatch": "The two entries do not match",
+ "lockWeakPassphrase": "Passphrase too weak: make it longer or mix character types",
+ "lockEnterPrompt": "Enter your master passphrase or recovery code",
+ "lockWrongCredential": "Incorrect master passphrase or recovery code",
+ "lockUnlockFailed": "Failed to unlock: {e}",
+ "@lockUnlockFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockUnlocking": "Unlocking encrypted ledger…",
+ "lockUnlocked": "Unlocked",
+ "lockSaveRecoveryTitle": "Save your recovery code offline",
+ "lockRecoveryIntro": "The recovery code is your only way back in if you lose the master passphrase. Write it down somewhere safe (do not photograph it or store it in the cloud).",
+ "lockRecoverySaved": "I've saved it — open my ledger",
+ "lockCreateHint": "Create an encrypted ledger: set a master passphrase (8+ characters)",
+ "lockPassphraseTooltip": "The master passphrase derives the key that encrypts all your data. It cannot be recovered — only the recovery code can save you",
+ "lockRepeatPassphrase": "Re-enter the master passphrase",
+ "lockUnlockHint": "Master passphrase or recovery code",
+ "lockRecoveryNotice": "You can also unlock directly with the recovery code",
+ "lockForgotPassphrase": "Forgot the passphrase? Use the recovery code",
+ "shellCollapseMenu": "Collapse category menu",
+ "shellExpandMenu": "Expand category menu",
+ "shellMenuLabel": "Category menu",
+ "shellNavTitle": "Categories",
+ "shellPinnedTip": "Pinned: menu stays open",
+ "shellUnpinnedTip": "Unpinned: collapses after navigation",
+ "globeRestorePage": "Restore page",
+ "globeClearScreen": "Clear the deck: globe only",
+ "ovMonths": "Last {n} mo",
+ "@ovMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovTrGoReport": "Open monthly attribution",
+ "ovNwTitle": "Net worth",
+ "ovNwHint": "Assets, structure and account changes at a glance.",
+ "ovNwMonthDelta": "vs last month",
+ "ovNwCoverage": "Valuation coverage {n}/{m}",
+ "@ovNwCoverage": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "ovNwCoverageHint": "Accounts with a current valuation among those included in net worth. Missing ones count as zero and are flagged.",
+ "ovNwGlobe": "Global asset map",
+ "ovNwGlobeHint": "Geotagged assets glow on the globe; drag to rotate, scroll to zoom, tap a marker for details.",
+ "ovNwLocatedNote": "{n} located · {m} unmapped",
+ "@ovNwLocatedNote": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "ovNwAssetTypes": "Asset mix",
+ "ovNwAssetTypesHint": "Grouped by business class: cash, holdings, steady wealth, long-term assets.",
+ "ovNwGroupCash": "Cash & demand",
+ "ovNwGroupHold": "Investment holdings",
+ "ovNwGroupSteady": "Steady wealth",
+ "ovNwGroupLong": "Long-term assets",
+ "ovNwNoAssets": "No assets yet",
+ "ovNwNoAssetsMsg": "Add your first asset from the home page to light up the globe.",
+ "ovNwGroupTitle": "Account distribution",
+ "ovNwGroupHint": "Asset share by business group.",
+ "ovNwTopAccounts": "Top accounts",
+ "ovNwViewAll": "All assets",
+ "ovNwMissingHint": "Missing a current valuation; counted as zero for now.",
+ "ovNwTrendEmpty": "Trend pending",
+ "ovNwTrendEmptyMsg": "The curve appears after one full month of ledger data.",
+ "ovNwAttribution": "This month's attribution",
+ "ovNwAttributionHint": "Net-worth change split into cash flow, investment, FX and other valuations; unexplained parts go to residual.",
+ "ovNwNetChange": "Net change",
+ "ovNwAttrIncomeExpense": "Income − expense",
+ "ovNwAttrIncomeHint": "Regular income minus regular spending (transfers and trades excluded).",
+ "ovNwAttrInvest": "Investment P&L",
+ "ovNwAttrInvestHint": "Realized P&L + dividends + change in unrealized P&L.",
+ "ovNwAttrFx": "FX effect",
+ "ovNwAttrFxHint": "Revaluation of foreign-currency positions and conversion P&L.",
+ "ovNwAttrOther": "Other valuations",
+ "ovNwAttrOtherHint": "Manual valuations (property etc.) change over the month.",
+ "ovNwAttrCorrection": "Corrections",
+ "ovNwAttrCorrectionHint": "Equity-account adjustments such as historical corrections.",
+ "ovNwAttrResidual": "Residual",
+ "ovCfTitle": "Monthly cash flow",
+ "ovCfHint": "Every cash flow, spending structure and budget in one place.",
+ "ovCfIncomeHint": "Aggregated by income accounts; investment P&L is disclosed in attribution.",
+ "ovCfExpenseHint": "Actual spending and fees; card purchases count in-month.",
+ "ovCfSurplusHint": "Income minus spending. Transfers are neither; buying assets is not spending.",
+ "ovCfDailyTitle": "Daily cash flow",
+ "ovCfDailyHint": "Bars are daily income/spending; the bright line is cumulative net. Hover for details.",
+ "ovCfNetLine": "Cumulative net",
+ "ovCfExpenseCatTitle": "Spending by category",
+ "ovCfExpenseCatHint": "Aggregated by expense accounts.",
+ "ovCfOthers": "Others",
+ "ovCfNoExpense": "No spending this month",
+ "ovCfMonthExpense": "Month spend",
+ "ovCfIncomeTitle": "Income sources",
+ "ovCfNoIncome": "No income this month",
+ "ovCfBudgetTitle": "Budget execution",
+ "ovCfBudgetHint": "Monthly total budget vs actual spending.",
+ "ovCfNoBudget": "No budget set",
+ "ovCfNoBudgetMsg": "Set a monthly budget to see execution here.",
+ "ovCfBudgetOf": "Limit {x}",
+ "@ovCfBudgetOf": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovCfBudgetUsed": "Used",
+ "ovCfOverBy": "Over by",
+ "ovCfBudgetLeft": "Left",
+ "ovCfHeatTitle": "Cash-flow heatmap",
+ "ovCfHeatHint": "Darker means larger: blue = net-in day, red = net-out day.",
+ "ovCfRecentTitle": "Recent transactions",
+ "ovCfRecentHint": "Latest transactions this month; tap for details.",
+ "ovCfNoTx": "No transactions",
+ "ovCfUntitled": "Untitled",
+ "ovHlTitle": "Financial health",
+ "ovHlHint": "A health check across saving, emergency fund, leverage and fixed-cost coverage.",
+ "ovHlTargetSave": "Target ≥ 30%",
+ "ovHlTargetEmergency": "Target ≥ 6 months",
+ "ovHlTargetLeverage": "Target ≤ 50%",
+ "ovHlTargetCushion": "Target ≥ 100%",
+ "ovHlCushion": "Fixed-cost cover",
+ "ovHlCushionHint": "How much of fixed costs are covered by fixed income at month end.",
+ "ovHlScoreTitle": "Health score",
+ "ovHlScoreHint": "Average of available metrics normalized to their target bands; shows honestly when data is insufficient.",
+ "ovHlNoScore": "Not scoreable",
+ "ovHlExcellent": "Excellent",
+ "ovHlGood": "Good",
+ "ovHlAttention": "Watch",
+ "ovHlRisk": "At risk",
+ "ovHlMissing": "Missing data: {x}",
+ "@ovHlMissing": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovHlScoreNote": "From {n} real metrics",
+ "@ovHlScoreNote": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlOrbitTitle": "Dimension orbit",
+ "ovHlOrbitHint": "Four dimension stars orbit the score; color encodes status: blue=ok, amber=watch, red=risk.",
+ "ovHlRadarTitle": "Target radar",
+ "ovHlRadarHint": "Current values (blue) vs target band (amber).",
+ "ovHlCurrent": "Current",
+ "ovHlTarget": "Target",
+ "ovHlPace": "Spending pace",
+ "ovHlPaceDays": "{n} days in",
+ "@ovHlPaceDays": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlCoverage": "Valuation coverage",
+ "ovHlCoverageSub": "covered accounts",
+ "ovHlDiagTitle": "Diagnosis",
+ "ovHlDiagHint": "Auto-bucketed by score: ≥75% strength, 40–75% to improve, <40% risk.",
+ "ovHlDiagValuation": "valuation gaps",
+ "ovHlDiagGood": "Strengths",
+ "ovHlDiagRisk": "Risks",
+ "ovHlDiagImprove": "To improve",
+ "ovHlDiagEmpty": "Not enough data yet — keep the ledger going.",
+ "ovHlDiagNone": "—",
+ "ovHlActTitle": "Actions",
+ "ovHlActHint": "Sorted by weakest dimension; each links to the right page.",
+ "ovHlActValuation": "Fix {n} valuations",
+ "@ovHlActValuation": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlActValuationSub": "Missing valuations distort net worth",
+ "ovHlActSave": "Raise your savings rate",
+ "ovHlActSaveSub": "Set a budget and pay yourself first",
+ "ovHlActEmergency": "Build the emergency fund",
+ "ovHlActEmergencySub": "Target: 6 months of essentials",
+ "ovHlActLeverage": "Reduce leverage",
+ "ovHlActLeverageSub": "Pay high-interest debts first",
+ "ovHlActCushion": "Balance fixed flows",
+ "ovHlActCushionSub": "Review recurring plans and repayments",
+ "ovHlActEmpty": "All dimensions on track. Keep it up.",
+ "ovHlActGo": "Take action",
+ "ovBsTitle": "Balance sheet",
+ "ovBsHint": "A professional view of assets, liabilities and structure.",
+ "ovBsAssetsHint": "Base-currency total of all asset accounts.",
+ "ovBsLiabHint": "Base-currency total of all liability accounts.",
+ "ovBsScaleTitle": "The balance",
+ "ovBsScaleHint": "Beam tilt mirrors the debt ratio; level at 50%. Visual only, not a calculation.",
+ "ovBsTreemapTitle": "Asset treemap",
+ "ovBsTreemapHint": "Area = share of total; tap a block to inspect.",
+ "ovBsAssetTableTitle": "Asset classes",
+ "ovBsAssetTableHint": "By asset subtype; delta vs month start.",
+ "ovBsColClass": "Class",
+ "ovBsColAmount": "Amount",
+ "ovBsColShare": "Share",
+ "ovBsColDelta": "Δ",
+ "ovBsLiabTableTitle": "Liabilities",
+ "ovBsLiabTableHint": "By liability subtype.",
+ "ovBsNoDebt": "Debt free",
+ "ovBsNoDebtMsg": "No liability accounts right now.",
+ "ovBsLiquidityTitle": "Liquidity",
+ "ovBsLiquidityHint": "By days to liquidate: ≤1d, ≤90d, >90d.",
+ "ovBsLiquidNow": "On demand",
+ "ovBsLiquidMid": "Within 90 days",
+ "ovBsLiquidLong": "Long term",
+ "ovBsLiabMixTitle": "Liability mix",
+ "ovBsLiabMixHint": "Share by liability subtype.",
+ "ovBsDualTitle": "Assets vs liabilities",
+ "ovBsDualHint": "Twelve months side by side.",
+ "ovSpTitle": "Safe to spend ({n}d)",
+ "@ovSpTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpHint": "How much you can safely spend after reserves and known obligations.",
+ "ovSpHeroTitle": "Discretionary · {n}d",
+ "@ovSpHeroTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpHeroHint": "Discretionary = min over days of (cash − reserve − floor); not your whole net worth.",
+ "ovSpHeroOk": "Ceiling for unplanned spending",
+ "ovSpHeroZero": "Plans already touch the safety line — no slack left",
+ "ovSpCashNow": "Liquid cash now",
+ "ovSpPlannedOut": "Known outflows",
+ "ovSpReserved": "Reserved (goals+floor)",
+ "ovSpRemain": "Discretionary",
+ "ovSpScenTitle": "Scenarios",
+ "ovSpScenHint": "Same starting cash and reserves; only the event stream changes.",
+ "ovSpScenConservative": "Conservative",
+ "ovSpScenConsSub": "Confirmed income only",
+ "ovSpScenStandard": "Standard",
+ "ovSpScenStdSub": "Same as home forecast",
+ "ovSpScenOptimistic": "Optimistic",
+ "ovSpScenOptSub": "Flexible estimates excluded",
+ "ovSpKpiSafe": "Safe to spend ({n}d)",
+ "@ovSpKpiSafe": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiMonthCap": "Suggested monthly cap",
+ "ovSpKpiMonthCapHint": "Discretionary prorated over {n} days.",
+ "@ovSpKpiMonthCapHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiDaily": "Daily allowance",
+ "ovSpKpiDailyHint": "Discretionary ÷ {n} days.",
+ "@ovSpKpiDailyHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiLow": "Cash low point",
+ "ovSpKpiLowHint": "No outflow events in the horizon.",
+ "ovSpKpiLowAt": "Bottoms on {x}",
+ "@ovSpKpiLowAt": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpFcTitle": "{n}-day cash forecast",
+ "@ovSpFcTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpFcHint": "Line = daily cash; dashes = safety floor (reserve+baseline); red dots = shortfall days.",
+ "ovSpFloorLabel": "Safety floor",
+ "ovSpFlowTitle": "In & out",
+ "ovSpFlowHint": "All cash events in the horizon (base currency).",
+ "ovSpFlowIn": "Expected in",
+ "ovSpFlowOut": "Expected out",
+ "ovSpFlowNet": "Net flow",
+ "ovSpFlowPlanned": "Planned spending",
+ "ovSpFlowDebt": "Debt repayment",
+ "ovSpFlowBudget": "Budget baseline",
+ "ovSpFlowIncome": "Expected income",
+ "ovSpFlowOther": "Other",
+ "ovSpMonthTitle": "Monthly allocation",
+ "ovSpMonthHint": "Blue = planned outflow; gold = suggested cap (planned + prorated discretionary).",
+ "ovSpMonthPlanned": "Planned",
+ "ovSpMonthCap": "Cap",
+ "ovSpCalTitle": "Spending calendar",
+ "ovSpCalHint": "Outflow intensity; red dots mark forecast shortfalls.",
+ "ovSpCalDay": "out {x}",
+ "@ovSpCalDay": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpCalShortfall": "shortfall",
+ "ovSpRiskTitle": "Risks & advice",
+ "ovSpRiskHint": "Shortfalls come from the replay; advice is rule-based.",
+ "ovSpRiskNone": "No shortfall forecast in the next {n} days.",
+ "@ovSpRiskNone": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpAdviceTitle": "Advice",
+ "ovSpAdviceScenario": "Plan on the conservative scenario: confirmed income only, discretionary {x}.",
+ "@ovSpAdviceScenario": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpAdviceZero": "Zero discretionary: trim planned spending or top up cash first.",
+ "ovSpAdviceReconcile": "Keep the ledger and valuations fresh for a trustworthy forecast.",
+ "ovTrTitle": "Net-worth trend",
+ "ovTrHint": "History, one series at the center.",
+ "ovTrCurrent": "Current",
+ "ovTrChange": "Period change",
+ "ovTrChangeHint": "Change from {a} to {b}.",
+ "@ovTrChangeHint": {
+  "placeholders": {
+   "a": {
+    "type": "String"
+   },
+   "b": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrGrowth": "Growth rate",
+ "ovTrGrowthHint": "Change over the absolute starting value.",
+ "ovTrMax": "Peak",
+ "ovTrMin": "Trough",
+ "ovTrChartTitle": "The big chart",
+ "ovTrAll": "All",
+ "ovTrInsightTitle": "Key insights",
+ "ovTrInsightHint": "Derived from the real series; growth is never assumed.",
+ "ovTrStreak": "{n}-month streak",
+ "@ovTrStreak": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovTrStreakSub": "rising month over month",
+ "ovTrBigMove": "Biggest monthly move: {m} ({x})",
+ "@ovTrBigMove": {
+  "placeholders": {
+   "m": {
+    "type": "String"
+   },
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrMilestone": "Next round milestone in {n} months ({m})",
+ "@ovTrMilestone": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrMilestoneSub": "Theil–Sen trend: {x} per month",
+ "@ovTrMilestoneSub": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrAttributionGo": "For this month, see the waterfall and the report.",
+ "ovTrWfStart": "Start",
+ "ovTrWfEnd": "End",
+ "ovTrWfTitle": "Attribution waterfall",
+ "ovUpTitle": "Next 30 days",
+ "ovUpHint": "Bills and planned spending ahead.",
+ "ovUpPlanned30": "Planned in 30d",
+ "ovUpPlannedHint": "Planned outflows not yet posted.",
+ "ovUpDue7": "Due in 7d",
+ "ovUpDue7Hint": "Outflows due within seven days.",
+ "ovUpOverdue": "Overdue",
+ "ovUpOverdueHint": "Due occurrences not yet posted.",
+ "ovUpNone": "None",
+ "ovUpRecurring": "Recurring",
+ "ovUpRecurringHint": "Active recurring events.",
+ "ovUpCalTitle": "Bill calendar",
+ "ovUpCalHint": "Today in steel; within 3 days amber; overdue red; posted green. Tap a day for details.",
+ "ovUpModeCal": "Calendar",
+ "ovUpModeTimeline": "Timeline",
+ "ovUpItemCount": "{n} items",
+ "@ovUpItemCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovUpDueTitle": "Due soon",
+ "ovUpDueHint": "Sorted by date; status: pending/overdue/posted.",
+ "ovUpAllSettled": "Nothing pending in the next 30 days",
+ "ovUpGoPost": "Post bills in Plans",
+ "ovUpFixedTitle": "Recurring items",
+ "ovUpFixedHint": "Recurring events and their next date.",
+ "ovUpNoFixed": "No recurring plans",
+ "ovUpNextAt": "next {x}",
+ "@ovUpNextAt": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovUpWeekTitle": "Weekly outflows",
+ "ovUpWeekHint": "Planned outflow per week; current week in amber.",
+ "ovUpWeekLabel": "W{n}",
+ "@ovUpWeekLabel": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovIxTitle": "Task center",
+ "ovIxHint": "One place for valuation gaps, due plans, reconciliation and cash alerts.",
+ "ovIxStatHigh": "High priority",
+ "ovIxStatMissing": "Missing values",
+ "ovIxStatStale": "Stale values",
+ "ovIxStatReconcile": "Reconcile & alerts",
+ "ovIxTableTitle": "Tasks",
+ "ovIxTableHint": "All from real records; done items disappear by themselves.",
+ "ovIxFilterAll": "All",
+ "ovIxFilterUrgent": "Urgent",
+ "ovIxFilterToday": "Today",
+ "ovIxFilterWeek": "This week",
+ "ovIxColTask": "Task",
+ "ovIxColType": "Type",
+ "ovIxColPriority": "Priority",
+ "ovIxColDue": "Due",
+ "ovIxNoMatch": "No tasks under this filter",
+ "ovIxTypeDue": "Due plan",
+ "ovIxTypeMissing": "Missing value",
+ "ovIxTypeStale": "Stale value",
+ "ovIxTypeResidual": "Residual",
+ "ovIxTypeShortfall": "Cash alert",
+ "ovIxPriorityHigh": "High",
+ "ovIxPriorityMedium": "Med",
+ "ovIxPriorityLow": "Low",
+ "ovIxResidualTask": "Attribution residual {x} to reconcile",
+ "@ovIxResidualTask": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovIxAction": "Open the related page to resolve",
+ "ovIxGo": "Go",
+ "ovIxQuickTitle": "Quick actions",
+ "ovIxQuickHint": "Frequent fixes.",
+ "ovIxAValuation": "Fix valuations",
+ "ovIxAValuationSub": "Add current values where missing",
+ "ovIxAPost": "Post plans",
+ "ovIxAPostSub": "Turn due plans into real transactions",
+ "ovIxALedger": "Reconcile",
+ "ovIxALedgerSub": "Check the ledger and residuals",
+ "ovIxASpendable": "Cash forecast",
+ "ovIxASpendableSub": "How much is safe to spend",
+ "ovIxTimelineTitle": "Alert timeline",
+ "ovIxTimelineHint": "By date and priority.",
+ "ovIxNoDue": "No due date",
+ "ovIxEmptyTitle": "All clear.",
+ "ovIxEmptyMsg": "Values fresh, plans posted, books reconciled. Keep it up.",
+ "settingsRelNow": "Just now",
+ "settingsRelMin": "{n} min ago",
+ "@settingsRelMin": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsRelHour": "{n} h ago",
+ "@settingsRelHour": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsRelDay": "{n} d ago",
+ "@settingsRelDay": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsSecHeroHint": "A security overview of encryption, passphrase and recovery.",
+ "settingsStatLocalEncrypt": "Local encryption",
+ "settingsStatEnabled": "Enabled",
+ "settingsStatLocalEncryptTip": "The database is encrypted on-device; keys never leave this machine.",
+ "settingsStatPassphrase": "Master passphrase",
+ "settingsStatSet": "Set",
+ "settingsStatPassphraseTip": "Used for unlock and backup encryption.",
+ "settingsStatRecovery": "Recovery code",
+ "settingsStatConfigured": "Configured",
+ "settingsStatNotConfigured": "Not configured",
+ "settingsStatRecoveryTip": "How to regain access if the passphrase is lost.",
+ "settingsSessionTitle": "Session & protection",
+ "settingsSessionHint": "Auto-lock and startup verification.",
+ "settingsAutoLockRowHint": "Lock automatically after being idle.",
+ "settingsStartupVerify": "Startup verification",
+ "settingsStartupVerifyHint": "Require verification when the app launches.",
+ "settingsStartupVerifyValue": "On",
+ "settingsRecentTitle": "Recent security activity",
+ "settingsRecentHint": "Unlock, lock and configuration changes.",
+ "settingsEvEmpty": "No security activity yet",
+ "settingsEvLock": "App locked",
+ "settingsEvUnlock": "App unlocked",
+ "settingsEvPass": "Passphrase changed",
+ "settingsEvRecovery": "Recovery code regenerated",
+ "settingsEvConfig": "Security setting changed",
+ "settingsAiStatusTitle": "AI service status",
+ "settingsAiStatusHint": "Model and web-search setup.",
+ "settingsAiOn": "On",
+ "settingsAiOff": "Off",
+ "settingsAiUnconfigured": "Not configured",
+ "settingsAiProvider": "Provider",
+ "settingsAiModel": "Model",
+ "settingsAiCustom": "Custom",
+ "settingsAiWebSearch": "Web search",
+ "settingsBkOverviewTitle": "Backup",
+ "settingsBkOverviewHint": "Last backup and its container.",
+ "settingsBkLastBackup": "Last backup",
+ "settingsBkLastBackupTip": "When the last backup succeeded.",
+ "settingsBkNever": "Never",
+ "settingsBkContainer": "Container",
+ "settingsBkContainerTip": ".asbk encrypted container: sealed by its own backup passphrase, independent of the master passphrase.",
+ "settingsDataOverviewTitle": "Data overview",
+ "settingsDataOverviewHint": "The size of your ledger.",
+ "settingsDataAccounts": "Accounts",
+ "settingsDataTxns": "Transactions",
+ "settingsDataCurrencies": "Currencies",
+ "settingsPrefAppearanceTitle": "Appearance",
+ "settingsPrefAppearanceHint": "Theme and motion preferences.",
+ "settingsPrefMoneyTitle": "Money",
+ "settingsPrefMoneyHint": "Base currency and rates.",
+ "settingsPrefForecastTitle": "Forecast",
+ "settingsPrefForecastHint": "Cash forecast horizon.",
+ "settingsAboutVersion": "App version",
+ "settingsAboutVersionHint": "Current app version.",
+ "settingsPageHint": "Manage account security, data, system preferences and AI services.",
+ "settingsHeaderShield": "Encrypted",
+ "settingsHeaderShieldTip": "The ledger database is fully encrypted; keys are derived locally from your master passphrase and never leave this device.",
+ "settingsThemeModeLabel": "Theme mode"
+}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/invest/allocation.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/portfolio_analytics_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -41,6 +42,7 @@ class AllocationCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return ref
         .watch(allocationProvider)
         .when(
@@ -48,18 +50,18 @@ class AllocationCard extends ConsumerWidget {
             height: 60,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+          error: (e, _) => ErrorPlaceholder(t.loadFailedReports(e.toString())),
           data: (r) => SectionCard(
-            title: '资产配置',
+            title: t.assetAllocation,
             trailing: IconButton(
-              tooltip: '设置目标配置',
+              tooltip: t.setTargetAllocation,
               icon: const Icon(Icons.flag_outlined, size: 18),
               onPressed: () =>
                   showAllocationTargetSheet(context, ref, r.targets),
             ),
             child: r.slices.isEmpty
                 ? Text(
-                    '还没有资产。记账后这里会展示你的资产结构。',
+                    t.allocNoAssetsHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                     ),
@@ -73,7 +75,7 @@ class AllocationCard extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 4, bottom: 4),
                           child: Text(
-                            '⚠ ${r.missingValuations} 个账户估值缺失（按 0 计入占比）',
+                            t.allocMissingValuations(r.missingValuations),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: AppColors.brassOf(theme.brightness),
                             ),
@@ -84,7 +86,7 @@ class AllocationCard extends ConsumerWidget {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            '再平衡建议（5/25 带宽法）',
+                            t.rebalanceAdviceTitle,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -95,7 +97,7 @@ class AllocationCard extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            '偏离超过 max(5 个百分点, 目标的 25%) 时提醒，交易回带边（非回到目标，降低换手）。',
+                            t.rebalanceAdviceNote,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.hintColor,
                               fontSize: 11,
@@ -106,7 +108,7 @@ class AllocationCard extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            '配置均在目标带宽内 ✓',
+                            t.allocWithinBand,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: AppColors.positiveOf(theme.brightness),
                             ),
@@ -145,6 +147,7 @@ class AllocationCard extends ConsumerWidget {
     AllocationSlice s,
   ) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final target = r.targets[s.allocationClass];
     final sharePct = (s.share.asDouble() * 100);
     final drift = target == null ? null : sharePct - target;
@@ -166,7 +169,7 @@ class AllocationCard extends ConsumerWidget {
       subtitle: target == null
           ? null
           : Text(
-              '目标 $target%',
+              t.allocTargetPct(target),
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
             ),
       trailing: Row(
@@ -210,6 +213,7 @@ class AllocationCard extends ConsumerWidget {
     RebalanceAdvice a,
   ) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final isBuy = a.action == RebalanceAction.buy;
     return ListTile(
       dense: true,
@@ -222,11 +226,13 @@ class AllocationCard extends ConsumerWidget {
             : AppColors.negativeOf(theme.brightness),
       ),
       title: Text(
-        '${isBuy ? '买入' : '卖出'}${a.allocationClass.labelZh} ≈ ${fmtMinor(a.tradeMinor, r.baseCurrencyCode)}',
+        '${isBuy ? t.rebalanceBuy : t.rebalanceSell}${a.allocationClass.labelZh} ≈ ${fmtMinor(a.tradeMinor, r.baseCurrencyCode)}',
       ),
       subtitle: Text(
-        '当前 ${(a.currentShare.asDouble() * 100).toStringAsFixed(1)}% → 回到带宽边 '
-        '${(a.targetShare.asDouble() * 100).toStringAsFixed(0)}%±带',
+        t.rebalanceAdviceDetail(
+          (a.currentShare.asDouble() * 100).toStringAsFixed(1),
+          (a.targetShare.asDouble() * 100).toStringAsFixed(0),
+        ),
         style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
       ),
     );

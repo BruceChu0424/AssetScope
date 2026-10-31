@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import 'currency.dart';
 import 'money.dart';
 
@@ -21,7 +22,7 @@ class Rational {
 
   factory Rational.parseDecimal(String s) {
     s = s.trim();
-    if (s.isEmpty) throw const FormatException('空数字');
+    if (s.isEmpty) throw FormatException(rt('空数字'));
     var neg = false;
     if (s.startsWith('-')) {
       neg = true;
@@ -167,7 +168,7 @@ class FxRate {
       r = Rational.one / rate;
       dst = from;
     } else {
-      throw ArgumentError('汇率 $from->$to 无法处理币种 ${src.code}');
+      throw ArgumentError(rt('汇率 $from->$to 无法处理币种 ${src.code}'));
     }
     // minor_out = minor_in × rate × (factor_to / factor_from)
     final scaled =

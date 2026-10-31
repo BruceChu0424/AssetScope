@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../app_database.dart';
 
 /// 账户仓储：DB 行 ↔ 领域实体。
@@ -155,7 +156,7 @@ class AccountsRepo {
           .insertOnConflictUpdate(
             AccountsCompanion.insert(
               id: costId,
-              name: '$name-成本',
+              name: '$name-${rt('成本')}',
               type: 'asset',
               currencyCode: currencyCode,
               includeInNetWorth: const Value(false),

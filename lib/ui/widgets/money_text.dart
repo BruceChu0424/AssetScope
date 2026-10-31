@@ -53,6 +53,7 @@ class MoneyText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _styles[size]!.copyWith(
+      fontFamily: AppFonts.mono,
       fontFeatures: const [FontFeature.tabularFigures()],
       color:
           color ??

@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/recurrence.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -15,34 +16,74 @@ class GoalsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     final async = ref.watch(_goalsProvider);
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
     return PageFrame(
-      title: '目标与准备金',
-      maxWidth: 980,
+      title: t.goalsPageTitle,
+      maxWidth: wide ? AppMeasure.workbench : 980,
       fab: ParticleEdge(
         band: 12,
         extendBelow: 6,
         child: FloatingActionButton.extended(
-          onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (_) => const _GoalEditDialog(),
-            );
-            if (ok == true) ref.invalidate(_goalsProvider);
-          },
+          onPressed: () => _newGoal(context, ref),
           icon: const Icon(Icons.add),
-          label: const Text('新建目标'),
+          label: Text(t.goalNew),
         ),
       ),
       child: async.when(
         loading: () => const Center(child: OrbitSpinner(size: 36)),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+        error: (e, _) => ErrorPlaceholder(t.wdgLoadFailed(e.toString())),
         data: (goals) {
           if (goals.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.flag_outlined,
-              title: '还没有目标',
-              message: '用目标为大额支出提前留钱：旅行、保费、学费、设备……',
+              title: t.goalEmptyTitle,
+              message: t.goalEmptyMessage,
+            );
+          }
+          if (wide) {
+            final target = goals.fold(
+              BigInt.zero, (s, g) => s + g.targetAmountMinor);
+            final reserved = goals.fold(
+              BigInt.zero, (s, g) => s + g.reservedAmountMinor);
+            final gap = target - reserved;
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 300,
+                    child: SummaryPanel(
+                      title: t.goalSummaryTitle,
+                      hint: t.goalSummaryHint,
+                      heroValue: fmtMinor(reserved, 'CNY'),
+                      heroLabel: t.goalReserved,
+                      rows: [
+                        SummaryRow(t.goalTotalTarget, fmtMinor(target, 'CNY')),
+                        SummaryRow(
+                          t.goalTotalGap,
+                          fmtMinor(gap.isNegative ? BigInt.zero : gap, 'CNY'),
+                          color: gap > BigInt.zero
+                              ? AppColors.warnOf(
+                                  Theme.of(context).brightness,
+                                )
+                              : null,
+                        ),
+                        SummaryRow(t.goalCount, t.goalItems(goals.length)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: PageMeasure.gutter),
+                  Expanded(
+                    child: CardWrap(
+                      tileWidth: 400,
+                      children: [for (final g in goals) _GoalCard(goal: g)],
+                    ),
+                  ),
+                ],
+              ),
             );
           }
           return ListView(
@@ -58,6 +99,14 @@ class GoalsPage extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _newGoal(BuildContext context, WidgetRef ref) async {
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (_) => const _GoalEditDialog(),
+    );
+    if (ok == true) ref.invalidate(_goalsProvider);
+  }
 }
 
 /// 单只目标卡：左环右文。环=已留比例；缺口/每月需用 AmountTile 行。
@@ -68,6 +117,7 @@ class _GoalCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final now = DateTime.now();
     final ratio = goal.targetAmountMinor == BigInt.zero
@@ -98,13 +148,21 @@ class _GoalCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, size: 20, color: theme.hintColor),
-                  tooltip: '目标操作',
+                ParticleMenuButton<String>(
+                  tooltip: t.goalActions,
                   onSelected: (a) => _onAction(context, ref, a),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'reserve', child: Text('增加预留')),
-                    PopupMenuItem(value: 'delete', child: Text('删除目标')),
+                  items: [
+                    ParticleMenuEntry(
+                      value: 'reserve',
+                      label: t.goalAddReserve,
+                      icon: Icons.savings_outlined,
+                    ),
+                    ParticleMenuEntry(
+                      value: 'delete',
+                      label: t.goalDelete,
+                      icon: Icons.delete_outline,
+                      destructive: true,
+                    ),
                   ],
                 ),
               ],
@@ -119,12 +177,12 @@ class _GoalCard extends ConsumerWidget {
                   child: Column(
                     children: [
                       AmountTile(
-                        label: '目标',
+                        label: t.goalTarget,
                         amount: fmtMinor(goal.targetAmountMinor, 'CNY'),
                       ),
                       const SizedBox(height: 8),
                       AmountTile(
-                        label: '已留',
+                        label: t.goalReserved,
                         amount: fmtMinor(goal.reservedAmountMinor, 'CNY'),
                       ),
                     ],
@@ -134,7 +192,7 @@ class _GoalCard extends ConsumerWidget {
                   child: Column(
                     children: [
                       AmountTile(
-                        label: '缺口',
+                        label: t.goalGap,
                         amount: fmtMinor(gap, 'CNY'),
                         color: gap > BigInt.zero
                             ? AppColors.warnOf(theme.brightness)
@@ -142,9 +200,11 @@ class _GoalCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       AmountTile(
-                        label: '每月需留',
+                        label: t.goalMonthlyNeed,
                         amount: monthly == null ? '—' : fmtMinor(monthly, 'CNY'),
-                        tooltip: monthly == null ? '目标日已过或已留满，无需再留' : null,
+                        tooltip: monthly == null
+                            ? t.goalMonthlyNeedTooltip
+                            : null,
                       ),
                     ],
                   ),
@@ -161,7 +221,9 @@ class _GoalCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  daysLeft >= 0 ? '还有 $daysLeft 天' : '已过期 ${-daysLeft} 天',
+                  daysLeft >= 0
+                      ? t.goalDaysLeft(daysLeft)
+                      : t.goalOverdueBy(-daysLeft),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: daysLeft >= 30
                         ? theme.hintColor
@@ -173,7 +235,7 @@ class _GoalCard extends ConsumerWidget {
                 TextButton.icon(
                   onPressed: () => _addReserved(context, ref),
                   icon: const Icon(Icons.add_circle_outline, size: 17),
-                  label: const Text('增加预留'),
+                      label: Text(t.goalAddReserve),
                 ),
               ],
             ),
@@ -189,14 +251,15 @@ class _GoalCard extends ConsumerWidget {
     WidgetRef ref,
     String action,
   ) async {
+    final t = AppLocalizations.of(context);
     if (action == 'reserve') return _addReserved(context, ref);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final ok = await confirmDialog(
       context,
-      title: '删除目标？',
-      message: '「${goal.name}」的预留记录将删除，已发生的转账不受影响。',
-      confirmLabel: '删除',
+      title: t.goalDeleteConfirmTitle,
+      message: t.goalDeleteConfirmMessage(goal.name),
+      confirmLabel: t.wdgDelete,
       destructive: true,
     );
     if (ok != true) return;
@@ -205,26 +268,26 @@ class _GoalCard extends ConsumerWidget {
   }
 
   Future<void> _addReserved(BuildContext context, WidgetRef ref) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final ctrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('为「${goal.name}」增加预留'),
-        content: ParticleTextField(
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (dctx) => AppDialog(
+        title: t.goalReserveTitle(goal.name),
+        content: AppAmountField(
           controller: ctrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: '金额（元）'),
+          currencyCode: 'CNY',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            onPressed: () => Navigator.pop(dctx, false),
+            child: Text(t.wdgCancel),
           ),
           ParticleFilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('保存'),
+            onPressed: () => Navigator.pop(dctx, true),
+            child: Text(t.wdgSave),
           ),
         ],
       ),
@@ -299,34 +362,34 @@ class _GoalEditDialogState extends ConsumerState<_GoalEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('新建目标'),
+    final t = AppLocalizations.of(context);
+    return AppDialog(
+      title: t.goalNew,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ParticleTextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: '名称'),
+            autofocus: true,
+            decoration: InputDecoration(labelText: t.goalNameField),
           ),
-          const SizedBox(height: 8),
-          ParticleTextField(
+          const SizedBox(height: 14),
+          AppAmountField(
             controller: _amount,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: '目标金额（元）'),
+            currencyCode: 'CNY',
+            label: t.goalAmountField,
           ),
-          const SizedBox(height: 8),
-          ParticleTextField(
-            controller: _date,
-            decoration: const InputDecoration(labelText: '目标日期 (yyyy-mm-dd)'),
-          ),
+          const SizedBox(height: 14),
+          AppDateField(controller: _date, label: t.goalDateField),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          child: Text(t.wdgCancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.wdgSave)),
       ],
     );
   }

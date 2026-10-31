@@ -4,7 +4,9 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/life_planner.dart';
-import '../widgets/particle_interactive.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
+import '../widgets/common.dart';
 
 /// 人生规划事件的新建/编辑对话框 + 摘要文案。
 
@@ -13,20 +15,20 @@ Future<LifeEvent?> showLifeEventDialog(
   LifeEvent? initial,
 }) async {
   if (initial != null) {
-    return showDialog<LifeEvent>(
-      context: context,
+    return showAppDialog<LifeEvent>(
+      context,
       builder: (_) => _EventFormDialog(event: initial),
     );
   }
   // 类型选择先返回索引，由外层（活跃）context 弹表单——
   // 在对话框 onPressed 里 pop 后立刻用自身 context 会查已失活的 element。
-  final kind = await showDialog<int>(
-    context: context,
+  final kind = await showAppDialog<int>(
+    context,
     builder: (_) => const _EventTypeDialog(),
   );
   if (kind == null || !context.mounted) return null;
-  return showDialog<LifeEvent>(
-    context: context,
+  return showAppDialog<LifeEvent>(
+    context,
     builder: (_) => _EventFormDialog(kind: kind),
   );
 }
@@ -35,32 +37,41 @@ Future<LifeEvent?> showLifeEventDialog(
 class _EventTypeDialog extends StatelessWidget {
   const _EventTypeDialog();
 
-  static const _types = [
-    (Icons.home_work_outlined, '买房（含贷款）'),
-    (Icons.child_care_outlined, '生孩子 / 抚养'),
-    (Icons.trending_up, '收入跳变（升职/失业）'),
-    (Icons.beach_access_outlined, '退休'),
-    (Icons.directions_car_outlined, '大件购置（换车等）'),
-    (Icons.payments_outlined, '一次性大额收支'),
+  static final _types = [
+    (Icons.home_work_outlined, rt('买房（含贷款）')),
+    (Icons.child_care_outlined, rt('生孩子 / 抚养')),
+    (Icons.trending_up, rt('收入跳变（升职/失业）')),
+    (Icons.beach_access_outlined, rt('退休')),
+    (Icons.directions_car_outlined, rt('大件购置（换车等）')),
+    (Icons.payments_outlined, rt('一次性大额收支')),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return SimpleDialog(
-      title: const Text('添加人生事件'),
-      children: [
-        for (final (i, t) in _types.indexed)
-          SimpleDialogOption(
-            child: Row(
-              children: [
-                Icon(t.$1, size: 20),
-                const SizedBox(width: 12),
-                Text(t.$2),
-              ],
+    final t = AppLocalizations.of(context);
+    return AppDialog(
+      title: t.lifeEventAddTitle,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, t) in _types.indexed)
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => Navigator.pop(context, i),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(t.$1, size: 20),
+                    const SizedBox(width: 12),
+                    Text(t.$2),
+                  ],
+                ),
+              ),
             ),
-            onPressed: () => Navigator.pop(context, i),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -121,26 +132,25 @@ class _EventFormDialogState extends State<_EventFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final fields = switch (_kind) {
-      0 => '买房（含贷款）',
-      1 => '生孩子 / 抚养',
-      2 => '收入跳变',
-      3 => '退休',
-      4 => '大件购置',
-      _ => '一次性大额收支',
+      0 => t.lifeEventBuyHome,
+      1 => t.lifeEventChildRearing,
+      2 => t.lifeEventIncomeChange,
+      3 => t.lifeEventRetirement,
+      4 => t.lifeEventBigPurchase,
+      _ => t.lifeEventLumpSum,
     };
-    return AlertDialog(
-      title: Text(fields),
-      content: SizedBox(
-        width: 360,
-        child: SingleChildScrollView(child: _form()),
-      ),
+    return AppDialog(
+      title: fields,
+      scroll: true,
+      content: _form(),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(t.cancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('确定')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.confirm)),
       ],
     );
   }
@@ -156,6 +166,7 @@ class _EventFormDialogState extends State<_EventFormDialog> {
       );
 
   Widget _form() {
+    final t = AppLocalizations.of(context);
     switch (_kind) {
       case 0:
         final e = widget.event as HomePurchase?;
@@ -164,29 +175,29 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后',
+              t.lifeEventYearsLater,
               init: e == null ? '3' : (e.month / 12).round().toString(),
             ),
             _num(
               'price',
-              '总价（元）',
+              t.lifeEventTotalPrice,
               init: e?.priceMinor == null ? '' : _yuan(e!.priceMinor),
             ),
             _num(
               'down',
-              '首付（元）',
+              t.lifeEventDownPayment,
               init: e?.downPaymentMinor == null
                   ? ''
                   : _yuan(e!.downPaymentMinor),
             ),
             _num(
               'rate',
-              '年利率 %（如 3.6）',
+              t.lifeEventAnnualRateHint,
               init: e == null
                   ? '3.6'
                   : (e.annualRate.asDouble() * 100).toString(),
             ),
-            DropdownButtonFormField<String>(
+            ParticleDropdownField<String>(
               initialValue: e == null
                   ? '30'
                   : (e.termYears == 10 ||
@@ -194,11 +205,11 @@ class _EventFormDialogState extends State<_EventFormDialog> {
                         e.termYears == 30)
                   ? e.termYears.toString()
                   : '30',
-              decoration: const InputDecoration(labelText: '贷款年限'),
-              items: const [
-                DropdownMenuItem(value: '10', child: Text('10 年')),
-                DropdownMenuItem(value: '20', child: Text('20 年')),
-                DropdownMenuItem(value: '30', child: Text('30 年')),
+              decoration: InputDecoration(labelText: t.lifeEventLoanTerm),
+              items: [
+                DropdownMenuItem(value: '10', child: Text(t.yearsN('10'))),
+                DropdownMenuItem(value: '20', child: Text(t.yearsN('20'))),
+                DropdownMenuItem(value: '30', child: Text(t.yearsN('30'))),
               ],
               onChanged: (v) => _termYears = v ?? '30',
             ),
@@ -211,19 +222,19 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后出生',
+              t.lifeEventYearsUntilBirth,
               init: e == null ? '2' : (e.month / 12).round().toString(),
             ),
             _num(
               'm',
-              '每月养育成本（元）',
+              t.lifeEventMonthlyRearingCost,
               init: e?.monthlyCostMinor == null
                   ? '3000'
                   : _yuan(e!.monthlyCostMinor),
             ),
             _num(
               'c',
-              '大学阶段每月额外（元，可空）',
+              t.lifeEventCollegeExtra,
               init: e?.collegeExtraMinor == null
                   ? ''
                   : _yuan(e!.collegeExtraMinor!),
@@ -237,12 +248,12 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后',
+              t.lifeEventYearsLater,
               init: e == null ? '1' : (e.month / 12).round().toString(),
             ),
             _num(
               'p',
-              '变化 %（+30 涨三成 / −100 归零）',
+              t.lifeEventChangePctHint,
               init: e == null
                   ? '+30'
                   : ((e.factor - Rational.one) *
@@ -259,14 +270,14 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后退休',
+              t.lifeEventYearsUntilRetire,
               init: e == null ? '30' : (e.month / 12).round().toString(),
             ),
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '退休后：收入 ×0.4（养老金替代率）、支出 ×0.75',
-                style: TextStyle(fontSize: 12),
+                t.lifeEventRetirementNote,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
           ],
@@ -278,17 +289,17 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后',
+              t.lifeEventYearsLater,
               init: e == null ? '5' : (e.month / 12).round().toString(),
             ),
             _num(
               'cost',
-              '购置支出（元）',
+              t.lifeEventPurchaseCost,
               init: e?.costMinor == null ? '' : _yuan(e!.costMinor),
             ),
             _num(
               'r',
-              '残值计入固定资产（元，可空）',
+              t.lifeEventResidualValue,
               init: e?.residualMinor == null ? '' : _yuan(e!.residualMinor!),
             ),
           ],
@@ -300,12 +311,12 @@ class _EventFormDialogState extends State<_EventFormDialog> {
           children: [
             _num(
               'y',
-              '几年后',
+              t.lifeEventYearsLater,
               init: e == null ? '1' : (e.month / 12).round().toString(),
             ),
             _num(
               'a',
-              '金额（元，负数 = 流出）',
+              t.lifeEventAmountInOut,
               init: e?.amountMinor == null ? '' : _yuan(e!.amountMinor),
             ),
           ],
@@ -373,19 +384,20 @@ class _EventFormDialogState extends State<_EventFormDialog> {
 /// 事件列表摘要（弹层展示用）。
 String lifeEventSummary(LifeEvent e) {
   String yuan(BigInt minor) =>
-      '${minor ~/ BigInt.from(1000000)} 万'; // 万 = 10^6 分
-  String inYears(int month) => month == 0 ? '现在' : '${(month / 12).round()} 年后';
+      '${minor ~/ BigInt.from(1000000)} ${rt('万')}'; // 万 = 10^6 分
+  String inYears(int month) =>
+      month == 0 ? rt('现在') : '${(month / 12).round()} ${rt('年后')}';
   return switch (e) {
     HomePurchase h =>
-      '${inYears(h.month)}买房 ${yuan(h.priceMinor)}（首付 ${yuan(h.downPaymentMinor)} · ${(h.annualRate.asDouble() * 100).toStringAsFixed(2)}% × ${h.termYears} 年）',
+      '${inYears(h.month)}${rt('买房')} ${yuan(h.priceMinor)}${rt('（首付')} ${yuan(h.downPaymentMinor)} · ${(h.annualRate.asDouble() * 100).toStringAsFixed(2)}% × ${h.termYears}${rt(' 年）')}',
     ChildRearing c =>
-      '${inYears(c.month)}生孩子（月成本 ${yuan(c.monthlyCostMinor)}${c.collegeExtraMinor != null && c.collegeExtraMinor != BigInt.zero ? ' · 大学加 ${yuan(c.collegeExtraMinor!)}' : ''}）',
+      '${inYears(c.month)}${rt('生孩子（月成本')} ${yuan(c.monthlyCostMinor)}${c.collegeExtraMinor != null && c.collegeExtraMinor != BigInt.zero ? ' · ${rt('大学加')} ${yuan(c.collegeExtraMinor!)}' : ''}${rt('）')}',
     IncomeChange ic =>
-      '${inYears(ic.month)}收入${ic.factor >= Rational.one ? '涨' : '降'}到 ${((ic.factor - Rational.one) * Rational.fromInt(BigInt.from(100))).asDouble().toStringAsFixed(0)}%',
-    Retirement r => '${inYears(r.month)}退休',
+      '${inYears(ic.month)}${rt('收入')}${ic.factor >= Rational.one ? rt('涨') : rt('降')}${rt('到')} ${((ic.factor - Rational.one) * Rational.fromInt(BigInt.from(100))).asDouble().toStringAsFixed(0)}%',
+    Retirement r => '${inYears(r.month)}${rt('退休')}',
     BigPurchase b =>
-      '${inYears(b.month)}购置 ${yuan(b.costMinor)}${b.residualMinor != null && b.residualMinor != BigInt.zero ? '（残值 ${yuan(b.residualMinor!)}）' : ''}',
+      '${inYears(b.month)}${rt('购置')} ${yuan(b.costMinor)}${b.residualMinor != null && b.residualMinor != BigInt.zero ? '${rt('（残值')} ${yuan(b.residualMinor!)}${rt('）')}' : ''}',
     LumpSum l =>
-      '${inYears(l.month)}一次性${l.amountMinor.isNegative ? '流出' : '流入'} ${yuan(l.amountMinor.abs())}',
+      '${inYears(l.month)}${rt('一次性')}${l.amountMinor.isNegative ? rt('流出') : rt('流入')} ${yuan(l.amountMinor.abs())}',
   };
 }

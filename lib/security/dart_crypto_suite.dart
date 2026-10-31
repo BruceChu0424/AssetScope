@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart' as c;
 
+import '../l10n/runtime_l10n.dart';
 import 'crypto_suite.dart';
 
 /// 纯 Dart 密码学套件（默认实现，测试与任意平台可用）：
@@ -66,7 +67,7 @@ class _XchachaAead extends AeadCipher {
     Uint8List? aad,
   }) async {
     if (ciphertext.length < 16) {
-      throw CryptoException('密文长度不足（损坏的数据）');
+      throw CryptoException(rt('密文长度不足（损坏的数据）'));
     }
     final ctPart = ciphertext.sublist(0, ciphertext.length - 16);
     final mac = ciphertext.sublist(ciphertext.length - 16);
@@ -79,7 +80,7 @@ class _XchachaAead extends AeadCipher {
         ),
       );
     } on c.SecretBoxAuthenticationError {
-      throw CryptoException('认证失败：密钥错误或数据被篡改');
+      throw CryptoException(rt('认证失败：密钥错误或数据被篡改'));
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import 'asset_globe.dart';
 
 /// 全屏资产地球（沉浸模式）：从首页取景框的「全屏」入口进入。
@@ -10,15 +11,16 @@ class GlobePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFF050A12),
       appBar: AppBar(
-        title: const Text('资产地球'),
+        title: Text(t.globeTitle),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.tealAccent,
         actions: [
           IconButton(
-            tooltip: '返回总览',
+            tooltip: t.globeBackToOverview,
             icon: const Icon(Icons.close_fullscreen, color: Colors.tealAccent),
             onPressed: () => context.go('/'),
           ),

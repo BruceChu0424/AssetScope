@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show Offset;
 
 import '../../domain/ledger/account.dart';
+import '../../l10n/runtime_l10n.dart';
 
 /// 地球视图状态：中心经纬 + 缩放系数（纯数据，供 painter 与手势层共用）。
 class GlobeView {
@@ -98,7 +99,7 @@ class GlobeMarker {
   /// 子类型中文名（弹窗展示，如「银行活期」「房产」）。
   final String subtypeLabel;
 
-  String get kindLabel => kind == MarkerKind.fixed ? '固定资产' : '资金';
+  String get kindLabel => kind == MarkerKind.fixed ? rt('固定资产') : rt('资金');
 
   /// 资产子类型 → 光点类别。持仓/存款/现金都算资金，
   /// 只有"搬不走的"才算固定资产。

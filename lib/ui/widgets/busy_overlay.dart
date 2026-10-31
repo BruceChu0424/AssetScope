@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui show Gradient, Image, ImageFilter, RSTransform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../../l10n/runtime_l10n.dart';
 import 'logo_points.dart';
 import 'soft_sprite.dart';
 
@@ -245,6 +247,7 @@ class _BusySceneState extends State<_BusyScene>
   ui.Image? _sprite; // 软贴图（异步生成，就绪前退化硬圆点）
 
   Timer? _timer;
+  Timer? _burstArm; // 迸散迟发（等 logo 汇聚成形）
   bool _inited = false;
   bool _reduce = false;
   bool _closing = false;
@@ -296,6 +299,7 @@ class _BusySceneState extends State<_BusyScene>
   @override
   void dispose() {
     _timer?.cancel();
+    _burstArm?.cancel();
     _ticker.dispose();
     widget.client.removeListener(_onPhase);
     // 兜底揭幕：舞台以任何方式消失（含宿主整树被销毁）都不得让
@@ -307,6 +311,14 @@ class _BusySceneState extends State<_BusyScene>
 
   void _onPhase() => _syncPhase();
 
+  /// founders 全员到位时刻：delay 上限 0.12+200/300=0.79s + travel 上限
+  /// 1.0s ≈ 1.79s。成功迸散**不得早于此刻**——任务快于汇聚时 logo 还未
+  /// 成形就被炸散，用户看不到粒子汇聚效果（登录→首页过渡的下限即此）。
+  /// 测试环境不等待（舞台定格、测试按原节奏推进）。
+  static const double _kConvergeDone = 1.79;
+  static final bool _testEnv =
+      Platform.environment['FLUTTER_TEST'] == 'true';
+
   /// 按 client 当前相位自排离场（监听回调与注册后补课共用）。
   void _syncPhase() {
     if (_closing) return;
@@ -314,9 +326,32 @@ class _BusySceneState extends State<_BusyScene>
     if (c.closeNow) return _close();
     switch (c.phase) {
       case _BusyPhase.success:
-        // 「减少动画」不进迸散分支（-1），静态呈现成功文案即可。
-        _tPhase = _reduce ? -1 : _clock.t;
-        _timer ??= Timer(widget.hold, _close);
+        if (_reduce) {
+          // 「减少动画」不进迸散分支（-1），静态呈现成功文案即可。
+          _tPhase = -1;
+          _timer ??= Timer(widget.hold, _close);
+          break;
+        }
+        // logo 成形（+0.07s 定格一拍）之前不迸散；欠的时长补进 hold 前，
+        // 总程仍是「汇聚完成 → 迸散 → hold → 渐隐」的最短可行序列。
+        final wait = _testEnv
+            ? 0.0
+            : math.max(0.0, _kConvergeDone + 0.07 - math.max(_clock.t, 0));
+        void armBurst() {
+          if (mounted && !_closing && widget.client.phase == _BusyPhase.success) {
+            setState(() => _tPhase = _clock.t);
+          }
+        }
+        if (wait <= 0.001) {
+          _tPhase = _clock.t;
+        } else {
+          _burstArm?.cancel();
+          _burstArm = Timer(
+            Duration(microseconds: (wait * 1e6).round()),
+            armBurst,
+          );
+        }
+        _timer ??= Timer(widget.hold + Duration(microseconds: (wait * 1e6).round()), _close);
       case _BusyPhase.error:
         _tPhase = _reduce ? -1 : _clock.t;
         // 交还调用方内联展示：立即离场；否则停留至点按或超时。
@@ -333,6 +368,8 @@ class _BusySceneState extends State<_BusyScene>
     _closing = true;
     _timer?.cancel();
     _timer = null;
+    _burstArm?.cancel();
+    _burstArm = null;
     // 散场开始即揭幕：首页入场与幕布渐薄同步启幕。
     BusyReveal.instance.reveal();
     if (!mounted) return;
@@ -798,9 +835,11 @@ class _ScenePainter extends CustomPainter {
     final succeeded = phase == _BusyPhase.success;
     final failed = phase == _BusyPhase.error;
     final text = succeeded
-        ? (detail ?? '完成')
+        ? (detail ?? rt('完成'))
         : failed
-        ? (detail == null || detail!.isEmpty ? '操作失败' : '操作失败：$detail')
+        ? (detail == null || detail!.isEmpty
+              ? rt('操作失败')
+              : '${rt('操作失败：')}$detail')
         : message;
     final color = succeeded
         ? const Color(0xFFD8BE85)

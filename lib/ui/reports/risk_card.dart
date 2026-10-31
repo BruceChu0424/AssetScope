@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/invest/risk_metrics.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/portfolio_analytics_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -20,6 +21,7 @@ class RiskCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     return ref
         .watch(riskProvider)
         .when(
@@ -27,25 +29,25 @@ class RiskCard extends ConsumerWidget {
             height: 60,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+          error: (e, _) => ErrorPlaceholder(t.loadFailedReports(e.toString())),
           data: (result) => _card(context, ref, result),
         );
   }
 
   Widget _card(BuildContext context, WidgetRef ref, RiskReportResult result) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final r = result.report;
     return SectionCard(
-      title: '风险与风险调整后收益',
+      title: t.riskTitle,
       trailing: IconButton(
-        tooltip: '无风险利率（Sharpe/Sortino 参数）',
+        tooltip: t.riskFreeRateTooltip,
         icon: const Icon(Icons.tune, size: 18),
         onPressed: () => _editRiskFreeRate(context, ref, r),
       ),
       child: r == null
           ? Text(
-              '需要至少 2 个有效月末估值点（当前 ${result.valuationPoints} 个）。\n'
-              '每月给持仓更新一次价格，即可得到回撤、波动率等风险画像。',
+              t.riskNeedMorePoints(result.valuationPoints),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -57,7 +59,7 @@ class RiskCard extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      '⚠ 有效样本 ${r.periods} 个月（< 6），指标波动大，仅供参考',
+                      t.riskSmallSample(r.periods),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.brassOf(theme.brightness),
                       ),
@@ -65,33 +67,37 @@ class RiskCard extends ConsumerWidget {
                   ),
                 _row(
                   context,
-                  '年化收益（TWR）',
+                  t.annualizedReturnTwr,
                   _pct(r.annualizedReturn),
                   strong: true,
                 ),
-                _row(context, '年化波动率', _pct(r.annualizedVolatility)),
+                _row(context, t.annualizedVolatility, _pct(r.annualizedVolatility)),
                 _maxDrawdownRow(context, r),
                 _row(
                   context,
-                  'Sharpe 比率',
+                  t.sharpeRatio,
                   _num(r.sharpe),
-                  hint: '(年化收益 − 无风险) / 波动率',
+                  hint: t.sharpeFormulaHint,
                 ),
                 _row(
                   context,
-                  'Sortino 比率',
+                  t.sortinoRatio,
                   _num(r.sortino),
-                  hint: '下行偏差版 Sharpe',
+                  hint: t.sortinoHint,
                 ),
                 _row(
                   context,
-                  '最佳 / 最差月',
+                  t.bestWorstMonth,
                   '${_pct(r.bestMonth)} / ${_pct(r.worstMonth)}',
                 ),
-                _row(context, '月胜率', _pct(r.positiveMonthsRatio)),
+                _row(context, t.monthWinRate, _pct(r.positiveMonthsRatio)),
                 const Divider(height: 12),
                 Text(
-                  '基于 ${r.periods} 个月度子期间（近 36 个月中 ${result.valuationPoints} 个有效月末估值点）· 无风险利率 ${(r.riskFreeAnnual * 100).toStringAsFixed(1)}%',
+                  t.riskBasisNote(
+                    r.periods,
+                    result.valuationPoints,
+                    (r.riskFreeAnnual * 100).toStringAsFixed(1),
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.hintColor,
                     fontSize: 11,
@@ -134,16 +140,20 @@ class RiskCard extends ConsumerWidget {
   Widget _maxDrawdownRow(BuildContext context, RiskReport r) {
     final mdd = r.maxDrawdown;
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final span =
         (mdd != null &&
             r.drawdownPeakDate != null &&
             r.drawdownTroughDate != null)
-        ? '${r.drawdownPeakDate!.year}.${r.drawdownPeakDate!.month} 峰 → ${r.drawdownTroughDate!.year}.${r.drawdownTroughDate!.month} 谷'
+        ? t.drawdownSpan(
+            '${r.drawdownPeakDate!.year}.${r.drawdownPeakDate!.month}',
+            '${r.drawdownTroughDate!.year}.${r.drawdownTroughDate!.month}',
+          )
         : null;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      title: const Text('最大回撤'),
+      title: Text(t.maxDrawdown),
       subtitle: span == null
           ? null
           : Text(
@@ -171,6 +181,7 @@ class RiskCard extends ConsumerWidget {
     WidgetRef ref,
     RiskReport? r,
   ) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || !context.mounted) return;
     final currentPercent = r?.riskFreeAnnual != null
@@ -184,10 +195,10 @@ class RiskCard extends ConsumerWidget {
                   : currentPercent!)
               .toStringAsFixed(1),
     );
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('无风险利率（年化 %）'),
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (dctx) => AppDialog(
+        title: t.riskFreeRateDialogTitle,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -196,18 +207,18 @@ class RiskCard extends ConsumerWidget {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(hintText: '如 2.0（十年期国债收益率附近）'),
+              decoration: InputDecoration(hintText: t.riskFreeRateHint),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dctx, false),
-            child: const Text('取消'),
+            child: Text(t.reportCancel),
           ),
           ParticleFilledButton(
             onPressed: () => Navigator.pop(dctx, true),
-            child: const Text('保存'),
+            child: Text(t.reportSave),
           ),
         ],
       ),

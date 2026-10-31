@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:assetscope/ui/widgets/particle_interactive.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// ParticleEdge 底缘光尘：触发接线与「测试环境静态帧」工艺回归。
 ///
@@ -17,7 +18,10 @@ void main() {
 
   testWidgets('hover 激活光尘画布，pumpAndSettle 仍能收尾', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Center(
             child: ParticleEdge(
@@ -51,6 +55,9 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Center(
             child: ParticleTextField(
@@ -82,7 +89,10 @@ void main() {
 
   testWidgets('「减少动画」时整带禁用（不激活）', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: MediaQuery(
           data: MediaQueryData(disableAnimations: true),
           child: Scaffold(
@@ -107,7 +117,10 @@ void main() {
 
   testWidgets('active 外部驱动模式随布尔切换', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: Center(
             child: ParticleEdge.active(

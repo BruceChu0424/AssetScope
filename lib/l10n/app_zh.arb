@@ -1,0 +1,2848 @@
+{
+ "@@locale": "zh",
+ "appTitle": "资观 AssetScope",
+ "aiCfgTestMissingInput": "请先填写 Base URL 与 API Key",
+ "aiCfgTestConnected": "连接成功：{reply}",
+ "@aiCfgTestConnected": {
+  "placeholders": {
+   "reply": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgGlmCodingPlanKeyHint": "若这是编程套餐（Coding Plan）Key，请改选「智谱 GLM Coding Plan」",
+ "aiCfgGlmRegularKeyHint": "套餐端点只认编程套餐 Key；普通 API Key 请改选「智谱 GLM」",
+ "aiCfgKeyPrivacyTip": "API Key 加密存储在本地账本库，仅用于行情/汇率抓取与 AI 助手；抓取时只发送查询名称与币种对，绝不发送余额与金额。",
+ "aiCfgOpenAiCompatibleNote": "OpenAI 兼容端点",
+ "aiCfgWebSearchOnTip": "联网搜索已开：行情抓取带联网工具，价格来自实时网页",
+ "aiCfgWebSearchOffTip": "联网搜索已关：行情价格可能来自模型记忆",
+ "aiCfgNoWebSearchSupportTip": "该服务商 chat 接口不支持联网工具，行情价格可能来自模型记忆",
+ "aiCfgDialogTitle": "AI 服务配置",
+ "aiCfgProvider": "服务商",
+ "aiCfgBaseUrlLabel": "Base URL（https://…，不含 /chat/completions）",
+ "aiCfgModelLabel": "模型（须支持联网搜索）",
+ "aiCfgWebSearch": "联网搜索",
+ "aiCfgTestConnection": "测试连接",
+ "aiCfgUsageTitle": "用量与额度",
+ "aiCfgUsageTooltip": "调用次数由本应用本地统计（设置页关闭后重新打开刷新）；额度来自服务商接口，免费模型不扣费",
+ "aiCfgStatToday": "今日调用",
+ "aiCfgStatLast7Days": "近 7 天",
+ "aiCfgStatTotal": "累计",
+ "aiCfgCalls": "{n} 次",
+ "@aiCfgCalls": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiCfgNoBalanceApi": "该服务商暂无余额查询接口，可到其控制台查看",
+ "aiCfgBalanceGlm": "服务商余额（智谱）",
+ "aiCfgBalanceTotal": "总额度 ¥{v}",
+ "@aiCfgBalanceTotal": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceVoucher": "免费额度 ¥{v}",
+ "@aiCfgBalanceVoucher": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceCash": "现金 ¥{v}",
+ "@aiCfgBalanceCash": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceNoFields": "接口未返回额度字段",
+ "aiCfgBalanceQueryFailed": "查询失败：{e}",
+ "@aiCfgBalanceQueryFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "aiCfgBalanceQuery": "查询",
+ "aiCfgBalanceRefresh": "刷新",
+ "aiCfgServiceHint": "智谱/Kimi/千问/OpenAI/Claude/自定义；Key 加密存本地",
+ "categoryManagerTitle": "分类与规则",
+ "categoryRulePriorityHint": "关键词规则在导入时优先于历史学习命中。",
+ "categoryExpenseGroup": "支出分类",
+ "categoryIncomeGroup": "收入分类",
+ "categoryKeywordRules": "关键词规则",
+ "categoryNoRulesHint": "还没有显式规则。导入与日常记账会自动学习对手方→分类的对应关系。",
+ "categoryRuleKeyword": "「{kw}」",
+ "@categoryRuleKeyword": {
+  "placeholders": {
+   "kw": {
+    "type": "String"
+   }
+  }
+ },
+ "categoryAddExpense": "新增支出分类",
+ "categoryAddIncome": "新增收入分类",
+ "categoryRename": "重命名分类",
+ "categoryAddRule": "新增关键词规则",
+ "categoryRuleKeywordLabel": "关键词（如 美团、NETFLIX）",
+ "categoryRuleTargetLabel": "命中后归类到",
+ "categoryManagerHint": "管理收支分类、商户→分类关键词规则",
+ "fxManagerTitle": "汇率管理",
+ "fxManagerHint": "净值折算取\"当日或之前最近\"的一条；倒序存入即可覆盖历史。",
+ "fxAddRate": "新增汇率",
+ "fxAiFetch": "AI 抓取",
+ "fxNoRatesHint": "还没有汇率记录。多币种账户折算需要至少一条对该币种的汇率。",
+ "fxEditRateTitle": "录入汇率",
+ "fxFromCurrency": "原币种",
+ "fxToCurrency": "目标币种",
+ "fxRateLabel": "1 原币种 = ? 目标币种（如 7.25）",
+ "fxRateSaved": "汇率已保存",
+ "fxRateInvalid": "汇率格式不正确",
+ "fxManualHint": "手工录入各币种对本位币汇率",
+ "mergeDecryptFailed": "备份无法解密（口令不对或文件损坏）：{e}",
+ "@mergeDecryptFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergeSchemaTooNew": "备份来自更新版本的应用（schema {v}），请先升级再合并",
+ "@mergeSchemaTooNew": {
+  "placeholders": {
+   "v": {
+    "type": "num"
+   }
+  }
+ },
+ "mergeLineageMismatch": "这份备份属于另一个账本（谱系指纹不一致），不能合并。恢复请用\"从备份恢复\"",
+ "mergeVerifyFailed": "备份内容校验失败：{e}",
+ "@mergeVerifyFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergeNothingToMerge": "两份账本已一致，没有需要合并的内容",
+ "mergeDone": "合并完成",
+ "mergeSafetyBackupNote": "合并前的安全备份：\n{path}\n各页面回到前台会自动刷新。",
+ "@mergeSafetyBackupNote": {
+  "placeholders": {
+   "path": {
+    "type": "String"
+   }
+  }
+ },
+ "mergeFailed": "合并失败（账本未改动，已整体回滚）：{e}",
+ "@mergeFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "mergePassphraseLabel": "这份 .asbk 的导出口令",
+ "mergeConfirmTitle": "确认合并",
+ "mergeWillImport": "将并入：{summary}。",
+ "@mergeWillImport": {
+  "placeholders": {
+   "summary": {
+    "type": "String"
+   }
+  }
+ },
+ "mergeConfirmNote": "交易按\"更新时间新者胜\"合并，其余内容按表策略并入；合并会先自动生成一份安全备份，可随时用\"从备份恢复\"退回。",
+ "mergeLegacyWarning": "注意：这份备份由旧版本导出、没有账本身份标识。请确认它确实来自同一本账。",
+ "mergeBackupAndMerge": "安全备份并合并",
+ "quoteAppliedCount": "已写入 {n} 条行情/汇率",
+ "@quoteAppliedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "quoteWriteFailed": "写入失败：{e}",
+ "@quoteWriteFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "quoteFetchTitle": "行情 / 汇率抓取",
+ "quoteFetchIntro": "直连官方行情源（免费无 key、秒回）；查不到的再试 AI 联网搜索。预览确认后才写入，来源可审计。无论哪种方式，都只发送证券代码与币种对。",
+ "quoteQueryingDirect": "正在向官方行情源查询…",
+ "quoteQueryingAi": "AI 正在联网搜索行情，约需 10–60 秒…",
+ "quoteNoWebSearchWarning": "当前 AI 配置未开启联网搜索，模型可能返回记忆中的过时价格，请谨慎确认。",
+ "quoteWillQuery": "本次将查询：",
+ "quoteNoTargets": "没有在持的证券持仓，也没有需要折算的外币账户。",
+ "quoteHoldingPrices": "· 持仓价格（{n}）：{names}",
+ "@quoteHoldingPrices": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "names": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteFxPairs": "· 汇率（{n}）：{pairs} → {base}",
+ "@quoteFxPairs": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "pairs": {
+    "type": "String"
+   },
+   "base": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteRoutingHint": "直连路由：A股/场内基金 → 腾讯行情；港股/美股 → stooq；汇率 → 欧央行。行情代码可在持仓账户详情设置（如 600519 / 00700 / AAPL）。",
+ "quoteDirectFetchButton": "直连官方行情源（推荐 · 免费 · 秒回）",
+ "quoteAiFetchFallback": "AI 联网搜索（查不到时兜底）",
+ "quoteAiFetchNeedsConfig": "AI 联网搜索（需先配置 AI 服务）",
+ "quoteAssetPrices": "资产价格",
+ "quoteFxRates": "汇率",
+ "quoteNotes": "提示",
+ "quoteSelectedCount": "已选 {p} 条价格 + {r} 条汇率",
+ "@quoteSelectedCount": {
+  "placeholders": {
+   "p": {
+    "type": "num"
+   },
+   "r": {
+    "type": "num"
+   }
+  }
+ },
+ "quoteBack": "返回",
+ "quoteApplyButton": "确认写入",
+ "quoteUnmatchedTooltip": "未匹配到在持仓账户，不入账",
+ "quoteCurrencyMismatchTooltip": "币种与账户不一致（{ccy} vs 账户币种），默认不勾选",
+ "@quoteCurrencyMismatchTooltip": {
+  "placeholders": {
+   "ccy": {
+    "type": "String"
+   }
+  }
+ },
+ "quoteFetchHint": "AI 联网搜索最新价格与汇率，预览确认后入账",
+ "settingsFailed": "失败：{e}",
+ "@settingsFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsFailedPrefix": "失败",
+ "settingsCancel": "取消",
+ "settingsSave": "保存",
+ "settingsGotIt": "知道了",
+ "settingsBackupFileType": "备份",
+ "settingsBackupPassphraseTitle": "输入备份口令",
+ "settingsVerify": "校验",
+ "settingsChangePassphrase": "修改主口令",
+ "settingsCurrentPassphrase": "当前主口令",
+ "settingsNewPassphraseLabel": "新主口令（≥12位更安全）",
+ "settingsConfirm": "确认",
+ "settingsPassphraseUpdated": "主口令已更新",
+ "settingsNewRecoveryCode": "新恢复码（离线保存）",
+ "settingsBackupPassphrase": "备份口令",
+ "settingsBackupPassphraseLabel": "备份文件口令（≥8 位，建议 12 位以上）",
+ "settingsExport": "导出",
+ "settingsExportedTo": "已导出：{path}",
+ "@settingsExportedTo": {
+  "placeholders": {
+   "path": {
+    "type": "String"
+   }
+  }
+ },
+ "settingsExportFailed": "导出失败：{e}",
+ "@settingsExportFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsVerifyAndRestore": "校验并恢复",
+ "settingsRestoreDone": "恢复完成，已用新数据锁定；请用主口令解锁（原库保留为 .bak）",
+ "settingsRestoreFailed": "恢复失败（原账本未受影响）：{e}",
+ "@settingsRestoreFailed": {
+  "placeholders": {
+   "e": {
+    "type": "Object"
+   }
+  }
+ },
+ "settingsBaseCurrency": "本位币",
+ "settingsBaseCurrencySet": "本位币已设为 {code}",
+ "@settingsBaseCurrencySet": {
+  "placeholders": {
+   "code": {
+    "type": "String"
+   }
+  }
+ },
+ "settingsNotUnlocked": "未解锁",
+ "settingsGroupSecurity": "安全",
+ "settingsGroupBackup": "备份与恢复",
+ "settingsGroupPreferences": "偏好",
+ "settingsGroupData": "数据管理",
+ "settingsGroupAiQuotes": "AI 与行情",
+ "settingsGroupAbout": "关于",
+ "settingsLockNow": "立即锁定",
+ "settingsLockNowHint": "关闭数据库并清除内存密钥；无操作也会自动锁定",
+ "settingsChangePassphraseHint": "只重新包裹密钥，数据不需要重加密",
+ "settingsRegenRecoveryCode": "重新生成恢复码",
+ "settingsRegenRecoveryCodeHint": "旧恢复码立即失效",
+ "settingsExportBackup": "导出加密备份",
+ "settingsExportBackupHint": "生成 .asbk 加密容器，请用独立口令并离线保存",
+ "settingsRestoreBackup": "从备份恢复",
+ "settingsRestoreBackupHint": "先隔离校验，通过后才替换当前账本（原库保留 .bak）",
+ "settingsMergeBackup": "从备份合并（多设备）",
+ "settingsMergeBackupHint": "把另一设备的 .asbk 并入当前账本：交易按时间新者胜，先自动安全备份",
+ "settingsBaseCurrencyHint": "统计、净资产与预测的基准货币",
+ "settingsImportCsv": "导入账单 CSV",
+ "settingsImportCsvHint": "UTF-8/GBK 自动识别，去重幂等，智慧分类建议",
+ "settingsExportJson": "导出全量 JSON",
+ "settingsExportJsonHint": "账户/估值/交易/计划/预算的明文快照（不含密钥），可审计可迁移",
+ "settingsPageTitle": "设置",
+ "settingsFullJsonExported": "已导出全量 JSON（明文，不含任何密钥）",
+ "settingsAboutTagline": "本地优先的个人资产、负债与财务规划系统。数据全程加密存储，任何联网功能默认关闭。",
+ "settingsAppearance": "外观",
+ "settingsAppearanceHint": "浅色冷雾白 / 深色财富终端，跟随系统自动切换",
+ "settingsThemeSystem": "跟随系统",
+ "settingsThemeLight": "浅色",
+ "settingsThemeDark": "深色",
+ "settingsAutoLock": "自动锁定",
+ "settingsAutoLockHint": "无操作达到该时长后自动锁定账本",
+ "settingsMinutes": "{n} 分钟",
+ "@settingsMinutes": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsAutoLockDialogTitle": "无操作自动锁定",
+ "settingsAutoLockSet": "自动锁定已设为 {n} 分钟",
+ "@settingsAutoLockSet": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashHorizon": "现金预测期",
+ "settingsCashHorizonHint": "首页「还能花多少」的推演天数",
+ "settingsDays": "{n} 天",
+ "@settingsDays": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashHorizonSet": "现金预测期已设为 {n} 天",
+ "@settingsCashHorizonSet": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsCashFloor": "现金底线",
+ "settingsCashFloorHint": "低于此值视为现金短缺（预测与可支配上限会扣除）",
+ "settingsCashFloorSaved": "现金底线已保存",
+ "cancel": "取消",
+ "confirm": "确定",
+ "save": "保存",
+ "edit": "编辑",
+ "delete": "删除",
+ "remove": "移除",
+ "loadFailed": "加载失败：{error}",
+ "@loadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "yearsN": "{n} 年",
+ "@yearsN": {
+  "placeholders": {
+   "n": {
+    "type": "String"
+   }
+  }
+ },
+ "monthsN": "{n} 月",
+ "@monthsN": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "daysLaterN": "{n} 天后",
+ "@daysLaterN": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "lifeEventAddTitle": "添加人生事件",
+ "lifeEventBuyHome": "买房（含贷款）",
+ "lifeEventChildRearing": "生孩子 / 抚养",
+ "lifeEventIncomeChangeOption": "收入跳变（升职/失业）",
+ "lifeEventRetirement": "退休",
+ "lifeEventBigPurchaseOption": "大件购置（换车等）",
+ "lifeEventLumpSum": "一次性大额收支",
+ "lifeEventIncomeChange": "收入跳变",
+ "lifeEventBigPurchase": "大件购置",
+ "lifeEventYearsLater": "几年后",
+ "lifeEventTotalPrice": "总价（元）",
+ "lifeEventDownPayment": "首付（元）",
+ "lifeEventAnnualRateHint": "年利率 %（如 3.6）",
+ "lifeEventLoanTerm": "贷款年限",
+ "lifeEventYearsUntilBirth": "几年后出生",
+ "lifeEventMonthlyRearingCost": "每月养育成本（元）",
+ "lifeEventCollegeExtra": "大学阶段每月额外（元，可空）",
+ "lifeEventChangePctHint": "变化 %（+30 涨三成 / −100 归零）",
+ "lifeEventYearsUntilRetire": "几年后退休",
+ "lifeEventRetirementNote": "退休后：收入 ×0.4（养老金替代率）、支出 ×0.75",
+ "lifeEventPurchaseCost": "购置支出（元）",
+ "lifeEventResidualValue": "残值计入固定资产（元，可空）",
+ "lifeEventAmountInOut": "金额（元，负数 = 流出）",
+ "lifePlanTitle": "人生规划 · 多年度推演",
+ "lifePlanIntro": "把买房、育儿、换车、退休等大事放进同一条时间线，逐月推演未来 {years} 年的现金流与净资产（名义口径，收入支出按通胀增长）。只读模拟，不写账本。",
+ "@lifePlanIntro": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   }
+  }
+ },
+ "lifePlanRerun": "重新推演",
+ "lifePlanInvestableAssets": "可投资净资产（元）",
+ "lifePlanFixedAssets": "固定资产等（元）",
+ "lifePlanMonthlyIncome": "月收入（元）",
+ "lifePlanMonthlyExpense": "月支出（元）",
+ "lifePlanNominalReturn": "名义收益 %/年",
+ "lifePlanInflation": "通胀 %/年",
+ "lifePlanHorizonYears": "推演年限",
+ "lifePlanEvents": "人生事件",
+ "lifePlanAddEvent": "添加事件",
+ "lifePlanNoEvents": "还没有事件。加一个试试：三年后买房、明年生孩子……",
+ "lifePlanResults": "推演结论",
+ "lifePlanNetWorthInYears": "{years} 年后净资产",
+ "@lifePlanNetWorthInYears": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   }
+  }
+ },
+ "lifePlanPeakNetWorth": "峰值净资产",
+ "lifePlanNewLoanInterest": "新增贷款总利息",
+ "lifePlanCashExhaustionRisk": "现金耗尽风险",
+ "lifePlanNoGap": "推演期内无缺口 ✓",
+ "lifePlanExhaustedAt": "第 {year} 年（{date} 前后）",
+ "@lifePlanExhaustedAt": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "lifePlanNetWorthCurve": "净资产曲线（万元）",
+ "lifePlanCurveTooltip": "第 {year} 年  {value}",
+ "@lifePlanCurveTooltip": {
+  "placeholders": {
+   "year": {
+    "type": "String"
+   },
+   "value": {
+    "type": "String"
+   }
+  }
+ },
+ "planNew": "新建计划",
+ "planEdit": "编辑计划",
+ "planNameLabel": "名称（如 房租 / 工资）",
+ "planOutflow": "支出",
+ "planInflow": "收入",
+ "planCadence": "周期",
+ "planAnchorMonthly": "起始日（每月此日发生）",
+ "planAnchorDate": "起始日",
+ "planEndDate": "结束日（可选）",
+ "planAutoPostTitle": "到期自动记入账本",
+ "planAutoPostSubtitle": "解锁应用时自动落账；已入账/作废不会重复记",
+ "planPayAccount": "支付账户",
+ "planIncomeAccount": "入账账户",
+ "planNoAccountForCurrency": "没有 {currency} 账户可选，请先建账户",
+ "@planNoAccountForCurrency": {
+  "placeholders": {
+   "currency": {
+    "type": "String"
+   }
+  }
+ },
+ "planCategory": "分类",
+ "planPostTitle": "记入账本 · {name}",
+ "@planPostTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostDateNote": "落账日 {date}（发生日）",
+ "@planPostDateNote": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostEstimateNote": " · 估算金额取中位数，可修改",
+ "planAccountsLoadFailed": "账户加载失败：{error}",
+ "@planAccountsLoadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "planPostFailed": "入账失败：{error}",
+ "@planPostFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "planSkipOnce": "这次不记",
+ "planPostNow": "记入账本",
+ "planPosting": "入账中…",
+ "plansPageTitle": "计划",
+ "planMonthlyRhythm": "本月节奏",
+ "planDueUnposted": "到期未记入",
+ "planCount": "{n} 笔",
+ "@planCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planDueTooltip": "到期未入账的计划事件，逐笔或一键记入账本",
+ "planNext30Days": "未来 30 天",
+ "planNext30Tooltip": "含已入账与未入账的全部发生额",
+ "planNext30Net": "未来 30 天净流",
+ "planNetSignTooltip": "正为净流入，负为净流出",
+ "planDueTitle": "待落地 · {n} 笔到期",
+ "@planDueTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planPostAll": "全部记入",
+ "planEstimateTooltip": "估算金额，确认时可修改",
+ "planEstimateBadge": "估",
+ "planMoreDue": "…另有 {n} 笔，\"全部记入\"可一次处理",
+ "@planMoreDue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planNetEffect": "净影响 {amount}",
+ "@planNetEffect": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "planBlockedCount": " · {n} 笔需先在确认页选账户",
+ "@planBlockedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planPostedCount": "已记入 {n} 笔计划",
+ "@planPostedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "planNothingToPost": "没有可直接记入的计划（需先在确认页选账户）",
+ "planNoUpcoming": "暂无预定支出",
+ "planAllPlans": "全部计划",
+ "planEmptyHint": "点右下角「新建计划」，或用识别功能从流水中生成。",
+ "planEstimateAmount": " · 估算金额",
+ "planActions": "计划操作",
+ "planPause": "暂停",
+ "planResume": "恢复",
+ "planMarkFinished": "标记完成",
+ "planDeleteTitle": "删除计划",
+ "planDeleteMessage": "删除\"{name}\"不影响已入账的交易。",
+ "@planDeleteMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "recurringTitle": "识别到的固定收支",
+ "recurringIntro": "从近 18 个月流水中识别（同对手方、间隔规整、≥3 次）。转为计划后将计入现金预测与预算的\"已计划\"。",
+ "recurringOpenTooltip": "从流水识别固定收支",
+ "recurringEmpty": "暂未识别到固定收支。多记录几个月的房租/订阅/工资等\n规律流水后再来试试。",
+ "recurringStatLine1": "{cadence} · {n} 次 · 置信 {pct}%",
+ "@recurringStatLine1": {
+  "placeholders": {
+   "cadence": {
+    "type": "String"
+   },
+   "n": {
+    "type": "num"
+   },
+   "pct": {
+    "type": "String"
+   }
+  }
+ },
+ "recurringStatLine2": "中位 {amount} · 下次预计 {m}/{d}",
+ "@recurringStatLine2": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   },
+   "m": {
+    "type": "num"
+   },
+   "d": {
+    "type": "num"
+   }
+  }
+ },
+ "recurringAlreadyPlanned": "已建计划",
+ "recurringConvertToPlan": "转计划",
+ "scenarioTitle": "情景模拟 · 现金压力测试",
+ "scenarioIntro": "把\"如果……会怎样\"放进 180 天现金预测：计划、债务还款与准备金不变，只冲击收入/支出，看低谷多深、钱会不会断。不写账本。",
+ "scenarioExtraMonthlyLabel": "情景：额外月支出",
+ "scenarioOneOffLabel": "情景：一次性支出",
+ "scenarioRunFailed": "模拟失败：{error}",
+ "@scenarioRunFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioRun": "运行模拟",
+ "scenarioRunning": "模拟中…",
+ "scenarioExtrasTitle": "叠加自定义冲击（可选）",
+ "scenarioExtraMonthlyAmount": "额外月支出（元/月）",
+ "scenarioMonthsCount": "月数",
+ "scenarioOneOffAmount": "一次性支出（元）",
+ "scenarioOccursOn": "发生在",
+ "scenarioResultTitle": "结果 · {name}",
+ "@scenarioResultTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioMinCashBaseline": "最低现金 · 基线",
+ "scenarioMinCashScenario": "最低现金 · 情景",
+ "scenarioTroughDelta": "低谷变化",
+ "scenarioWorstDay": "最难受的一天（相对基线）",
+ "scenarioCashOutDate": "现金耗尽日",
+ "scenarioCashOutValue": "{date}（还剩 {days} 天）",
+ "@scenarioCashOutValue": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   },
+   "days": {
+    "type": "num"
+   }
+  }
+ },
+ "scenarioNoCashOut": "预测期内未耗尽",
+ "scenarioNewShortfalls": "新增缺口（基线没有、情景触发的）",
+ "scenarioBelowReserve": "低于准备金与底线",
+ "scenarioShortfallCount": "…共 {n} 条",
+ "@scenarioShortfallCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "scenarioSurvives": "情景可承受：无新增缺口、现金未耗尽。底线之外仍有余量 {amount}。",
+ "@scenarioSurvives": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "scenarioHurts": "该情景会造成伤害：考虑提高准备金、推迟可选支出或安排信用额度备用。",
+ "scenarioMethodNote": "口径：与现金预测同引擎重放（docs/05 §12）；准备金、债务还款与底线不变。",
+ "saveChanges": "保存修改",
+ "allReady": "全部就绪",
+ "assetsTitle": "资产",
+ "assetsTitleHint": "全部账户的台账与净值：点任一账户看价值、编辑资料、记估值与买卖",
+ "assetAdd": "添加资产",
+ "assetNew": "新建资产",
+ "assetCreate": "创建资产",
+ "assetsEmptyTitle": "还没有资产或负债",
+ "assetsEmptyMessage": "添加第一笔资产：现金、银行卡、房产、股票持仓……保存后地球首页会点亮它的坐标。",
+ "assetNameLabel": "名称",
+ "assetNameRequired": "请填写资产名称",
+ "assetValuePositiveRequired": "价值需为正数（如 1280000）",
+ "assetLocationRequired": "请选择资产位置——保存后将在地球首页点亮对应坐标",
+ "assetLocationTooltip": "资产需选位置——保存后弹窗将碎成光束，飞往地球点亮该坐标",
+ "assetCurrentValue": "当前价值",
+ "assetOpeningDebtNote": "期初欠款",
+ "accountEditProfile": "编辑资料",
+ "accountUpdateValuation": "更新估值",
+ "accountOpeningBalance": "期初余额",
+ "accountOpeningBalanceTitle": "记期初余额（历史补录，不算当月收入）",
+ "accountReconcileAdjust": "对账调整",
+ "accountReconcileAdjustTitle": "对账调整（填差额，可负）",
+ "accountQuoteCode": "行情代码",
+ "accountQuoteCodeTitle": "行情代码（直连行情源用）",
+ "accountQuoteCodeHint": "A股 600519 / 港股 00700 / 美股 AAPL",
+ "accountQuoteCodeHelp": "A股 6 位数字自动判交易所；港股填数字；美股填字母代码。修改只影响行情查询，不影响任何账目。",
+ "accountArchive": "归档",
+ "accountUnarchive": "取消归档",
+ "accountArchived": "已归档",
+ "accountArchivedHint": "不计入净资产统计",
+ "accountValuationMissing": "缺估值",
+ "accountMissingValuationHint": "尚无估值记录，未计入净资产——点「更新估值」补录",
+ "accountMissingValuationTip": "缺估值：未计入净资产",
+ "accountValuationStale": "估值过期",
+ "accountStaleValuationHint": "超过 30 天未更新",
+ "accountStaleValuationTip": "估值已过期（>30 天）",
+ "accountDebtBaseLabel": "当前欠款（本位币）",
+ "accountValueBaseLabel": "当前价值（本位币）",
+ "accountOriginalBalance": "原币余额 {amount}",
+ "@accountOriginalBalance": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "accountMyShareDetail": "本人份额 {value}（{share}%）",
+ "@accountMyShareDetail": {
+  "placeholders": {
+   "value": {
+    "type": "String"
+   },
+   "share": {
+    "type": "String"
+   }
+  }
+ },
+ "accountMineShare": "我 {share}%",
+ "@accountMineShare": {
+  "placeholders": {
+   "share": {
+    "type": "String"
+   }
+  }
+ },
+ "accountRecentTransactions": "近期交易",
+ "accountUnitPriceLabel": "单价（每单位）",
+ "accountTotalValueLabel": "当前总价值",
+ "accountCurrentBalance": "当前余额",
+ "accountLocated": "已定位",
+ "accountGroupCash": "现金与活期",
+ "accountGroupSteady": "稳健理财",
+ "accountGroupHoldings": "持仓",
+ "accountGroupReal": "实物与权益",
+ "accountGroupLiabilities": "负债",
+ "liabilityCurrentDebt": "当前欠款",
+ "netWorth": "净资产",
+ "netWorthMyShare": "净资产（本人份额）",
+ "netWorthMyShareHint": "存在归属份额 <100% 的账户，此处为本人份额口径；全户口径见右侧合计",
+ "totalAssets": "资产合计",
+ "totalLiabilities": "负债合计",
+ "valuationStatusLabel": "估值状态",
+ "itemsMissingValuation": "{count} 项缺估值",
+ "@itemsMissingValuation": {
+  "placeholders": {
+   "count": {
+    "type": "num"
+   }
+  }
+ },
+ "itemsStaleValuation": "{count} 项已过期",
+ "@itemsStaleValuation": {
+  "placeholders": {
+   "count": {
+    "type": "num"
+   }
+  }
+ },
+ "selectAccountHint": "选择左侧账户查看详情",
+ "subtypeLabel": "类型",
+ "currencyLabel": "币种",
+ "locationLabel": "位置",
+ "institutionLabel": "机构",
+ "securityCodeLabel": "证券代码",
+ "ownershipTitle": "归属份额",
+ "ownershipMyShareLabel": "本人份额（%）",
+ "ownershipShareLabel": "份额",
+ "ownershipHelper": "100 = 全额本人；夫妻共同账户各填 50。只影响净资产/我的份额统计，不改流水。",
+ "ownershipRangeError": "份额需在 0–100 之间（例如 50 或 33.3）",
+ "tradeBuy": "买入",
+ "tradeSell": "卖出",
+ "tradeDividendInterest": "分红/利息",
+ "tradeBuyTitle": "买入 · {name}",
+ "@tradeBuyTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeSellTitle": "卖出 · {name}",
+ "@tradeSellTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeDividendTitle": "分红/利息入账",
+ "tradeHoldingSummary": "持有 {qty} 份 · 成本 {cost}",
+ "@tradeHoldingSummary": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   },
+   "cost": {
+    "type": "String"
+   }
+  }
+ },
+ "tradeCashAccount": "现金账户",
+ "tradeCashAccountCredited": "入账现金账户",
+ "tradeQuantityLabel": "数量（份）",
+ "tradeTotalCostLabel": "总花费（含费用）",
+ "tradeNetProceedsLabel": "净到账金额",
+ "tradeDividendAmountLabel": "分红/利息金额",
+ "tradeNoteLabel": "备注（可选）",
+ "lotSectionTitle": "成本批次（FIFO）",
+ "lotRealizedTotal": "累计已实现 {amount}",
+ "@lotRealizedTotal": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "lotRealizedYear": "{year} 年已实现 {amount}",
+ "@lotRealizedYear": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "lotLineItem": "{qty} 份 × 单价 {price}",
+ "@lotLineItem": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   },
+   "price": {
+    "type": "String"
+   }
+  }
+ },
+ "lotShortfall": "⚠ {qty} 份卖出早于首笔买入（历史缺口，以零成本配对）",
+ "@lotShortfall": {
+  "placeholders": {
+   "qty": {
+    "type": "String"
+   }
+  }
+ },
+ "lotMethodologyNote": "口径：先买先卖逐批配对，与账面平均成本法并行披露（docs/05 §11）",
+ "aiRecognize": "AI 识别",
+ "aiFillNameFirst": "先填写资产名称，AI 才能识别",
+ "aiNotBound": "尚未绑定 AI：设置 → AI 服务",
+ "aiRecognizing": "AI 识别中…",
+ "aiFilledConfirmValue": "AI 已填充，请确认价值",
+ "aiValTitle": "AI 估值",
+ "aiValDaily": "每日 AI 估值",
+ "aiValDailyTooltip": "开启后每天联网检索该资产真实市价并自动更新价值（房产看成交行情、车辆看二手估值，多源交叉剔除营销噪音）；你随时可在账户详情纠正，当日人工值优先",
+ "aiValSectionTooltip": "每天解锁后自动联网检索真实市价并更新价值；你手动改过的估值当日优先，AI 不覆盖",
+ "aiValQueryLabel": "检索线索（小区/栋/室 · 年款型号）",
+ "aiValSaveQuery": "保存线索",
+ "aiValSearching": "检索中…",
+ "aiValEstimateNow": "立即估值",
+ "aiValQueryFallback": "检索词空 = 「{query}」",
+ "@aiValQueryFallback": {
+  "placeholders": {
+   "query": {
+    "type": "String"
+   }
+  }
+ },
+ "aiValQuerySaved": "AI 估值线索已保存",
+ "aiValBindKeyFirst": "先在 设置 → AI 服务 绑定你的 AI Key",
+ "aiValUpdated": "已更新估值：{value}",
+ "@aiValUpdated": {
+  "placeholders": {
+   "value": {
+    "type": "String"
+   }
+  }
+ },
+ "aiValError": "AI 估值：{error}",
+ "@aiValError": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "aiValResultTitle": "AI 估值结果",
+ "aiValRange": "区间",
+ "aiValConfidence": "置信度",
+ "aiValRationale": "依据",
+ "aiValSource": "来源",
+ "aiValDismiss": "不用",
+ "aiValAdopt": "采用",
+ "aiValNoRecords": "暂无估值记录",
+ "locSet": "设置位置",
+ "locChange": "修改位置",
+ "locClear": "清除位置",
+ "locLocatedBuiltin": "已定位：{name}（内置城市坐标）",
+ "@locLocatedBuiltin": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedAiPrecise": "AI 已定位：{name}（精确位置）",
+ "@locLocatedAiPrecise": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedAiCity": "AI 已定位：{name}（城市中心）",
+ "@locLocatedAiCity": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locLocatedFallback": "已定位：{name}",
+ "@locLocatedFallback": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locDialogTitle": "「{name}」的位置",
+ "@locDialogTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "locDialogSubtitle": "设置后该资产将以呼吸标记出现在 3D 资产地球上",
+ "locNameLabel": "位置名（如 上海·前滩）",
+ "locLatitudeLabel": "纬度 (-90 ~ 90)",
+ "locLongitudeLabel": "经度 (-180 ~ 180)",
+ "locCoordNote": "坐标为 WGS84；国内资产可用城市快选后在地图 App 里查小区坐标微调",
+ "loadFailedReports": "加载失败：{e}",
+ "@loadFailedReports": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "reportCancel": "取消",
+ "reportSave": "保存",
+ "assetAllocation": "资产配置",
+ "setTargetAllocation": "设置目标配置",
+ "allocNoAssetsHint": "还没有资产。记账后这里会展示你的资产结构。",
+ "allocMissingValuations": "⚠ {n} 个账户估值缺失（按 0 计入占比）",
+ "@allocMissingValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "rebalanceAdviceTitle": "再平衡建议（5/25 带宽法）",
+ "rebalanceAdviceNote": "偏离超过 max(5 个百分点, 目标的 25%) 时提醒，交易回带边（非回到目标，降低换手）。",
+ "allocWithinBand": "配置均在目标带宽内 ✓",
+ "allocTargetPct": "目标 {n}%",
+ "@allocTargetPct": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "rebalanceBuy": "买入",
+ "rebalanceSell": "卖出",
+ "rebalanceAdviceDetail": "当前 {current}% → 回到带宽边 {target}%±带",
+ "@rebalanceAdviceDetail": {
+  "placeholders": {
+   "current": {
+    "type": "String"
+   },
+   "target": {
+    "type": "String"
+   }
+  }
+ },
+ "targetAllocationTitle": "目标配置",
+ "targetAllocationHint": "各类占全部资产的百分比，合计 ≤ 100%。留空 = 不设目标（不参与再平衡提醒）。",
+ "targetSumExceeded": "合计 {n}%（超过 100%）",
+ "@targetSumExceeded": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "targetSumRemaining": "合计 {sum}% · 未设目标/未分配 {rest}%",
+ "@targetSumRemaining": {
+  "placeholders": {
+   "sum": {
+    "type": "num"
+   },
+   "rest": {
+    "type": "num"
+   }
+  }
+ },
+ "fireTitle": "财务独立（FIRE）",
+ "fireTuneTooltip": "调整参数与模拟",
+ "fireEmptyHint": "记录一段时间的收支后，这里会给出“多少钱可以财务自由”的测算。\n口径：FI 门槛 = 年支出 ÷ 提取率（4% 法则），可投资净资产 = 净资产 − 固定资产 − 长期权益。",
+ "fiNumberToday": "FI 门槛（今天的钱）",
+ "investableCoverage": "可投资净资产覆盖",
+ "coverageHistoryMonths": "（历史 {n} 个月）",
+ "@coverageHistoryMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fiTimeToReach": "默认假设下达标",
+ "fiUnreachable": "不可达（提高储蓄或收益假设）",
+ "fiReached": "已达标 🎉",
+ "fiYearsAway": "≈ {n} 年",
+ "@fiYearsAway": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fireDefaultsNote": "默认：名义收益 5% · 通胀 2.5% · 提取率 4% · 储蓄取近 12 个月实绩。点右上角调整并跑蒙特卡洛。",
+ "firePlannerTitle": "财务独立（FIRE）规划器",
+ "firePlannerNote": "FI 门槛 = 年支出 ÷ 提取率；累积期逐月精确复利（名义收益、目标随通胀增长）。蒙特卡洛为实际口径（已扣通胀），固定种子可复现。",
+ "recalculate": "重新测算",
+ "investableNetWorthField": "可投资净资产（元）",
+ "annualSavingsField": "年储蓄（元，可负）",
+ "targetAnnualSpendField": "目标年支出（元）",
+ "nominalReturnField": "名义收益 %/年",
+ "inflationField": "通胀 %/年",
+ "withdrawalRateField": "提取率 %（4=4% 法则）",
+ "withdrawalVolPct": "提取期波动率 {v}%",
+ "@withdrawalVolPct": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "calcResults": "测算结果",
+ "currentCoverage": "当前覆盖率",
+ "timeToFi": "达标时间",
+ "fiUnreachableWithin": "不可达（{n} 年内）",
+ "@fiUnreachableWithin": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "fiYearsMonths": "≈ {years} 年（{months} 个月）",
+ "@fiYearsMonths": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   },
+   "months": {
+    "type": "num"
+   }
+  }
+ },
+ "requiredSavingsTitle": "反解：想 N 年达标每年要存多少",
+ "fiWithinYears": "{n} 年内达标",
+ "@fiWithinYears": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "mcTitle": "蒙特卡洛 · 达标后提取 30 年",
+ "mcSurvivalLabel": "生存率（1000 条路径）",
+ "mcPercentileLabel": "期末余额分位（年支出倍数）",
+ "mcNote": "期初 = FI 门槛（提取率倒数倍年支出），每年提取 1 倍并按随机实际收益增长；波动率 {vol}%。模拟为启发式参考，不构成投资建议。",
+ "@mcNote": {
+  "placeholders": {
+   "vol": {
+    "type": "String"
+   }
+  }
+ },
+ "fiUnreachableShort": "不可达",
+ "fiReachedShort": "已达标",
+ "yearsShort": "{n} 年",
+ "@yearsShort": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "sensitivityTitle": "敏感性：收益 ±1pp × 支出 ±10%",
+ "baseline": "基准",
+ "sensReturnRow": "收益{sign}{n} pp",
+ "@sensReturnRow": {
+  "placeholders": {
+   "sign": {
+    "type": "String"
+   },
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "sensitivityColsNote": "列：支出 ×0.9 / ×1.0 / ×1.1（能省 10% 比多赚 1 个点更有力）",
+ "portfolioTitle": "投资组合",
+ "noHoldingsHint": "还没有持仓。在总览「添加资产」新建持仓账户后，用「买入」记录第一笔投资。",
+ "holdingQtyShares": "{q} 份",
+ "@holdingQtyShares": {
+  "placeholders": {
+   "q": {
+    "type": "String"
+   }
+  }
+ },
+ "holdingCostHint": " · 成本 {cost}",
+ "@holdingCostHint": {
+  "placeholders": {
+   "cost": {
+    "type": "String"
+   }
+  }
+ },
+ "missingPrice": "缺价",
+ "skippedFxFlows": "⚠ {n} 笔含外币流水因缺历史汇率未计入 XIRR",
+ "@skippedFxFlows": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "xirrTwrTooltip": "XIRR 资金加权（含你的加减仓时点影响）；TWR 时间加权（剔除资金进出，衡量标的表现）",
+ "annualizedXirr": "年化 XIRR {v}%",
+ "@annualizedXirr": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "annualizedTwr": "年化 TWR {v}%",
+ "@annualizedTwr": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "myCpiTitle": "我的通胀 · 近 12 个月",
+ "myCpiEmptyHint": "记账满 6 个月后，这里会用你自己的消费篮子计算“你的生活成本通胀”（固定篮子口径：维持基期消费结构不变，现在要多花多少）。",
+ "aboveAssumedInflation": "高于假设通胀 {v}%",
+ "@aboveAssumedInflation": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "notAboveAssumedInflation": "不高于假设通胀 {v}%",
+ "@notAboveAssumedInflation": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "basketCoverageWarning": "⚠ 篮子覆盖率 {v}%（消费结构变化较大，解读需谨慎）",
+ "@basketCoverageWarning": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "cpiMethodNote": "基期 {base} 个月 vs 近期 {recent} 个月的月均支出；口径：维持基期消费结构不变的价格指数近似（固定篮子 Laspeyres）。",
+ "@cpiMethodNote": {
+  "placeholders": {
+   "base": {
+    "type": "num"
+   },
+   "recent": {
+    "type": "num"
+   }
+  }
+ },
+ "basketShareHint": "占篮子 {share}% · 近期/基期 ×{ratio}",
+ "@basketShareHint": {
+  "placeholders": {
+   "share": {
+    "type": "String"
+   },
+   "ratio": {
+    "type": "String"
+   }
+  }
+ },
+ "reportYearTitle": "年度 · {year} 年",
+ "@reportYearTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   }
+  }
+ },
+ "reportMonthTitle": "月报 · {year} 年 {month} 月",
+ "@reportMonthTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   },
+   "month": {
+    "type": "num"
+   }
+  }
+ },
+ "prevPeriod": "上一期",
+ "nextPeriod": "下一期",
+ "nwChangeBreakdown": "净资产变化分解",
+ "residualTooltip": "差额非 0 通常意味着缺估值、漏记或导入重复",
+ "pendingReviewChip": "待核对 {v}",
+ "@pendingReviewChip": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "netWorthOpening": "期初净资产",
+ "attributionIncomeExpense": "收支贡献",
+ "attributionRealized": "投资损益·已实现",
+ "attributionDividend": "投资损益·分红",
+ "attributionUnrealizedDelta": "投资损益·未实现变化",
+ "attributionFx": "汇兑影响",
+ "attributionOtherValuation": "其他估值变化",
+ "attributionCorrection": "范围/历史修正",
+ "attributionResidual": "待核对差额",
+ "netWorthClosing": "期末净资产",
+ "incomeMix": "收入构成",
+ "expenseMix": "消费构成",
+ "closingBalanceSheetMix": "期末资产负债构成",
+ "valuationMissingSuffix": "（缺估值）",
+ "valuationStaleSuffix": "（估值过期）",
+ "monthlyReport": "月报",
+ "yearlyReport": "年度",
+ "riskTitle": "风险与风险调整后收益",
+ "riskFreeRateTooltip": "无风险利率（Sharpe/Sortino 参数）",
+ "riskNeedMorePoints": "需要至少 2 个有效月末估值点（当前 {n} 个）。\n每月给持仓更新一次价格，即可得到回撤、波动率等风险画像。",
+ "@riskNeedMorePoints": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "riskSmallSample": "⚠ 有效样本 {n} 个月（< 6），指标波动大，仅供参考",
+ "@riskSmallSample": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "annualizedReturnTwr": "年化收益（TWR）",
+ "annualizedVolatility": "年化波动率",
+ "sharpeRatio": "Sharpe 比率",
+ "sharpeFormulaHint": "(年化收益 − 无风险) / 波动率",
+ "sortinoRatio": "Sortino 比率",
+ "sortinoHint": "下行偏差版 Sharpe",
+ "bestWorstMonth": "最佳 / 最差月",
+ "monthWinRate": "月胜率",
+ "riskBasisNote": "基于 {periods} 个月度子期间（近 36 个月中 {points} 个有效月末估值点）· 无风险利率 {rf}%",
+ "@riskBasisNote": {
+  "placeholders": {
+   "periods": {
+    "type": "num"
+   },
+   "points": {
+    "type": "num"
+   },
+   "rf": {
+    "type": "String"
+   }
+  }
+ },
+ "drawdownSpan": "{peak} 峰 → {trough} 谷",
+ "@drawdownSpan": {
+  "placeholders": {
+   "peak": {
+    "type": "String"
+   },
+   "trough": {
+    "type": "String"
+   }
+  }
+ },
+ "maxDrawdown": "最大回撤",
+ "riskFreeRateDialogTitle": "无风险利率（年化 %）",
+ "riskFreeRateHint": "如 2.0（十年期国债收益率附近）",
+ "yearSummaryTitle": "{year} 年总览",
+ "@yearSummaryTitle": {
+  "placeholders": {
+   "year": {
+    "type": "num"
+   }
+  }
+ },
+ "yearTotalIncome": "全年收入",
+ "yearTotalExpense": "全年消费",
+ "surplus": "结余",
+ "savingsRate": "储蓄率",
+ "savingsRateTooltip": "结余 / 收入",
+ "positiveSurplusMonths": "结余为正的月份",
+ "interestPaid": "支付利息",
+ "interestPaidTooltip": "全年债务成本",
+ "realizedPnl": "已实现投资损益",
+ "realizedPnlTooltip": "卖出落袋（账面口径）",
+ "dividends": "分红派息",
+ "netInvestmentGain": "投资净收益",
+ "netInvestmentGainTooltip": "已实现 + 分红",
+ "monthlyCashflow": "月度收支",
+ "incomeLabel": "收入",
+ "expenseLabel": "支出",
+ "barTooltipMonth": "{n} 月\n{amount}",
+ "@barTooltipMonth": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "yearExpenseRanking": "全年消费排行",
+ "yearHighlights": "年度亮点",
+ "biggestExpense": "最大单笔：{label}",
+ "@biggestExpense": {
+  "placeholders": {
+   "label": {
+    "type": "String"
+   }
+  }
+ },
+ "expenseFallback": "消费",
+ "loanPrincipalRepaid": "全年还贷本金",
+ "incomeCategoryEntry": "收入 · {name}",
+ "@incomeCategoryEntry": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "globeTitle": "资产地球",
+ "globeBackToOverview": "返回总览",
+ "globeResetView": "复位视角",
+ "globeFullscreen": "全屏地球",
+ "globeAssetCategory": "资产类别",
+ "globeInstitution": "机构",
+ "globeCurrentValue": "当前价值",
+ "globeValuationMissingExcluded": "缺估值（不计净资产）",
+ "globeValuationStale": "已过期（>30 天未更新）",
+ "globeDenominationCurrency": "计价币种",
+ "globeViewAndEdit": "查看与编辑",
+ "globeMoreSameLocation": "同址还有 {n} 处资产",
+ "@globeMoreSameLocation": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "globeValuationMissing": "缺估值",
+ "homeLoadFailed": "加载失败：{error}",
+ "@homeLoadFailed": {
+  "placeholders": {
+   "error": {
+    "type": "Object"
+   }
+  }
+ },
+ "homeTodoTooltip": "待办事项",
+ "homeTodoPending": "待办 · {n} 项待处理，点击查看",
+ "@homeTodoPending": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "homeAiTooltip": "AI 助手",
+ "homeSettingsTooltip": "设置",
+ "homeLocateCurrentTooltip": "定位当前位置",
+ "homeLocating": "定位中…",
+ "homeLocatedExact": "已定位当前位置：{city}",
+ "@homeLocatedExact": {
+  "placeholders": {
+   "city": {
+    "type": "String"
+   }
+  }
+ },
+ "homeLocatedEstimate": "定位服务不可用，已按本地时区估计：{city}",
+ "@homeLocatedEstimate": {
+  "placeholders": {
+   "city": {
+    "type": "String"
+   }
+  }
+ },
+ "homeAddAsset": "添加资产",
+ "homeAddAssetTooltip": "新建资产/负债账户，为资产选位置即点亮地球",
+ "homeLogTransaction": "记一笔",
+ "homeLogTransactionTooltip": "上报消费 / 收入 / 转账等日常流水",
+ "homeCollapse": "收起",
+ "homeQuickAdd": "记一笔 / 添加资产",
+ "homeCollapseQuickMenu": "收起快捷菜单",
+ "homeAddSemantic": "添加：记一笔或添加资产",
+ "homeRefreshing": "刷新中…",
+ "homeRefreshData": "刷新数据",
+ "homeNwCardHint": "月报 · 净资产变化分解",
+ "homeFlowCardHint": "流水 · 本月全部收支",
+ "homeHealthCardHint": "月报 · 体检与构成明细",
+ "homeAssetsCardHint": "资产 · 全部账户台账与编辑",
+ "homeBudgetCardHint": "预算 · 额度与配速",
+ "homeTrendCardHint": "月报 · 历史走势与归因",
+ "homePlansCardHint": "计划 · 固定开销与预定支出",
+ "homeAutoPosted": "已按计划自动记入 {n} 笔交易，可在流水中查看（来源：计划）",
+ "@homeAutoPosted": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashNetWorth": "净资产",
+ "dashAsOf": "截至 {date}",
+ "@dashAsOf": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashMyShare": "我的份额 {amount}",
+ "@dashMyShare": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashAssetsAmount": "资产 {amount}",
+ "@dashAssetsAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashLiabAmount": "负债 {amount}",
+ "@dashLiabAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashResidualTooltip": "差额非 0 通常意味着缺估值、漏记或导入重复（月报页有明细）",
+ "dashPendingReview": "待核对 {amount}",
+ "@dashPendingReview": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashTotalAssets": "总资产",
+ "dashTotalLiabilities": "总负债",
+ "dashMonthFlow": "本月收支（{m} 月）",
+ "@dashMonthFlow": {
+  "placeholders": {
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "dashIncome": "收入",
+ "dashSpendFees": "消费与费用",
+ "dashSurplus": "结余",
+ "dashInvestPnl": "投资损益",
+ "dashPrincipalRepaid": "还贷本金",
+ "dashInterestPaid": "支付利息",
+ "dashSpendable": "还能花多少（未来 {n} 天）",
+ "@dashSpendable": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashForecastThrough": "现金流预测截至 {date}",
+ "@dashForecastThrough": {
+  "placeholders": {
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashDiscretionaryCap": "计划外可支配上限",
+ "dashDiscretionaryCapHint": "已扣除固定计划、还款、准备金与现金底线",
+ "dashMonthSpendForecast": "本月消费预测",
+ "dashMonthSpendForecastHint": "按当前速度外推到月末",
+ "dashDailyAllowance": "剩余日均可花",
+ "dashDaysElapsed": "本月已过 {n} 天",
+ "@dashDaysElapsed": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashCashLowPoint": "现金最低点",
+ "dashShortfall": "{label}（{date}）短缺",
+ "@dashShortfall": {
+  "placeholders": {
+   "label": {
+    "type": "String"
+   },
+   "date": {
+    "type": "String"
+   }
+  }
+ },
+ "dashHealthTitle": "财务体检",
+ "dashSavingsRate": "储蓄率",
+ "dashSavingsRateHint": "本月（收入−消费）/收入",
+ "dashEmergencyMonths": "应急月数",
+ "dashEmergencyMonthsHint": "流动资产/月均消费",
+ "dashDebtToAsset": "资产负债率",
+ "dashDebtToAssetHint": "总负债/总资产",
+ "dashInsights": "智慧洞察",
+ "dashNwTrend": "净资产走势",
+ "dashNwTrendMonths": "净资产走势（近 {n} 个月）",
+ "@dashNwTrendMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashNwTrendHint": "按住底部滚筒左右拖动：从 1 个月拉长到 {n} 个月",
+ "@dashNwTrendHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashRollerHint": "按住滚筒左右拖动：1 ~ {n} 个月",
+ "@dashRollerHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashUpcomingTitle": "未来 30 天要花的钱",
+ "dashNoUpcoming": "暂无计划支出",
+ "dashPendingDue": "{n} 笔到期计划待入账（计划页可一键记入）",
+ "@dashPendingDue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashMissingValuations": "{n} 个账户缺估值（不计为 0，请编辑账户补录）",
+ "@dashMissingValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashStaleValuations": "{n} 个账户估值已过期（>30 天）",
+ "@dashStaleValuations": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashResidualIssue": "本月归因存在待核对差额：{amount}",
+ "@dashResidualIssue": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "dashIssuesTitle": "待处理",
+ "dashBalanceSheet": "资产负债表",
+ "dashAssetsTotal": "资产合计",
+ "dashLiabilitiesTotal": "负债合计",
+ "dashIncludedAccounts": "计入账户",
+ "dashAccountCount": "{n} 项",
+ "@dashAccountCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashValuationStatus": "估值状态",
+ "dashMissingCount": "{n} 项缺估值",
+ "@dashMissingCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "dashStaleCount": "{n} 项已过期",
+ "@dashStaleCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiAssistant": "AI 助手",
+ "aiHistorySessions": "历史会话",
+ "aiBindKeyFirst": "先在 设置 → AI 服务 绑定你自己的 AI Key",
+ "aiAssistantError": "AI 助手：{error}",
+ "@aiAssistantError": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "aiSessions": "会话",
+ "aiNewChat": "新对话",
+ "aiNoSessionsHint": "还没有会话，点右上「+」开始第一段对话。",
+ "aiDeleteChat": "删除会话",
+ "aiLedgerContextOn": "已附带账本概况：净资产、本月收支等汇总数字会发给 AI（不含逐笔明细）",
+ "aiLedgerContextOff": "未附带账本数据：AI 只作通用回答",
+ "aiAskSomething": "问点什么，或从下面开始",
+ "aiInputHint": "问你的账房先生…（Enter 发送）",
+ "aiSend": "发送",
+ "aiPromptSpendWhere": "我的钱都花哪儿了？",
+ "aiPromptNwTrend": "净资产最近走势如何？",
+ "aiPromptSaveMonth": "这个月怎么省下一笔？",
+ "aiPromptPrepay": "现在适合提前还贷吗？",
+ "aiValuationsUpdated": "AI 已更新 {n} 项资产估值（来源可审计，可在账户详情纠正）",
+ "@aiValuationsUpdated": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "aiValuationsUpdatedFailed": "AI 已更新 {n} 项资产估值（部分失败，可在账户详情查看）",
+ "@aiValuationsUpdatedFailed": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "commonCancel": "取消",
+ "commonSave": "保存",
+ "commonEdit": "编辑",
+ "commonVoid": "作废",
+ "commonGotIt": "知道了",
+ "fieldType": "类型",
+ "dirIncome": "收入",
+ "dirExpense": "支出",
+ "txAddTitle": "记一笔",
+ "txEditTitle": "编辑交易",
+ "txPageTitle": "流水",
+ "txExportCsvTooltip": "导出 CSV（明文，自选位置）",
+ "txImportCsvTooltip": "导入账单 CSV",
+ "txSearchHint": "搜索全账本：备注、对方、标签",
+ "txEmptyTitle": "还没有流水",
+ "txNoMatchTitle": "没有匹配的交易",
+ "txEmptyHint": "右下角「记一笔」，或从设置导入账单 CSV。",
+ "txNoMatchHint": "换个关键词，或清除类型筛选再试。",
+ "txNoMatchHintWide": "换个关键词，或清除右侧类型筛选再试。",
+ "txExportedToast": "已导出流水 CSV（含 BOM，Excel 可直接打开）",
+ "txAccountLabel": "账户",
+ "txAccountPayFrom": "支付账户",
+ "txAccountDeposit": "入账账户",
+ "txAccountTransferFrom": "转出账户",
+ "txAccountTransferTo": "转入账户",
+ "txAccountRepayCard": "偿还卡片",
+ "txAccountRepayFrom": "还款来源",
+ "txAccountLoan": "贷款账户",
+ "txAccountBorrowTo": "借入到",
+ "txAccountBorrowToAsset": "借入到账账户（资产）",
+ "txAccountLendReceivable": "借出（挂应收）",
+ "txAccountReceiveBackTo": "收回至",
+ "txAccountCounterpartyCash": "对方现金账户",
+ "txAccountB": "账户 B",
+ "txInterestCategory": "利息分类",
+ "txCategory": "分类",
+ "txNoteOptional": "备注（可选）",
+ "txVoidedBadge": "已作废",
+ "txPostingsTitle": "分录（借贷平衡）",
+ "txShares": "{q} 份",
+ "@txShares": {
+  "placeholders": {
+   "q": {
+    "type": "String"
+   }
+  }
+ },
+ "txExternalId": "外部 ID：{id}",
+ "@txExternalId": {
+  "placeholders": {
+   "id": {
+    "type": "String"
+   }
+  }
+ },
+ "txVoidConfirmTitle": "作废此交易？",
+ "txVoidConfirmMessage": "作废后分录不再计入余额与统计，但保留审计痕迹。",
+ "monthExpense": "本月支出",
+ "monthIncome": "本月收入",
+ "monthSurplus": "本月结余",
+ "monthThis": "本月",
+ "monthSpent": "已支出",
+ "monthCnyOnlyTooltip": "仅统计人民币流水，避免混币求和失真",
+ "filterPanelHint": "按交易种类过滤台账；搜索不受此筛选限制",
+ "importTitle": "导入账单",
+ "importFileTypeBills": "账单",
+ "importStepHeader": "第 {n}/4 步 · {title}",
+ "@importStepHeader": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "title": {
+    "type": "String"
+   }
+  }
+ },
+ "importStepPickFile": "选择文件",
+ "importStepChooseAccount": "选择账户",
+ "importStepPreview": "预览与分类",
+ "importStepDone": "完成",
+ "importParsePreview": "解析预览",
+ "importConfirm": "确认入账",
+ "importPickFileHint": "微信 / 支付宝导出的原生账单（CSV，GBK 或 UTF-8）自动识别列名与交易单号，无需改表头；其他 CSV 需表头含 date、type、amount 三列。",
+ "importChooseCsvFile": "选择 CSV 文件",
+ "importParseFailed": "解析失败：{error}",
+ "@importParseFailed": {
+  "placeholders": {
+   "error": {
+    "type": "String"
+   }
+  }
+ },
+ "importTargetAccount": "入到哪个账户",
+ "importFileName": "文件：{file}",
+ "@importFileName": {
+  "placeholders": {
+   "file": {
+    "type": "String"
+   }
+  }
+ },
+ "importRowsDetected": "已识别 {n} 行",
+ "@importRowsDetected": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importDefaultExpenseCategory": "支出默认分类",
+ "importDefaultIncomeCategory": "收入默认分类",
+ "importReadyToPost": "可入账",
+ "importLineCount": "{n} 行",
+ "@importLineCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importExactDuplicates": "精确重复跳过",
+ "importCategoryHits": "智慧分类命中",
+ "importCategoryHitsDetail": "{n} 行（规则+历史学习）",
+ "@importCategoryHitsDetail": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importParserSkipped": "原生解析跳过",
+ "importTransferSuggestions": "转账配对建议",
+ "importTransferSuggestionDetail": "{n} 条（导入后可在流水页人工合并）",
+ "@importTransferSuggestionDetail": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importNoCounterparty": "(无对方)",
+ "importPostedCount": "已入账 {n} 笔",
+ "@importPostedCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "importDoneHint": "重复导入同一文件会自动跳过（外部 ID 幂等）。对手方分类已被学习，下次导入会自动建议。",
+ "strategyCompareTitle": "还款策略对比",
+ "strategySubtitle": "在最低还款之外，每月额外拿出一笔钱优先还某一笔债",
+ "strategyExtraMonthly": "每月额外还款额",
+ "strategyResimulate": "重新模拟",
+ "strategyNoDebt": "没有待还负债",
+ "strategyAvalancheTitle": "雪崩法 · 高利率优先",
+ "strategySnowballTitle": "雪球法 · 小额优先",
+ "strategyAvalancheSaves": "雪崩法比雪球法少付利息 {amount}；若你需要\"先清掉一笔\"的成就感，选雪球也完全合理。",
+ "@strategyAvalancheSaves": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "strategyPayoffTime": "还清时间",
+ "strategyDuration": "{years} 年 {months} 个月",
+ "@strategyDuration": {
+  "placeholders": {
+   "years": {
+    "type": "num"
+   },
+   "months": {
+    "type": "num"
+   }
+  }
+ },
+ "strategyTotalInterest": "总利息",
+ "strategyPayoffOrder": "还清顺序",
+ "debtPageTitle": "负债",
+ "debtStrategyTooltip": "雪崩 vs 雪球策略对比",
+ "debtNew": "新建负债",
+ "debtEmptyTitle": "还没有负债",
+ "debtEmptyHint": "登记信用卡、房贷、花呗等负债后，这里给出还款计划与压力模拟。",
+ "debtOverviewTitle": "负债总览",
+ "debtTotalBase": "总负债（折本位币）",
+ "debtTotalBaseTooltip": "按账本内最近汇率折算本位币汇总；无汇率的外币计 0",
+ "debtCountLabel": "笔数",
+ "debtCountValue": "{n} 笔",
+ "@debtCountValue": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtWorstApr": "最高实际年化",
+ "debtWorstAprTooltip": "IRR 口径；费用率类负债明显高于名义利率",
+ "debtRepayMethod": "还款方式",
+ "debtNominalApr": "名义年利率",
+ "debtNominalAprField": "名义年利率 %（如 3.85）",
+ "debtTermLabel": "期数",
+ "debtTermCount": "{n} 期",
+ "@debtTermCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtTermMonthsField": "期数（月）",
+ "debtEffectiveApr": "实际年化",
+ "debtEffectiveAprTooltip": "IRR 口径，费用率类负债明显更高",
+ "debtNextRepay": "下期 {month}/{day} 还 {total}（本金 {principal} + 利息 {interest}）",
+ "@debtNextRepay": {
+  "placeholders": {
+   "month": {
+    "type": "num"
+   },
+   "day": {
+    "type": "num"
+   },
+   "total": {
+    "type": "String"
+   },
+   "principal": {
+    "type": "String"
+   },
+   "interest": {
+    "type": "String"
+   }
+  }
+ },
+ "debtRepayNext": "按计划还款",
+ "debtPrepaySim": "提前还款模拟",
+ "debtNoScheduleSnackBar": "没有待还期数（或为手工计划）",
+ "debtPrepaySimTitle": "提前还款模拟 · {name}",
+ "@debtPrepaySimTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "debtRemainingPrincipal": "当前剩余本金 {amount}",
+ "@debtRemainingPrincipal": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "debtExtraPayment": "额外偿还金额",
+ "debtSimulate": "模拟",
+ "debtSimResultTitle": "模拟结果",
+ "debtSimFee": "手续费：{fee}",
+ "@debtSimFee": {
+  "placeholders": {
+   "fee": {
+    "type": "String"
+   }
+  }
+ },
+ "debtSimInterestSaved": "利息净节省：{saved}",
+ "@debtSimInterestSaved": {
+  "placeholders": {
+   "saved": {
+    "type": "String"
+   }
+  }
+ },
+ "debtSimRemaining": "剩余期数：{n} 期",
+ "@debtSimRemaining": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtSimMonthsSaved": "（少 {n} 期）",
+ "@debtSimMonthsSaved": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "debtNameField": "名称",
+ "debtPrincipal": "本金",
+ "debtStartDate": "起始日",
+ "wdgCancel": "取消",
+ "wdgConfirm": "确认",
+ "wdgSave": "保存",
+ "wdgDelete": "删除",
+ "wdgLoadFailed": "加载失败：{e}",
+ "@wdgLoadFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "wdgBack": "返回",
+ "wdgAmount": "金额",
+ "wdgDate": "日期",
+ "wdgCloseEsc": "关闭 (Esc)",
+ "wdgDialogBarrier": "关闭弹窗",
+ "wdgSheetBarrier": "关闭面板",
+ "wdgMinimize": "最小化",
+ "wdgRestoreDown": "向下还原",
+ "wdgMaximize": "最大化",
+ "wdgClose": "关闭",
+ "wdgDeltaWithPercent": "{amount}（{arrow} {pct}%）",
+ "@wdgDeltaWithPercent": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   },
+   "arrow": {
+    "type": "String"
+   },
+   "pct": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetPageTitle": "预算",
+ "budgetCreate": "新建预算",
+ "budgetEmptyTitle": "还没有预算",
+ "budgetEmptyMessage": "从月度总预算开始，或给餐饮、购物等分类单独设额度，首页会按当前消费速度预测月末是否超支。",
+ "budgetMonthTitle": "本月预算",
+ "budgetOverspentHero": "已超支",
+ "budgetRemainingHero": "剩余可花",
+ "budgetTotalLimit": "总额度",
+ "budgetSpent": "已花",
+ "budgetOverEnvelopes": "超支信封",
+ "budgetEnvelopeCount": "{n} 只",
+ "@budgetEnvelopeCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "budgetTotalUsagePct": "总用量 {v}%",
+ "@budgetTotalUsagePct": {
+  "placeholders": {
+   "v": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetMonthTotalLimit": "本月总额度",
+ "budgetRemaining": "剩余",
+ "budgetOverAmount": "超支 {amount}",
+ "@budgetOverAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetRemainingAmount": "剩余 {amount}",
+ "@budgetRemainingAmount": {
+  "placeholders": {
+   "amount": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetEnvelopeActions": "信封操作",
+ "budgetDelete": "删除预算",
+ "budgetLimit": "额度",
+ "budgetPlanned": "计划占用",
+ "budgetPlannedTooltip": "未来计划将落在这只信封里的金额",
+ "budgetDeleteConfirmTitle": "删除预算？",
+ "budgetDeleteConfirmMessage": "「{name}」的额度记录将被删除，已发生的消费不受影响。",
+ "@budgetDeleteConfirmMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetForecastExceed": "按当前配速月底将花 {projected}（超 {over}）",
+ "@budgetForecastExceed": {
+  "placeholders": {
+   "projected": {
+    "type": "String"
+   },
+   "over": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetForecastOk": "按当前配速月底约花 {projected}，剩余日均可花 {daily}",
+ "@budgetForecastOk": {
+  "placeholders": {
+   "projected": {
+    "type": "String"
+   },
+   "daily": {
+    "type": "String"
+   }
+  }
+ },
+ "budgetMonthlyTotalName": "月度总预算",
+ "budgetCategoryBudget": "分类预算",
+ "budgetScopeTotal": "总预算",
+ "budgetCategoryField": "分类",
+ "budgetMonthlyLimitField": "每月额度（元）",
+ "budgetNameOptionalField": "名称（可选）",
+ "goalsPageTitle": "目标与准备金",
+ "goalNew": "新建目标",
+ "goalEmptyTitle": "还没有目标",
+ "goalEmptyMessage": "用目标为大额支出提前留钱：旅行、保费、学费、设备……",
+ "goalSummaryTitle": "目标合计",
+ "goalSummaryHint": "为大额支出提前留钱的准备金总览",
+ "goalReserved": "已留",
+ "goalTotalTarget": "目标总额",
+ "goalTotalGap": "总缺口",
+ "goalCount": "目标数",
+ "goalItems": "{n} 个",
+ "@goalItems": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalActions": "目标操作",
+ "goalAddReserve": "增加预留",
+ "goalDelete": "删除目标",
+ "goalTarget": "目标",
+ "goalGap": "缺口",
+ "goalMonthlyNeed": "每月需留",
+ "goalMonthlyNeedTooltip": "目标日已过或已留满，无需再留",
+ "goalDaysLeft": "还有 {n} 天",
+ "@goalDaysLeft": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalOverdueBy": "已过期 {n} 天",
+ "@goalOverdueBy": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "goalDeleteConfirmTitle": "删除目标？",
+ "goalDeleteConfirmMessage": "「{name}」的预留记录将删除，已发生的转账不受影响。",
+ "@goalDeleteConfirmMessage": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "goalReserveTitle": "为「{name}」增加预留",
+ "@goalReserveTitle": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "goalNameField": "名称",
+ "goalAmountField": "目标金额",
+ "goalDateField": "目标日期",
+ "lockOpeningLedger": "正在打开加密账本…",
+ "lockWelcome": "欢迎来到资观",
+ "lockOpenFailed": "打开失败：{e}",
+ "@lockOpenFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockCreateFailed": "创建失败：{e}",
+ "@lockCreateFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockPassphraseRule": "主口令至少 8 位；建议 12 位以上 passphrase",
+ "lockPassMismatch": "两次输入不一致",
+ "lockWeakPassphrase": "口令强度不足：请更长或混合字符类型",
+ "lockEnterPrompt": "请输入主口令或恢复码",
+ "lockWrongCredential": "主口令或恢复码不正确",
+ "lockUnlockFailed": "解锁失败：{e}",
+ "@lockUnlockFailed": {
+  "placeholders": {
+   "e": {
+    "type": "String"
+   }
+  }
+ },
+ "lockUnlocking": "正在解锁加密账本…",
+ "lockUnlocked": "已解锁",
+ "lockSaveRecoveryTitle": "请离线保存恢复码",
+ "lockRecoveryIntro": "恢复码是丢失主口令后唯一的自救方式。请抄写在安全的地方（不要拍照存云端）。",
+ "lockRecoverySaved": "我已保存，进入账本",
+ "lockCreateHint": "创建加密账本：设定主口令（8 位以上）",
+ "lockPassphraseTooltip": "主口令派生密钥加密全部数据，无法找回，只能用恢复码自救",
+ "lockRepeatPassphrase": "再输入一遍主口令",
+ "lockUnlockHint": "输入主口令或恢复码",
+ "lockRecoveryNotice": "也可直接输入恢复码解锁",
+ "lockForgotPassphrase": "忘记主口令？使用恢复码",
+ "shellCollapseMenu": "收起分类菜单",
+ "shellExpandMenu": "展开分类菜单",
+ "shellMenuLabel": "分类菜单",
+ "shellNavTitle": "分类导航",
+ "shellPinnedTip": "已固定：菜单保持展开",
+ "shellUnpinnedTip": "未固定：跳转后自动收起",
+ "globeRestorePage": "恢复页面",
+ "globeClearScreen": "清屏地球：只留中央地球",
+ "ovMonths": "近 {n} 个月",
+ "@ovMonths": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovTrGoReport": "查看月报归因",
+ "ovNwTitle": "净资产",
+ "ovNwHint": "全面了解资产总额、结构分布与账户变化。",
+ "ovNwMonthDelta": "较上月",
+ "ovNwCoverage": "估值覆盖 {n}/{m}",
+ "@ovNwCoverage": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "ovNwCoverageHint": "纳入净资产的账户中，已有当期估值的数量。缺失估值的账户按 0 计入并单独提示。",
+ "ovNwGlobe": "全球资产分布",
+ "ovNwGlobeHint": "已设置地理位置的资产在地球上发光；拖动旋转、滚轮缩放，点击光点查看账户。",
+ "ovNwLocatedNote": "已定位 {n} · 未定位 {m}",
+ "@ovNwLocatedNote": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "num"
+   }
+  }
+ },
+ "ovNwAssetTypes": "资产类型分布",
+ "ovNwAssetTypesHint": "按业务分组：现金活期、投资持仓、稳健理财、长期资产。",
+ "ovNwGroupCash": "现金活期",
+ "ovNwGroupHold": "投资持仓",
+ "ovNwGroupSteady": "稳健理财",
+ "ovNwGroupLong": "长期资产",
+ "ovNwNoAssets": "暂无资产",
+ "ovNwNoAssetsMsg": "在首页右上角添加第一笔资产，点亮你的地球。",
+ "ovNwGroupTitle": "账户分布",
+ "ovNwGroupHint": "按业务分组的资产占比。",
+ "ovNwTopAccounts": "主要资产账户",
+ "ovNwViewAll": "全部资产",
+ "ovNwMissingHint": "该账户缺当期估值，暂按 0 计入。",
+ "ovNwTrendEmpty": "走势待积累",
+ "ovNwTrendEmptyMsg": "账本满一个月后这里会长出第一条曲线。",
+ "ovNwAttribution": "本月变动归因",
+ "ovNwAttributionHint": "净资产变动拆解为收支、投资、汇率与其他估值变动；对不上的部分计入「待核对」。",
+ "ovNwNetChange": "净变动",
+ "ovNwAttrIncomeExpense": "收支结余",
+ "ovNwAttrIncomeHint": "常规收入减常规消费（不含转账与投资买卖）。",
+ "ovNwAttrInvest": "投资损益",
+ "ovNwAttrInvestHint": "已实现损益 + 分红 + 未实现损益变动。",
+ "ovNwAttrFx": "汇率影响",
+ "ovNwAttrFxHint": "外币头寸的重估影响与换汇损益。",
+ "ovNwAttrOther": "其他估值变动",
+ "ovNwAttrOtherHint": "房产等手工估值的期初期末变动。",
+ "ovNwAttrCorrection": "数据修正",
+ "ovNwAttrCorrectionHint": "权益类科目的调整（历史修正等）。",
+ "ovNwAttrResidual": "待核对",
+ "ovCfTitle": "本月收支",
+ "ovCfHint": "了解每一笔现金流，掌握消费结构与月度预算。",
+ "ovCfIncomeHint": "按收入科目账户汇总；投资收益在归因页单独披露。",
+ "ovCfExpenseHint": "实际消费与费用；信用卡消费计入当月。",
+ "ovCfSurplusHint": "收入减消费。内部转账不算收支，买入资产不算消费。",
+ "ovCfDailyTitle": "每日收支趋势",
+ "ovCfDailyHint": "双柱为当日收入/消费，亮线为累计净额；悬停查看当天明细。",
+ "ovCfNetLine": "累计净额",
+ "ovCfExpenseCatTitle": "消费分类",
+ "ovCfExpenseCatHint": "按支出科目账户汇总。",
+ "ovCfOthers": "其他",
+ "ovCfNoExpense": "本月还没有消费记录",
+ "ovCfMonthExpense": "本月消费",
+ "ovCfIncomeTitle": "收入来源",
+ "ovCfNoIncome": "本月还没有收入记录",
+ "ovCfBudgetTitle": "预算执行",
+ "ovCfBudgetHint": "本月总预算额度 vs 实际消费。",
+ "ovCfNoBudget": "未设置预算",
+ "ovCfNoBudgetMsg": "在预算页设置月度总预算后，这里会出现执行进度。",
+ "ovCfBudgetOf": "额度 {x}",
+ "@ovCfBudgetOf": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovCfBudgetUsed": "已用",
+ "ovCfOverBy": "已超支",
+ "ovCfBudgetLeft": "剩余",
+ "ovCfHeatTitle": "收支热力",
+ "ovCfHeatHint": "颜色越深金额越大：蓝=净流入日，红=净流出日。",
+ "ovCfRecentTitle": "近期交易",
+ "ovCfRecentHint": "本月最近的收支交易，点击查看详情。",
+ "ovCfNoTx": "暂无交易",
+ "ovCfUntitled": "未命名交易",
+ "ovHlTitle": "财务体检",
+ "ovHlHint": "储蓄、应急、杠杆与固定覆盖四个维度的健康评估。",
+ "ovHlTargetSave": "建议 ≥ 30%",
+ "ovHlTargetEmergency": "建议 ≥ 6 个月",
+ "ovHlTargetLeverage": "建议 ≤ 50%",
+ "ovHlTargetCushion": "建议 ≥ 100%",
+ "ovHlCushion": "固定覆盖",
+ "ovHlCushionHint": "月末固定收入可覆盖固定支出的比例。",
+ "ovHlScoreTitle": "健康评分",
+ "ovHlScoreHint": "可得指标归一化到建议带后的平均分；数据不足时如实显示「暂无法评分」。",
+ "ovHlNoScore": "暂无法评分",
+ "ovHlExcellent": "优秀",
+ "ovHlGood": "良好",
+ "ovHlAttention": "关注",
+ "ovHlRisk": "风险",
+ "ovHlMissing": "还差这些数据：{x}",
+ "@ovHlMissing": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovHlScoreNote": "基于 {n} 项真实指标",
+ "@ovHlScoreNote": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlOrbitTitle": "维度巡游",
+ "ovHlOrbitHint": "四颗维度星沿轨道巡游；颜色即状态：蓝=达标，金=关注，红=风险。",
+ "ovHlRadarTitle": "目标雷达",
+ "ovHlRadarHint": "当前值（蓝）对照建议带（金）。",
+ "ovHlCurrent": "当前",
+ "ovHlTarget": "目标",
+ "ovHlPace": "消费配速",
+ "ovHlPaceDays": "已过 {n} 天",
+ "@ovHlPaceDays": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlCoverage": "估值覆盖",
+ "ovHlCoverageSub": "已覆盖账户",
+ "ovHlDiagTitle": "诊断",
+ "ovHlDiagHint": "按各维度得分自动分桶：≥75% 优势、40–75% 优化空间、<40% 风险。",
+ "ovHlDiagValuation": "估值缺口",
+ "ovHlDiagGood": "优势亮点",
+ "ovHlDiagRisk": "潜在风险",
+ "ovHlDiagImprove": "优化空间",
+ "ovHlDiagEmpty": "指标数据不足，先记账一段时间再看诊断。",
+ "ovHlDiagNone": "—",
+ "ovHlActTitle": "行动建议",
+ "ovHlActHint": "按最弱维度排序，每条直达对应业务页。",
+ "ovHlActValuation": "补齐 {n} 项估值",
+ "@ovHlActValuation": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovHlActValuationSub": "缺估值会拉低净资产的准确性",
+ "ovHlActSave": "提高储蓄率",
+ "ovHlActSaveSub": "设置预算，先存后花",
+ "ovHlActEmergency": "充实应急金",
+ "ovHlActEmergencySub": "目标：6 个月必要支出",
+ "ovHlActLeverage": "压降负债率",
+ "ovHlActLeverageSub": "优先偿还高息负债",
+ "ovHlActCushion": "平衡固定收支",
+ "ovHlActCushionSub": "检视周期计划与还款日程",
+ "ovHlActEmpty": "各维度都在轨道上，保持。",
+ "ovHlActGo": "去处理",
+ "ovBsTitle": "资产负债表",
+ "ovBsHint": "资产、负债与净资产结构的专业分析。",
+ "ovBsAssetsHint": "全部资产账户的本位币估值合计。",
+ "ovBsLiabHint": "全部负债账户的本位币估值合计。",
+ "ovBsScaleTitle": "资产负债天平",
+ "ovBsScaleHint": "横梁倾角示意负债率：50% 时水平。仅作视觉表达，不代表财务计算。",
+ "ovBsTreemapTitle": "资产结构树图",
+ "ovBsTreemapHint": "面积 = 金额占比；点击色块查看类别。",
+ "ovBsAssetTableTitle": "资产分类",
+ "ovBsAssetTableHint": "按资产子类型；环比为期初至今。",
+ "ovBsColClass": "类别",
+ "ovBsColAmount": "金额",
+ "ovBsColShare": "占比",
+ "ovBsColDelta": "环比",
+ "ovBsLiabTableTitle": "负债分类",
+ "ovBsLiabTableHint": "按负债子类型。",
+ "ovBsNoDebt": "没有负债",
+ "ovBsNoDebtMsg": "当前没有任何负债账户。",
+ "ovBsLiquidityTitle": "流动性结构",
+ "ovBsLiquidityHint": "按变现天数分桶：≤1 天、≤90 天、>90 天。",
+ "ovBsLiquidNow": "随时可用",
+ "ovBsLiquidMid": "短期可变现",
+ "ovBsLiquidLong": "长期资产",
+ "ovBsLiabMixTitle": "负债构成",
+ "ovBsLiabMixHint": "按负债子类型的占比。",
+ "ovBsDualTitle": "资产 vs 负债",
+ "ovBsDualHint": "近 12 个月双线对比。",
+ "ovSpTitle": "还能花多少（{n} 天）",
+ "@ovSpTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpHint": "在保留准备金与已知支出的前提下，未来还能安全花多少钱。",
+ "ovSpHeroTitle": "安全可支配 · {n} 天",
+ "@ovSpHeroTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpHeroHint": "可支配 = 每日现金 − 准备金 − 现金底线的最小值；不是全部净资产。",
+ "ovSpHeroOk": "计划外可自由安排的上限",
+ "ovSpHeroZero": "现有计划已触及安全边界，暂无计划外空间",
+ "ovSpCashNow": "可用流动资金",
+ "ovSpPlannedOut": "未来必要流出",
+ "ovSpReserved": "已预留（目标+底线）",
+ "ovSpRemain": "计划外可支配",
+ "ovSpScenTitle": "情景模拟",
+ "ovSpScenHint": "同一份期初余额与准备金，只换事件流重放。",
+ "ovSpScenConservative": "保守",
+ "ovSpScenConsSub": "只信已确认收入",
+ "ovSpScenStandard": "标准",
+ "ovSpScenStdSub": "与首页预测同口径",
+ "ovSpScenOptimistic": "乐观",
+ "ovSpScenOptSub": "可压缩的估算支出不计",
+ "ovSpKpiSafe": "安全可支配（{n} 天）",
+ "@ovSpKpiSafe": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiMonthCap": "建议月度消费上限",
+ "ovSpKpiMonthCapHint": "安全可支配按 {n} 天折算到月。",
+ "@ovSpKpiMonthCapHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiDaily": "剩余日均可花",
+ "ovSpKpiDailyHint": "安全可支配 ÷ {n} 天。",
+ "@ovSpKpiDailyHint": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpKpiLow": "现金最低点",
+ "ovSpKpiLowHint": "预测期内无流出事件。",
+ "ovSpKpiLowAt": "出现在 {x}",
+ "@ovSpKpiLowAt": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpFcTitle": "{n} 天现金预测",
+ "@ovSpFcTitle": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpFcHint": "实线为逐日现金；虚线为安全底线（准备金+现金底线）；红点为缺口日。",
+ "ovSpFloorLabel": "安全底线",
+ "ovSpFlowTitle": "预计流入与流出",
+ "ovSpFlowHint": "期内全部现金事件（本位币）。",
+ "ovSpFlowIn": "预计流入",
+ "ovSpFlowOut": "预计流出",
+ "ovSpFlowNet": "净现金流",
+ "ovSpFlowPlanned": "计划支出",
+ "ovSpFlowDebt": "负债还款",
+ "ovSpFlowBudget": "预算基线",
+ "ovSpFlowIncome": "预期收入",
+ "ovSpFlowOther": "其他",
+ "ovSpMonthTitle": "月度消费分配",
+ "ovSpMonthHint": "蓝柱=当月计划流出；金柱=建议上限（计划+可支配摊月）。",
+ "ovSpMonthPlanned": "计划",
+ "ovSpMonthCap": "建议上限",
+ "ovSpCalTitle": "消费日历",
+ "ovSpCalHint": "流出强度着色；红点标记预测缺口日。",
+ "ovSpCalDay": "流出 {x}",
+ "@ovSpCalDay": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpCalShortfall": "缺口",
+ "ovSpRiskTitle": "风险与建议",
+ "ovSpRiskHint": "缺口来自预测重放；建议基于规则生成。",
+ "ovSpRiskNone": "未来 {n} 天没有预测到资金缺口。",
+ "@ovSpRiskNone": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovSpAdviceTitle": "建议",
+ "ovSpAdviceScenario": "以保守情景规划：只按已确认收入，可支配为 {x}。",
+ "@ovSpAdviceScenario": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovSpAdviceZero": "可支配为 0：先调整计划支出或补充流动资金。",
+ "ovSpAdviceReconcile": "保持账本与估值新鲜，预测才可信。",
+ "ovTrTitle": "净资产走势",
+ "ovTrHint": "以时间序列为中心的历史分析。",
+ "ovTrCurrent": "当前净资产",
+ "ovTrChange": "期间变化",
+ "ovTrChangeHint": "{a} → {b} 的变化。",
+ "@ovTrChangeHint": {
+  "placeholders": {
+   "a": {
+    "type": "String"
+   },
+   "b": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrGrowth": "期间增长率",
+ "ovTrGrowthHint": "期间变化 ÷ 期初绝对值。",
+ "ovTrMax": "期间最高",
+ "ovTrMin": "期间最低",
+ "ovTrChartTitle": "趋势大图",
+ "ovTrAll": "全部",
+ "ovTrInsightTitle": "关键洞察",
+ "ovTrInsightHint": "由真实序列推导；不预设增长。",
+ "ovTrStreak": "连涨 {n} 个月",
+ "@ovTrStreak": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovTrStreakSub": "环比逐月抬升",
+ "ovTrBigMove": "最大单月变动：{m}（{x}）",
+ "@ovTrBigMove": {
+  "placeholders": {
+   "m": {
+    "type": "String"
+   },
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrMilestone": "预计 {n} 个月后（{m}）触及下一整数关口",
+ "@ovTrMilestone": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   },
+   "m": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrMilestoneSub": "Theil–Sen 稳健趋势：每月 {x}",
+ "@ovTrMilestoneSub": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovTrAttributionGo": "当月拆解见归因瀑布与月报。",
+ "ovTrWfStart": "期初",
+ "ovTrWfEnd": "期末",
+ "ovTrWfTitle": "本月归因瀑布",
+ "ovUpTitle": "未来 30 天要花的钱",
+ "ovUpHint": "未来账单与支出计划中心。",
+ "ovUpPlanned30": "30 天计划支出",
+ "ovUpPlannedHint": "已计划且未落地的流出合计。",
+ "ovUpDue7": "7 天内到期",
+ "ovUpDue7Hint": "今天起 7 天内到期的计划流出。",
+ "ovUpOverdue": "已逾期",
+ "ovUpOverdueHint": "到期未落地的计划发生。",
+ "ovUpNone": "无",
+ "ovUpRecurring": "周期计划",
+ "ovUpRecurringHint": "处于激活状态的周期性事件数。",
+ "ovUpCalTitle": "支出日历",
+ "ovUpCalHint": "今天钢蓝描边；3 日内琥珀；逾期红框；已付绿点。点日期看当日明细。",
+ "ovUpModeCal": "日历",
+ "ovUpModeTimeline": "时间线",
+ "ovUpItemCount": "{n} 项",
+ "@ovUpItemCount": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovUpDueTitle": "即将到期",
+ "ovUpDueHint": "按日期紧迫排序；状态：待落地/已逾期/已付。",
+ "ovUpAllSettled": "未来 30 天没有待处理的支出",
+ "ovUpGoPost": "去计划页落地账单",
+ "ovUpFixedTitle": "定期固定收支",
+ "ovUpFixedHint": "周期事件及其下次执行日。",
+ "ovUpNoFixed": "暂无周期计划",
+ "ovUpNextAt": "下次 {x}",
+ "@ovUpNextAt": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovUpWeekTitle": "周流出分布",
+ "ovUpWeekHint": "未来五周每周计划流出（首周琥珀）。",
+ "ovUpWeekLabel": "第 {n} 周",
+ "@ovUpWeekLabel": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "ovIxTitle": "待处理",
+ "ovIxHint": "估值缺失、到期计划、对账差额与资金预警的统一处理中心。",
+ "ovIxStatHigh": "高优先级",
+ "ovIxStatMissing": "估值缺失",
+ "ovIxStatStale": "估值过期",
+ "ovIxStatReconcile": "对账与预警",
+ "ovIxTableTitle": "任务清单",
+ "ovIxTableHint": "全部来自真实业务记录；处理完成即自动消失。",
+ "ovIxFilterAll": "全部",
+ "ovIxFilterUrgent": "紧急",
+ "ovIxFilterToday": "今天",
+ "ovIxFilterWeek": "本周",
+ "ovIxColTask": "事项",
+ "ovIxColType": "类型",
+ "ovIxColPriority": "优先级",
+ "ovIxColDue": "截止",
+ "ovIxNoMatch": "该筛选下没有任务",
+ "ovIxTypeDue": "计划到期",
+ "ovIxTypeMissing": "缺估值",
+ "ovIxTypeStale": "估值过期",
+ "ovIxTypeResidual": "待核对",
+ "ovIxTypeShortfall": "资金预警",
+ "ovIxPriorityHigh": "高",
+ "ovIxPriorityMedium": "中",
+ "ovIxPriorityLow": "低",
+ "ovIxResidualTask": "本月归因差额 {x} 待核对",
+ "@ovIxResidualTask": {
+  "placeholders": {
+   "x": {
+    "type": "String"
+   }
+  }
+ },
+ "ovIxAction": "前往对应业务页处理",
+ "ovIxGo": "去处理",
+ "ovIxQuickTitle": "快捷操作",
+ "ovIxQuickHint": "高频处理入口。",
+ "ovIxAValuation": "补估值",
+ "ovIxAValuationSub": "为缺估值的资产补当期值",
+ "ovIxAPost": "落地计划",
+ "ovIxAPostSub": "把到期的计划变成真实交易",
+ "ovIxALedger": "对账",
+ "ovIxALedgerSub": "核对流水与归因差额",
+ "ovIxASpendable": "看资金预测",
+ "ovIxASpendableSub": "未来还能安全花多少",
+ "ovIxTimelineTitle": "提醒时间线",
+ "ovIxTimelineHint": "按日期与优先级排列。",
+ "ovIxNoDue": "无截止",
+ "ovIxEmptyTitle": "目前没有待处理事项。",
+ "ovIxEmptyMsg": "估值齐全、计划落地、账目对得上——保持。",
+ "settingsRelNow": "刚刚",
+ "settingsRelMin": "{n} 分钟前",
+ "@settingsRelMin": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsRelHour": "{n} 小时前",
+ "@settingsRelHour": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsRelDay": "{n} 天前",
+ "@settingsRelDay": {
+  "placeholders": {
+   "n": {
+    "type": "num"
+   }
+  }
+ },
+ "settingsSecHeroHint": "保护您的资产与隐私，确保所有数据只属于您自己。",
+ "settingsStatLocalEncrypt": "本地加密",
+ "settingsStatEnabled": "已启用",
+ "settingsStatLocalEncryptTip": "数据库在本机加密存储，密钥不出设备。",
+ "settingsStatPassphrase": "主口令",
+ "settingsStatSet": "已设置",
+ "settingsStatPassphraseTip": "解锁与备份加密使用的主口令。",
+ "settingsStatRecovery": "恢复码",
+ "settingsStatConfigured": "已配置",
+ "settingsStatNotConfigured": "未配置",
+ "settingsStatRecoveryTip": "忘记口令时的找回途径。",
+ "settingsSessionTitle": "会话与保护",
+ "settingsSessionHint": "管理应用的自动锁定与身份验证行为。",
+ "settingsAutoLockRowHint": "空闲一段时间后自动锁定。",
+ "settingsStartupVerify": "启动验证",
+ "settingsStartupVerifyHint": "启动应用时要求验证。",
+ "settingsStartupVerifyValue": "已开启",
+ "settingsRecentTitle": "最近安全操作",
+ "settingsRecentHint": "解锁、锁定、口令与恢复码变更记录，与账本同库加密保存。",
+ "settingsEvEmpty": "暂无安全事件记录",
+ "settingsEvLock": "应用锁定",
+ "settingsEvUnlock": "应用解锁",
+ "settingsEvPass": "主口令修改",
+ "settingsEvRecovery": "恢复码重新生成",
+ "settingsEvConfig": "安全配置变更",
+ "settingsAiStatusTitle": "AI 服务状态",
+ "settingsAiStatusHint": "模型与联网搜索配置。",
+ "settingsAiOn": "已开启",
+ "settingsAiOff": "已关闭",
+ "settingsAiUnconfigured": "未配置",
+ "settingsAiProvider": "服务商",
+ "settingsAiModel": "模型",
+ "settingsAiCustom": "自定义",
+ "settingsAiWebSearch": "联网搜索",
+ "settingsBkOverviewTitle": "备份概览",
+ "settingsBkOverviewHint": "最近备份与备份容器。",
+ "settingsBkLastBackup": "最近备份",
+ "settingsBkLastBackupTip": "上次成功备份的时间。",
+ "settingsBkNever": "从未",
+ "settingsBkContainer": "备份容器",
+ "settingsBkContainerTip": ".asbk 加密容器：由独立备份口令加密，与主口令互不相关。",
+ "settingsDataOverviewTitle": "数据概览",
+ "settingsDataOverviewHint": "账本规模一览。",
+ "settingsDataAccounts": "账户",
+ "settingsDataTxns": "交易",
+ "settingsDataCurrencies": "币种",
+ "settingsPrefAppearanceTitle": "外观",
+ "settingsPrefAppearanceHint": "主题模式立即生效并持久化。",
+ "settingsPrefMoneyTitle": "货币",
+ "settingsPrefMoneyHint": "本位币与汇率。",
+ "settingsPrefForecastTitle": "预测",
+ "settingsPrefForecastHint": "现金预测口径。",
+ "settingsAboutVersion": "应用版本",
+ "settingsAboutVersionHint": "当前应用版本。",
+ "settingsPageHint": "管理账户安全、数据、系统偏好与智能服务。",
+ "settingsHeaderShield": "加密保护中",
+ "settingsHeaderShieldTip": "账本整库加密，密钥由主口令在本地派生，绝不离开这台设备。",
+ "settingsThemeModeLabel": "主题模式"
+}

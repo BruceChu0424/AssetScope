@@ -6,6 +6,7 @@ import '../../domain/ledger/account.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/valuation/valuation.dart';
+import '../../l10n/runtime_l10n.dart';
 import 'ai_chat.dart';
 import 'ai_json.dart';
 
@@ -126,7 +127,7 @@ class AiValuationService {
   Future<AiValuationRun> refresh() async {
     final cfg = await config();
     if (cfg == null || cfg.apiKey.isEmpty || cfg.baseUrl.isEmpty) {
-      throw StateError('尚未配置 AI 服务（设置 → AI 服务配置）');
+      throw StateError(rt('尚未配置 AI 服务（设置 → AI 服务配置）'));
     }
     final targets = await this.targets();
     if (targets.isEmpty) return const AiValuationRun();
@@ -145,7 +146,7 @@ class AiValuationService {
         await applyEstimate(a, e, cfg);
         updated++;
       } catch (err) {
-        failures.add('${a.name}：$err');
+        failures.add('${a.name}${rt('：')}$err');
       }
     }
     return AiValuationRun(
@@ -252,16 +253,18 @@ String queryOf(Account a) => a.effectiveAiValuationQuery;
 String estimateNote(AiAssetEstimate e) {
   final low = e.low;
   final high = e.high;
-  final sb = StringBuffer('AI 估值');
-  if (e.confidence != null) sb.write('（置信度 ${e.confidence}%）');
+  final sb = StringBuffer(rt('AI 估值'));
+  if (e.confidence != null) {
+    sb.write('${rt('（置信度 ')}${e.confidence}${rt('%）')}');
+  }
   if (low != null && high != null) {
-    sb.write('：区间 ${fmtRational(low)} ~ ${fmtRational(high)}');
+    sb.write('${rt('：区间 ')}${fmtRational(low)} ~ ${fmtRational(high)}');
   }
   if (e.rationale != null && e.rationale!.trim().isNotEmpty) {
-    sb.write('；${e.rationale!.trim()}');
+    sb.write('${rt('；')}${e.rationale!.trim()}');
   }
   for (final s in e.sources.take(2)) {
-    sb.write('；来源 $s');
+    sb.write('${rt('；来源 ')}$s');
   }
   return sb.toString();
 }
@@ -280,13 +283,13 @@ AiAssetEstimate parseEstimate(String content, String query) {
     final reason = decoded['reason'];
     throw FormatException(
       reason is String && reason.trim().isNotEmpty
-          ? 'AI 未查到可靠市价：${reason.trim()}'
-          : 'AI 未查到可靠市价',
+          ? '${rt('AI 未查到可靠市价：')}${reason.trim()}'
+          : rt('AI 未查到可靠市价'),
     );
   }
   final value = _parsePositiveDecimal(decoded['value']);
   if (value == null) {
-    throw const FormatException('AI 估值数值无效');
+    throw FormatException(rt('AI 估值数值无效'));
   }
   final currency = decoded['currency'];
   final low = _parsePositiveDecimal(decoded['low']);

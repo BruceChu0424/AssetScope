@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../domain/ledger/account.dart';
 import '../../domain/money/currency.dart';
+import '../../l10n/app_localizations.dart';
 import '../globe/city_locations.dart';
 import '../theme/app_theme.dart';
-import '../widgets/common.dart' show OrbitSpinner, ParticleTextField;
+import '../widgets/common.dart'
+    show OrbitSpinner, ParticleTextField, ParticleDropdownField;
 
 /// 新建资产弹窗的表单部件：类型磁贴 / 子类型与币种下拉 / 地址自动适配 /
 /// 校验横摇。状态一律由弹窗持有，这里只做呈现。
@@ -77,15 +79,25 @@ class TypeTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
-          child: _tile(context, AccountType.asset, '资产', Icons.north_east),
+          child: _tile(
+            context,
+            AccountType.asset,
+            t.assetsTitle,
+            Icons.north_east,
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child:
-              _tile(context, AccountType.liability, '负债', Icons.south_east),
+          child: _tile(
+            context,
+            AccountType.liability,
+            t.accountGroupLiabilities,
+            Icons.south_east,
+          ),
         ),
       ],
     );
@@ -163,12 +175,13 @@ class SubtypeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (type == AccountType.asset) {
-      return DropdownButtonFormField<AssetSubtype>(
+      return ParticleDropdownField<AssetSubtype>(
         key: const ValueKey('subtype-asset'),
         isExpanded: true,
         initialValue: assetSubtype,
-        decoration: const InputDecoration(labelText: '类型'),
+        decoration: InputDecoration(labelText: t.subtypeLabel),
         menuMaxHeight: 380,
         itemHeight: 48,
         borderRadius: BorderRadius.circular(14),
@@ -185,11 +198,11 @@ class SubtypeField extends StatelessWidget {
         onChanged: (v) => onChangedAsset(v!),
       );
     }
-    return DropdownButtonFormField<LiabilitySubtype>(
+    return ParticleDropdownField<LiabilitySubtype>(
       key: const ValueKey('subtype-liability'),
       isExpanded: true,
         initialValue: liabilitySubtype,
-      decoration: const InputDecoration(labelText: '类型'),
+      decoration: InputDecoration(labelText: t.subtypeLabel),
       menuMaxHeight: 380,
       itemHeight: 48,
       borderRadius: BorderRadius.circular(14),
@@ -215,11 +228,12 @@ class CurrencyField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
+    final t = AppLocalizations.of(context);
+    return ParticleDropdownField<String>(
       key: const ValueKey('currency'),
       isExpanded: true,
         initialValue: currency,
-      decoration: const InputDecoration(labelText: '币种'),
+      decoration: InputDecoration(labelText: t.currencyLabel),
       menuMaxHeight: 380,
       itemHeight: 48,
       borderRadius: BorderRadius.circular(14),
@@ -265,6 +279,7 @@ class AddressField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final bad = error && located == null;
     final errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -277,7 +292,7 @@ class AddressField extends StatelessWidget {
           controller: controller,
           onChanged: onChanged,
           decoration: InputDecoration(
-            labelText: '位置',
+            labelText: t.locationLabel,
             prefixIcon: Icon(
               Icons.location_on_outlined,
               size: 20,
@@ -352,13 +367,14 @@ class AddressField extends StatelessWidget {
   /// 后缀状态：未定位空 / AI 定位中小轨道 / 已定位金色图标
   /// （AI 精确到 POI 用准星标，城市级用指南针）。状态切换 160ms 桥接。
   Widget? _suffix(BuildContext context, ThemeData theme) {
+    final t = AppLocalizations.of(context);
     Widget? current;
     if (geoBusy) {
       current = const OrbitSpinner(size: 16);
     } else if (located != null) {
       final precise = !(geoLabel ?? '').contains('城市');
       current = Tooltip(
-        message: geoLabel ?? '已定位：${located!.name}',
+        message: geoLabel ?? t.locLocatedFallback(located!.name),
         child: Icon(
           precise ? Icons.my_location : Icons.explore,
           size: 18,

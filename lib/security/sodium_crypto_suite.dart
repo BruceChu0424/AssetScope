@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:sodium/sodium_sumo.dart' as sumo;
 
+import '../l10n/runtime_l10n.dart';
 import 'crypto_suite.dart';
 
 /// libsodium 密码学套件（设备端首选：Argon2id + XSalsa20-Poly1305）。
@@ -54,7 +55,7 @@ class _SecretBoxAead extends AeadCipher {
     Uint8List? aad,
   }) async {
     if (aad != null && aad.isNotEmpty) {
-      throw CryptoException('secretBox 不支持 AAD');
+      throw CryptoException(rt('secretBox 不支持 AAD'));
     }
     final sk = sumo.SecureKey.fromList(_sumo, key);
     try {
@@ -64,7 +65,7 @@ class _SecretBoxAead extends AeadCipher {
         key: sk,
       );
     } on sumo.SodiumException catch (e) {
-      throw CryptoException('加密失败: $e');
+      throw CryptoException('${rt('加密失败: ')}$e');
     } finally {
       sk.dispose();
     }
@@ -78,7 +79,7 @@ class _SecretBoxAead extends AeadCipher {
     Uint8List? aad,
   }) async {
     if (aad != null && aad.isNotEmpty) {
-      throw CryptoException('secretBox 不支持 AAD');
+      throw CryptoException(rt('secretBox 不支持 AAD'));
     }
     final sk = sumo.SecureKey.fromList(_sumo, key);
     try {
@@ -88,7 +89,7 @@ class _SecretBoxAead extends AeadCipher {
         key: sk,
       );
     } on sumo.SodiumException {
-      throw CryptoException('认证失败：密钥错误或数据被篡改');
+      throw CryptoException(rt('认证失败：密钥错误或数据被篡改'));
     } finally {
       sk.dispose();
     }

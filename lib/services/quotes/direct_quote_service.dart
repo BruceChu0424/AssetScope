@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../data/repositories/accounts_repo.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../ai/ai_quote.dart';
 import '../ai/quote_fetch_service.dart';
 import '../net/guarded_http.dart';
@@ -49,8 +50,8 @@ class DirectQuoteService {
       final r = SymbolResolver.resolve(raw);
       if (!r.resolvable) {
         warnings.add(
-          '「${h.name}」行情代码「$raw」无法识别'
-          '（A股 6 位数字 / hk00700 / usAAPL / aapl.us），可在账户详情修改，已跳过',
+          '${rt('「')}${h.name}${rt('」行情代码「')}$raw'
+          '${rt('」无法识别（A股 6 位数字 / hk00700 / usAAPL / aapl.us），可在账户详情修改，已跳过')}',
         );
         continue;
       }
@@ -83,10 +84,14 @@ class DirectQuoteService {
           );
         }
         for (final f in failed) {
-          warnings.add('腾讯行情未返回「$f」的有效价格（停牌或代码错误），已跳过');
+          warnings.add(
+            '${rt('腾讯行情未返回「')}$f${rt('」的有效价格（停牌或代码错误），已跳过')}',
+          );
         }
       } catch (e) {
-        warnings.add('腾讯行情请求失败：$e（可稍后重试或改用 AI 抓取）');
+        warnings.add(
+          '${rt('腾讯行情请求失败：')}$e${rt('（可稍后重试或改用 AI 抓取）')}',
+        );
       }
     }
 
@@ -111,10 +116,14 @@ class DirectQuoteService {
           );
         }
         for (final f in failed) {
-          warnings.add('stooq 未返回「$f」的有效价格（检查代码如 0700.hk / aapl.us），已跳过');
+          warnings.add(
+            '${rt('stooq 未返回「')}$f${rt('」的有效价格（检查代码如 0700.hk / aapl.us），已跳过')}',
+          );
         }
       } catch (e) {
-        warnings.add('stooq 请求失败：$e（可稍后重试或改用 AI 抓取）');
+        warnings.add(
+          '${rt('stooq 请求失败：')}$e${rt('（可稍后重试或改用 AI 抓取）')}',
+        );
       }
     }
 
@@ -139,15 +148,19 @@ class DirectQuoteService {
           );
         });
         for (final c in missing) {
-          warnings.add('frankfurter 不支持币种 $c（欧央行列表外），请手工录入或用 AI 抓取');
+          warnings.add(
+            '${rt('frankfurter 不支持币种 ')}$c${rt('（欧央行列表外），请手工录入或用 AI 抓取')}',
+          );
         }
       } catch (e) {
-        warnings.add('frankfurter 汇率请求失败：$e（可手工录入或用 AI 抓取）');
+        warnings.add(
+          '${rt('frankfurter 汇率请求失败：')}$e${rt('（可手工录入或用 AI 抓取）')}',
+        );
       }
     }
 
     if (prices.isEmpty && rates.isEmpty && warnings.isEmpty) {
-      warnings.add('没有可直连查询的目标（缺代码的持仓见上方提示）');
+      warnings.add(rt('没有可直连查询的目标（缺代码的持仓见上方提示）'));
     }
     return QuoteFetchResult(prices: prices, rates: rates, warnings: warnings);
   }

@@ -6,7 +6,11 @@ library;
 
 export 'brand_logo.dart' show BrandMark, BrandLockup;
 export 'busy_overlay.dart' show runBusy, OrbitSpinner, BusyHost, BusyReveal;
+export 'app_dialog.dart' show AppDialog, showAppDialog, showAppSheet;
 export 'dialog_dissolve.dart' show DissolveController, DissolveCapture;
+export 'particle_dialog.dart' show showParticleDialog;
+export 'particle_menu.dart'
+    show ParticleDropdownField, ParticleMenuButton, ParticleMenuEntry;
 export 'fields_and_badges.dart'
     show
         DeltaBadge,
@@ -20,9 +24,24 @@ export 'hero_grow.dart' show HeroLaunch, HeroGrow;
 export 'money_text.dart' show MoneyText, MoneySize, fmtMinor;
 export 'odometer.dart' show Odometer;
 export 'page_frame.dart'
-    show PageFrame, PageMeasure, StatBand, StatBandItem, CardWrap, InfoHint;
+    show
+        PageFrame,
+        PageBackButton,
+        PageMeasure,
+        StatBand,
+        StatBandItem,
+        CardWrap,
+        InfoHint;
 export 'page_kit.dart'
-    show ActionIcon, ListRow, ProgressMeter, RingProgress, DayHeader;
+    show
+        ActionIcon,
+        ListRow,
+        ProgressMeter,
+        RingProgress,
+        DayHeader,
+        SummaryPanel,
+        SummaryRow,
+        WorkbenchSplit;
 export 'particle_edge.dart' show ParticleEdge;
 export 'particle_interactive.dart' show ParticleFilledButton, ParticleTextField;
 export 'particle_logo.dart' show ParticleBrandMark;

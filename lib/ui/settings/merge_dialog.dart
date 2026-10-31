@@ -7,11 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../security/dart_crypto_suite.dart';
 import '../../services/backup_service.dart';
 import '../../services/merge_counts.dart';
 import '../../services/merge_service.dart';
-import '../widgets/particle_interactive.dart';
+import '../widgets/common.dart';
 
 /// 从备份合并（多设备同步）：预览 → 安全备份 → 单事务合并。
 ///
@@ -23,9 +24,10 @@ Future<void> showMergeDialog(
   WidgetRef ref,
   VaultUnlocked s,
 ) async {
+  final t = AppLocalizations.of(context);
   final picked = await openFile(
     acceptedTypeGroups: [
-      const XTypeGroup(label: '备份', extensions: ['asbk']),
+      XTypeGroup(label: t.settingsBackupFileType, extensions: ['asbk']),
     ],
   );
   if (picked == null || !context.mounted) return;
@@ -65,7 +67,7 @@ Future<void> showMergeDialog(
       workingPass = pass;
     } catch (e) {
       if (context.mounted) {
-        _snack(context, '备份无法解密（口令不对或文件损坏）：$e');
+        _snack(context, t.mergeDecryptFailed(e));
       }
       return;
     }
@@ -73,11 +75,11 @@ Future<void> showMergeDialog(
   if (!context.mounted) return;
 
   if (!pre.schemaOk) {
-    _snack(context, '备份来自更新版本的应用（schema ${pre.backupSchemaVersion}），请先升级再合并');
+    _snack(context, t.mergeSchemaTooNew(pre.backupSchemaVersion));
     return;
   }
   if (pre.hasLineage && !pre.sameLineage) {
-    _snack(context, '这份备份属于另一个账本（谱系指纹不一致），不能合并。恢复请用"从备份恢复"');
+    _snack(context, t.mergeLineageMismatch);
     return;
   }
 
@@ -93,7 +95,7 @@ Future<void> showMergeDialog(
       passphrase: workingPass,
     );
   } catch (e) {
-    if (context.mounted) _snack(context, '备份内容校验失败：$e');
+    if (context.mounted) _snack(context, t.mergeVerifyFailed(e));
     return;
   }
   if (!context.mounted) {
@@ -105,7 +107,7 @@ Future<void> showMergeDialog(
     final preview = await merge.previewFrom(plain);
     if (preview.isEmpty) {
       if (context.mounted) {
-        _snack(context, '两份账本已一致，没有需要合并的内容');
+        _snack(context, t.mergeNothingToMerge);
       }
       return;
     }
@@ -128,10 +130,10 @@ Future<void> showMergeDialog(
 
     final result = await merge.applyFrom(plain);
     if (!context.mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('合并完成'),
+    await showAppDialog<void>(
+      context,
+      builder: (_) => AppDialog(
+        title: t.mergeDone,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,8 +141,7 @@ Future<void> showMergeDialog(
             Text(result.summarize()),
             const SizedBox(height: 12),
             Text(
-              '合并前的安全备份：\n${safety.path}\n'
-              '各页面回到前台会自动刷新。',
+              t.mergeSafetyBackupNote(safety.path),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -148,37 +149,38 @@ Future<void> showMergeDialog(
         actions: [
           ParticleFilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('知道了'),
+            child: Text(t.settingsGotIt),
           ),
         ],
       ),
     );
   } catch (e) {
-    if (context.mounted) _snack(context, '合并失败（账本未改动，已整体回滚）：$e');
+    if (context.mounted) _snack(context, t.mergeFailed(e));
   } finally {
     if (await plain.exists()) await plain.delete();
   }
 }
 
 Future<String?> _askPassphrase(BuildContext context) async {
+  final t = AppLocalizations.of(context);
   final pass = TextEditingController();
-  return showDialog<String>(
-    context: context,
-    builder: (dialogCtx) => AlertDialog(
-      title: const Text('输入备份口令'),
+  return showAppDialog<String>(
+    context,
+    builder: (dialogCtx) => AppDialog(
+      title: t.settingsBackupPassphraseTitle,
       content: ParticleTextField(
         controller: pass,
         obscureText: true,
-        decoration: const InputDecoration(labelText: '这份 .asbk 的导出口令'),
+        decoration: InputDecoration(labelText: t.mergePassphraseLabel),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogCtx, null),
-          child: const Text('取消'),
+          child: Text(t.settingsCancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dialogCtx, pass.text),
-          child: const Text('校验'),
+          child: Text(t.settingsVerify),
         ),
       ],
     ),
@@ -190,25 +192,25 @@ Future<bool?> _confirm(
   MergeCounts preview, {
   required bool legacy,
 }) async {
-  return showDialog<bool>(
-    context: context,
-    builder: (dialogCtx) => AlertDialog(
-      title: const Text('确认合并'),
+  final t = AppLocalizations.of(context);
+  return showAppDialog<bool>(
+    context,
+    builder: (dialogCtx) => AppDialog(
+      title: t.mergeConfirmTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('将并入：${preview.summarize()}。'),
+          Text(t.mergeWillImport(preview.summarize())),
           const SizedBox(height: 8),
           Text(
-            '交易按"更新时间新者胜"合并，其余内容按表策略并入；'
-            '合并会先自动生成一份安全备份，可随时用"从备份恢复"退回。',
+            t.mergeConfirmNote,
             style: Theme.of(dialogCtx).textTheme.bodySmall,
           ),
           if (legacy) ...[
             const SizedBox(height: 8),
             Text(
-              '注意：这份备份由旧版本导出、没有账本身份标识。请确认它确实来自同一本账。',
+              t.mergeLegacyWarning,
               style: Theme.of(dialogCtx).textTheme.bodySmall?.copyWith(
                 color: Theme.of(dialogCtx).colorScheme.error,
               ),
@@ -219,11 +221,11 @@ Future<bool?> _confirm(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogCtx, false),
-          child: const Text('取消'),
+          child: Text(t.settingsCancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dialogCtx, true),
-          child: const Text('安全备份并合并'),
+          child: Text(t.mergeBackupAndMerge),
         ),
       ],
     ),

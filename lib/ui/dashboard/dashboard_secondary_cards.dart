@@ -2,9 +2,10 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../domain/utils/dates.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'dashboard_providers.dart';
@@ -32,6 +33,7 @@ class _TrendCardState extends State<TrendCard> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final d = widget.d;
     if (d.series36.isEmpty) return const SizedBox.shrink();
@@ -53,7 +55,7 @@ class _TrendCardState extends State<TrendCard> {
     }
     final padding = (max - min) * 0.15 + 1;
     return SectionCard(
-      title: '净资产走势',
+      title: t.dashNwTrend,
       titleWidget: AnimatedSwitcher(
         duration: const Duration(milliseconds: 150),
         switchInCurve: Curves.easeOut,
@@ -69,7 +71,7 @@ class _TrendCardState extends State<TrendCard> {
           ),
         ),
         child: Text(
-          '净资产走势（近 $months 个月）',
+          t.dashNwTrendMonths(months),
           key: ValueKey(months),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
@@ -78,7 +80,7 @@ class _TrendCardState extends State<TrendCard> {
         ),
       ),
       trailing: Tooltip(
-        message: '按住底部滚筒左右拖动：从 1 个月拉长到 $maxMonths 个月',
+        message: t.dashNwTrendHint(maxMonths),
         child: Icon(Icons.info_outline, size: 15, color: theme.hintColor),
       ),
       child: Column(
@@ -185,6 +187,7 @@ class _TimeRollerState extends State<_TimeRoller> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final active = _dragging || _hover;
@@ -197,7 +200,7 @@ class _TimeRollerState extends State<_TimeRoller> {
       key: const Key('trend-roller'),
       height: 36,
       child: Tooltip(
-        message: '按住滚筒左右拖动：1 ~ ${widget.maxMonths} 个月',
+        message: t.dashRollerHint(widget.maxMonths),
         child: MouseRegion(
           // 保持系统默认箭头（用户要求）：拖动亲和力由滚筒自身的
           // hover 提亮与握纹旋转提示，不改光标样式。
@@ -359,7 +362,7 @@ class _RollerTrackPainter extends CustomPainter {
       if (major && (m == 1 || m == 12 || m == 24 || m == maxMonths)) {
         final tp = TextPainter(
           text: TextSpan(
-            text: '$m月',
+            text: '$m${rt('月')}',
             style: TextStyle(fontSize: 9, color: hint.withValues(alpha: 0.8)),
           ),
           textDirection: TextDirection.ltr,
@@ -416,12 +419,13 @@ class UpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final base = d.nw.baseCurrencyCode;
     return SectionCard(
-      title: '未来 30 天要花的钱',
+      title: t.dashUpcomingTitle,
       child: d.upcoming.isEmpty
           ? Text(
-              '暂无计划支出',
+              t.dashNoUpcoming,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).hintColor,
               ),
@@ -455,68 +459,45 @@ class UpcomingCard extends StatelessWidget {
   }
 }
 
-class IssuesCard extends StatelessWidget {
-  const IssuesCard({super.key, required this.d});
+/// 资产负债表卡（首页右列首卡）：资产/负债合计 + 账户数 + 估值状态，
+/// 整卡点开资产页（容器展开转场）。
+class AssetsSheetCard extends StatelessWidget {
+  const AssetsSheetCard({super.key, required this.d});
 
   final DashboardData d;
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final issues = <(String, String?)>[
-      if (d.pendingDueCount > 0)
-        ('${d.pendingDueCount} 笔到期计划待入账（计划页可一键记入）', '/plans'),
-      if (d.nw.missingValuations > 0)
-        ('${d.nw.missingValuations} 个账户缺估值（不计为 0，请编辑账户补录）', null),
-      if (d.nw.staleValuations > 0)
-        ('${d.nw.staleValuations} 个账户估值已过期（>30 天）', null),
-      if (d.report.attribution.hasResidual)
-        (
-          '本月归因存在待核对差额：${fmtMinor(d.report.attribution.residual, d.report.baseCurrencyCode)}',
-          null,
-        ),
-    ];
-    if (issues.isEmpty) return const SizedBox.shrink();
+    final base = d.nw.baseCurrencyCode;
+    final accounts = d.nw.items.length;
+    final missing = d.nw.missingValuations, stale = d.nw.staleValuations;
     return SectionCard(
-      title: '待处理',
+      title: t.dashBalanceSheet,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final (text, path) in issues)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: InkWell(
-                onTap: path == null ? null : () => context.go(path),
-                borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        path != null
-                            ? Icons.event_available_outlined
-                            : Icons.error_outline,
-                        size: 16,
-                        color: path != null
-                            ? AppColors.brassOf(theme.brightness)
-                            : AppColors.warnOf(theme.brightness),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          text,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: path != null
-                                ? theme.colorScheme.primary
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          StatRow(
+            label: t.dashAssetsTotal,
+            value: fmtMinor(d.nw.totalAssets, base),
+            emphasized: true,
+          ),
+          StatRow(
+            label: t.dashLiabilitiesTotal,
+            value: fmtMinor(d.nw.totalLiabilities, base),
+            valueColor: d.nw.totalLiabilities > BigInt.zero
+                ? AppColors.negativeOf(theme.brightness)
+                : null,
+          ),
+          StatRow(label: t.dashIncludedAccounts, value: t.dashAccountCount(accounts)),
+          if (missing > 0 || stale > 0)
+            StatRow(
+              label: t.dashValuationStatus,
+              value: [
+                if (missing > 0) t.dashMissingCount(missing),
+                if (stale > 0) t.dashStaleCount(stale),
+              ].join(' · '),
+              valueColor: AppColors.warnOf(theme.brightness),
             ),
         ],
       ),

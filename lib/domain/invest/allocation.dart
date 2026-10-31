@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../ledger/account.dart';
 import '../money/fx_rate.dart';
 
@@ -14,8 +15,9 @@ enum AllocationClass {
   longTerm('长期权益'),
   other('其他资产');
 
-  const AllocationClass(this.labelZh);
-  final String labelZh;
+  const AllocationClass(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 
   static AllocationClass fromSubtype(AssetSubtype s) => switch (s) {
     AssetSubtype.stock => equity,

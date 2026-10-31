@@ -11,6 +11,7 @@ import '../data/repositories/accounts_repo.dart';
 import '../data/repositories/ledger_repo.dart';
 import '../data/repositories/meta_repo.dart';
 import '../data/repositories/planning_repo.dart';
+import '../l10n/runtime_l10n.dart';
 import '../security/crypto_suite.dart';
 import '../security/dart_crypto_suite.dart';
 import '../security/key_manager.dart';
@@ -69,6 +70,7 @@ class VaultUnlocked extends VaultState {
     required this.aiValuation,
     required this.assistant,
     required this.aiUsage,
+    this.hasRecoveryCode = true,
   });
 
   final AppDatabase db;
@@ -104,6 +106,9 @@ class VaultUnlocked extends VaultState {
   /// 解锁后从设置读取的可调参数（有默认值）。
   int lockTimeoutMinutes = 5;
   int projectionHorizonDays = 90;
+
+  /// 恢复码是否已落盘（安全页状态章数据源；测试直构默认 true）。
+  final bool hasRecoveryCode;
 }
 
 /// 密钥存储：密文头保存在应用支持目录（内容无明文机密；
@@ -223,7 +228,7 @@ class VaultNotifier extends Notifier<VaultState> {
     final primary = await store.loadPrimary();
     final recovery = await store.loadRecovery();
     if (primary == null && recovery == null) {
-      throw StateError('金库不存在');
+      throw StateError(rt('金库不存在'));
     }
     final recoveryShaped = looksLikeRecoveryCode(passphrase);
     final order = recoveryShaped
@@ -262,6 +267,8 @@ class VaultNotifier extends Notifier<VaultState> {
     final ledger = LedgerRepo(db);
     final planning = PlanningRepo(db);
     final meta = MetaRepo(db);
+    // 安全页「恢复码」状态章：恢复码头是否落盘。
+    final hasRecovery = await _store!.loadRecovery() != null;
     final stats = StatsService(accounts, ledger, meta);
     final portfolio = PortfolioService(accounts, ledger, meta, stats);
     final projection = ProjectionService(accounts, ledger, planning, meta);
@@ -310,7 +317,10 @@ class VaultNotifier extends Notifier<VaultState> {
       aiValuation: aiValuation,
       assistant: assistant,
       aiUsage: aiUsage,
+      hasRecoveryCode: hasRecovery,
     );
+    // 安全事件日志：解锁（含首建后的开启，同属会话建立）。
+    unawaited(meta.appendSecurityEvent('unlock'));
     await _loadTunables();
     await _autoPostPlans();
     unawaited(_autoAiValuation());
@@ -380,6 +390,8 @@ class VaultNotifier extends Notifier<VaultState> {
     _lockTimer?.cancel();
     final s = state;
     if (s is VaultUnlocked) {
+      // 安全事件日志：先落库再关库。
+      await s.meta.appendSecurityEvent('lock');
       await s.db.close();
     }
     _keyManager?.lock();
@@ -390,18 +402,22 @@ class VaultNotifier extends Notifier<VaultState> {
   Future<void> changePassphrase(String oldPass, String newPass) async {
     final store = _store!;
     final header = await store.loadPrimary();
-    if (header == null) throw StateError('金库不存在');
+    if (header == null) throw StateError(rt('金库不存在'));
     final km = KeyManager(suite: _suite);
     final newHeader = await km.changePassphrase(oldPass, newPass, header);
     await store.savePrimary(newHeader);
+    final s = state;
+    if (s is VaultUnlocked) await s.meta.appendSecurityEvent('pass');
   }
 
   /// 重新生成恢复码，返回新码。
   Future<String> regenerateRecoveryCode() async {
     final km = _keyManager;
-    if (km == null || !km.isUnlocked) throw StateError('尚未解锁');
+    if (km == null || !km.isUnlocked) throw StateError(rt('尚未解锁'));
     final (code, header) = await km.newRecoveryCode();
     await _store!.saveRecovery(header);
+    final s = state;
+    if (s is VaultUnlocked) await s.meta.appendSecurityEvent('recovery');
     return code;
   }
 }

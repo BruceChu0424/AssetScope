@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/ai/ai_chat.dart';
 import '../../services/ai/ai_quote.dart';
 import '../accounts/accounts_providers.dart' show holdingsProvider;
@@ -13,10 +14,9 @@ import 'ai_config_sheet.dart';
 /// 行情/汇率 AI 抓取弹层：目标一览 → 抓取 → 逐条确认 → 入账。
 /// 手动触发、来源可审计（写入 source=`ai:预设/模型`，note 保留网址）。
 Future<void> showQuoteFetchSheet(BuildContext context, WidgetRef ref) {
-  return showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
+  return showAppSheet<void>(
+    context,
+    scrollControlled: true,
     builder: (_) => const _QuoteFetchSheet(),
   ).then((_) {
     ref.invalidate(holdingsProvider);
@@ -107,6 +107,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   }
 
   Future<void> _apply() async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _result == null) return;
     setState(() => _phase = _Phase.applying);
@@ -119,12 +120,12 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('已写入 $n 条行情/汇率')));
+        ).showSnackBar(SnackBar(content: Text(t.quoteAppliedCount(n))));
         Navigator.pop(context);
       }
     } catch (e) {
       setState(() {
-        _error = '写入失败：$e';
+        _error = t.quoteWriteFailed(e);
         _phase = _Phase.preview;
       });
     }
@@ -133,6 +134,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.8,
       child: Column(
@@ -141,7 +143,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              '行情 / 汇率抓取',
+              t.quoteFetchTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -150,8 +152,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Text(
-              '直连官方行情源（免费无 key、秒回）；查不到的再试 AI 联网搜索。'
-              '预览确认后才写入，来源可审计。无论哪种方式，都只发送证券代码与币种对。',
+              t.quoteFetchIntro,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -166,6 +167,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   }
 
   Widget _body(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     if (_phase == _Phase.loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -177,7 +179,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 12),
-            Text(_directMode ? '正在向官方行情源查询…' : 'AI 正在联网搜索行情，约需 10–60 秒…'),
+            Text(_directMode ? t.quoteQueryingDirect : t.quoteQueryingAi),
           ],
         ),
       );
@@ -186,6 +188,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   }
 
   Widget _readyView(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     final hasTargets = _holdingNames.isNotEmpty || _fxPairs.isNotEmpty;
     final aiReady = _cfg != null && _cfg!.apiKey.isNotEmpty;
     final noWeb = aiReady && !_cfg!.enableWebSearch;
@@ -202,7 +205,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '当前 AI 配置未开启联网搜索，模型可能返回记忆中的过时价格，请谨慎确认。',
+                t.quoteNoWebSearchWarning,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.brass,
                   height: 1.5,
@@ -211,7 +214,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
             ),
           ),
         Text(
-          '本次将查询：',
+          t.quoteWillQuery,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -219,24 +222,23 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         const SizedBox(height: 6),
         if (!hasTargets)
           Text(
-            '没有在持的证券持仓，也没有需要折算的外币账户。',
+            t.quoteNoTargets,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           )
         else ...[
           if (_holdingNames.isNotEmpty)
             Text(
-              '· 持仓价格（${_holdingNames.length}）：${_holdingNames.join('、')}',
+              t.quoteHoldingPrices(_holdingNames.length, _holdingNames.join('、')),
               style: theme.textTheme.bodySmall?.copyWith(height: 1.6),
             ),
           if (_fxPairs.isNotEmpty)
             Text(
-              '· 汇率（${_fxPairs.length}）：${_fxPairs.join('、')} → $_base',
+              t.quoteFxPairs(_fxPairs.length, _fxPairs.join('、'), _base),
               style: theme.textTheme.bodySmall?.copyWith(height: 1.6),
             ),
           const SizedBox(height: 4),
           Text(
-            '直连路由：A股/场内基金 → 腾讯行情；港股/美股 → stooq；汇率 → 欧央行。'
-            '行情代码可在持仓账户详情设置（如 600519 / 00700 / AAPL）。',
+            t.quoteRoutingHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.hintColor,
               fontSize: 11,
@@ -252,7 +254,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
         ParticleFilledButton.icon(
           onPressed: hasTargets ? () => _fetch(direct: true) : null,
           icon: const Icon(Icons.bolt),
-          label: const Text('直连官方行情源（推荐 · 免费 · 秒回）'),
+          label: Text(t.quoteDirectFetchButton),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
@@ -269,13 +271,14 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                 }
               : null,
           icon: const Icon(Icons.travel_explore),
-          label: Text(aiReady ? 'AI 联网搜索（查不到时兜底）' : 'AI 联网搜索（需先配置 AI 服务）'),
+          label: Text(aiReady ? t.quoteAiFetchFallback : t.quoteAiFetchNeedsConfig),
         ),
       ],
     );
   }
 
   Widget _previewView(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     final r = _result!;
     final applying = _phase == _Phase.applying;
     return Column(
@@ -284,14 +287,14 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
             children: [
-              if (r.prices.isNotEmpty) _header(theme, '资产价格'),
+              if (r.prices.isNotEmpty) _header(theme, t.quoteAssetPrices),
               for (var i = 0; i < r.prices.length; i++)
                 _priceTile(theme, r.prices[i], i),
-              if (r.rates.isNotEmpty) _header(theme, '汇率'),
+              if (r.rates.isNotEmpty) _header(theme, t.quoteFxRates),
               for (var i = 0; i < r.rates.length; i++)
                 _rateTile(theme, r.rates[i], i),
               if (r.warnings.isNotEmpty) ...[
-                _header(theme, '提示'),
+                _header(theme, t.quoteNotes),
                 for (final w in r.warnings)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 3, 12, 3),
@@ -321,7 +324,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
             children: [
               Expanded(
                 child: Text(
-                  '已选 ${_selectedPrices.length} 条价格 + ${_selectedRates.length} 条汇率',
+                  t.quoteSelectedCount(_selectedPrices.length, _selectedRates.length),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.hintColor,
                   ),
@@ -331,7 +334,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                 onPressed: applying
                     ? null
                     : () => setState(() => _phase = _Phase.ready),
-                child: const Text('返回'),
+                child: Text(t.quoteBack),
               ),
               const SizedBox(width: 8),
               ParticleFilledButton(
@@ -346,7 +349,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('确认写入'),
+                    : Text(t.quoteApplyButton),
               ),
             ],
           ),
@@ -372,6 +375,7 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
   );
 
   Widget _priceTile(ThemeData theme, FetchedPrice p, int i) {
+    final t = AppLocalizations.of(context);
     final enabled = p.accountId != null;
     final mismatch = p.currencyMismatch == true;
     return CheckboxListTile(
@@ -393,12 +397,12 @@ class _QuoteFetchSheetState extends ConsumerState<_QuoteFetchSheet> {
       ),
       secondary: !enabled
           ? Tooltip(
-              message: '未匹配到在持仓账户，不入账',
+              message: t.quoteUnmatchedTooltip,
               child: Icon(Icons.link_off, color: theme.hintColor),
             )
           : mismatch
           ? Tooltip(
-              message: '币种与账户不一致（${p.currency} vs 账户币种），默认不勾选',
+              message: t.quoteCurrencyMismatchTooltip(p.currency),
               child: const Icon(Icons.error_outline, color: AppColors.brass),
             )
           : null,

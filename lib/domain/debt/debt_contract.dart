@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 import '../utils/dates.dart';
 
@@ -10,8 +11,9 @@ enum RepaymentMethod {
   interestFree('免息分期'),
   manual('手工计划');
 
-  const RepaymentMethod(this.labelZh);
-  final String labelZh;
+  const RepaymentMethod(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 enum DayCountBasis {
@@ -256,7 +258,7 @@ class DebtContract {
   }) {
     final schedule = generateSchedule();
     if (afterEntrySeq < 0 || afterEntrySeq > schedule.length) {
-      throw ArgumentError('期数越界');
+      throw ArgumentError(rt('期数越界'));
     }
     final oldTailInterest = _tailCost(schedule, afterEntrySeq);
     final fee = prepayFeePercent == null

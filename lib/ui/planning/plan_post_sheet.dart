@@ -6,6 +6,7 @@ import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../../domain/planning/recurrence.dart';
 import '../../domain/utils/dates.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/plan_execution_service.dart';
 import '../transactions/transactions_page.dart' show txAccountsProvider;
 import '../theme/app_theme.dart';
@@ -20,10 +21,9 @@ Future<bool> showPlanPostSheet(
   WidgetRef ref,
   DueOccurrence d,
 ) async {
-  final changed = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final changed = await showAppSheet<bool>(
+    context,
+    scrollControlled: true,
     builder: (_) => _PlanPostSheet(d: d),
   );
   return changed == true;
@@ -57,6 +57,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
 
   Future<void> _post() async {
     if (_saving) return;
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _payAccountId == null) return;
     final amountText = _amount.text.trim();
@@ -75,7 +76,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('入账失败：$e')));
+        ).showSnackBar(SnackBar(content: Text(t.planPostFailed(e.toString()))));
       }
     }
   }
@@ -89,6 +90,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final e = widget.d.event;
     final isIncome = e.direction == EventDirection.inflow;
     final theme = Theme.of(context);
@@ -114,7 +116,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '记入账本 · ${e.name}',
+                      t.planPostTitle(e.name),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -124,8 +126,8 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
               ),
               const SizedBox(height: 4),
               Text(
-                '落账日 ${dateKey(widget.d.occurrence.date)}（发生日）'
-                '${widget.d.occurrence.isEstimate ? ' · 估算金额取中位数，可修改' : ''}',
+                '${t.planPostDateNote(dateKey(widget.d.occurrence.date))}'
+                '${widget.d.occurrence.isEstimate ? t.planPostEstimateNote : ''}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -136,7 +138,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
                   height: 120,
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (err, _) => Text('账户加载失败：$err'),
+                error: (err, _) => Text(t.planAccountsLoadFailed(err.toString())),
                 data: (accounts) {
                   // 下拉显示的初始值同步到状态：不改选择直接确认也能入账。
                   final payOptions = payableFor(
@@ -173,7 +175,7 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
                         direction: e.direction,
                         currency: e.currencyCode,
                         value: _payAccountId,
-                        label: isIncome ? '入账账户' : '支付账户',
+                        label: isIncome ? t.planIncomeAccount : t.planPayAccount,
                         onChanged: (v) => setState(() => _payAccountId = v),
                       ),
                       const SizedBox(height: 12),
@@ -192,16 +194,16 @@ class _PlanPostSheetState extends ConsumerState<_PlanPostSheet> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  TextButton(onPressed: _skip, child: const Text('这次不记')),
+                  TextButton(onPressed: _skip, child: Text(t.planSkipOnce)),
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('取消'),
+                    child: Text(t.cancel),
                   ),
                   const SizedBox(width: 8),
                   ParticleFilledButton(
                     onPressed: _post,
-                    child: Text(_saving ? '入账中…' : '记入账本'),
+                    child: Text(_saving ? t.planPosting : t.planPostNow),
                   ),
                 ],
               ),

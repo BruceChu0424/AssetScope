@@ -15,6 +15,7 @@ import 'package:assetscope/ui/globe/globe_page.dart';
 import 'package:assetscope/ui/planning/plans_page.dart';
 import 'package:assetscope/ui/reports/report_page.dart';
 import 'package:assetscope/ui/transactions/transactions_page.dart';
+import 'package:assetscope/ui/widgets/app_dialog.dart';
 import 'package:assetscope/ui/widgets/section_card.dart';
 
 import 'package:assetscope/ui/planning/life_planner_sheet.dart';
@@ -87,7 +88,7 @@ void main() {
     // 金额输入限定在对话框内（页面自身还有搜索框）。
     final amountField = find
         .descendant(
-            of: find.byType(AlertDialog), matching: find.byType(TextField))
+            of: find.byType(AppDialog), matching: find.byType(TextField))
         .first;
     await tester.enterText(amountField, '88.50');
     // 注意：聚焦的输入框光标闪烁会一直调度帧，此处不能用 pumpAndSettle。
@@ -134,7 +135,7 @@ void main() {
     // 金额改为 99.99（预填原金额 42.xx，覆盖）。
     final amountField = find
         .descendant(
-            of: find.byType(AlertDialog), matching: find.byType(TextField))
+            of: find.byType(AppDialog), matching: find.byType(TextField))
         .first;
     await tester.enterText(amountField, '99.99');
     FocusManager.instance.primaryFocus?.unfocus();

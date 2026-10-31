@@ -4,6 +4,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
@@ -11,6 +12,9 @@ import 'ui/widgets/window_chrome.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 双语日期符号（zh/en）：DateFormat 按 locale 取月份名/上下午等需先加载。
+  await initializeDateFormatting('zh');
+  await initializeDateFormatting('en');
   // 桌面端：去原生标题条（内容全出血到窗口顶缘），窗口控件自绘
   // （macOS 红绿灯，见 WindowChrome）。失败则退回原生标题条。
   if ((Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {

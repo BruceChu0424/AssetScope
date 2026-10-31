@@ -4,7 +4,6 @@ import 'package:assetscope/app/providers.dart';
 import 'package:assetscope/data/app_database.dart';
 import 'package:assetscope/ui/accounts/account_edit_dialog.dart';
 import 'package:assetscope/ui/globe/globe_home_page.dart';
-import 'package:assetscope/ui/home_shell.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widget_host.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 「添加资产」弹窗复现：用户真机点击后无弹窗 + release 闪退；
 /// errors.log 定位到 AlertDialog 布局断言（child!.hasSize）。
@@ -72,20 +72,19 @@ void main() {
       GoRouter router() => GoRouter(
             initialLocation: '/',
             routes: [
-              ShellRoute(
-                builder: (_, _, child) => HomeShell(body: child),
-                routes: [
-                  GoRoute(
-                      path: '/', builder: (_, _) => const GlobeHomePage()),
-                ],
-              ),
-            ],
+              GoRoute(
+                  path: '/', builder: (_, _) => const GlobeHomePage()),
+      ],
           );
       await tester.pumpWidget(ProviderScope(
         overrides: [
           vaultProvider.overrideWith(() => FixedVault(session)),
         ],
-        child: MaterialApp.router(routerConfig: router()),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          routerConfig: router()),
       ));
       for (var i = 0; i < 8; i++) {
         await tester.pump(const Duration(milliseconds: 200));

@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../net/guarded_http.dart';
 
 /// 请求协议形态。
@@ -33,12 +34,25 @@ class AiProviderPresets {
 
   static const glm = AiProviderPreset(
     id: 'glm',
-    label: '智谱 GLM（glm-4.7-flash 免费）',
+    label: '智谱 GLM（glm-5.3-flash 免费）',
     protocol: AiProtocol.openai,
     defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    defaultModel: 'glm-4.7-flash',
+    defaultModel: 'glm-5.3-flash',
     supportsWebSearch: true,
-    note: '国内直连，web_search 工具联网',
+    note: '国内直连，web_search 工具联网；编程套餐（Coding Plan）Key 请选下一项',
+  );
+
+  /// GLM Coding Plan（编程套餐）专用端点：套餐 Key 在普通端点会被判
+  /// 无效（401「令牌已过期」），必须走 /api/coding/paas/v4。套餐联网
+  /// 走 MCP 积分，chat/completions 不带 web_search 工具。
+  static const glmCoding = AiProviderPreset(
+    id: 'glmCoding',
+    label: '智谱 GLM Coding Plan',
+    protocol: AiProtocol.openai,
+    defaultBaseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    defaultModel: 'glm-5.3-flash',
+    supportsWebSearch: false,
+    note: '编程套餐 Key 专用端点（普通 API Key 不可用）；联网走套餐 MCP，行情抓取不联网',
   );
 
   static const moonshot = AiProviderPreset(
@@ -103,6 +117,7 @@ class AiProviderPresets {
 
   static const List<AiProviderPreset> all = [
     glm,
+    glmCoding,
     moonshot,
     qwen,
     deepseek,
@@ -219,7 +234,7 @@ class AiChat {
         ? extractAnthropicText(resp)
         : extractOpenAiText(resp);
     if (text == null || text.trim().isEmpty) {
-      throw const FormatException('AI 响应中没有文本内容');
+      throw FormatException(rt('AI 响应中没有文本内容'));
     }
     return text;
   }
@@ -258,7 +273,8 @@ class AiChat {
           extra['enable_search'] = true;
         case 'custom':
         case 'deepseek':
-          break; // 不支持服务端联网搜索
+        case 'glmCoding':
+          break; // 不支持服务端联网搜索（Coding Plan 联网走套餐 MCP）
         default: // openai 及其余兼容端点
           tools.add({'type': 'web_search'});
       }

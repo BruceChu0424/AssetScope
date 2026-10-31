@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui show Gradient;
 
@@ -13,11 +14,27 @@ import 'logo_points.dart';
 /// 行波 + 闪烁 + 呼吸光晕。深浅色各用一套粒子配色（浅色=墨蓝系，深色=
 /// 钢蓝系），光晕随主题主色。锁屏等品牌时刻替代静态 [BrandMark]；
 /// 「减少动画」时直接呈现汇聚完成的静止帧。
+///
+/// [compact] 为小尺寸档（≤48px，如首页左上角标识）：粒子半径改用
+/// 绝对像素（比例缩放在 44px 下只剩 0.3px，缩成不可见的尘点），抽稀
+/// 一半粒子并提亮——小面积下仍读得出「一团在呼吸的粒子 A」。
 class ParticleBrandMark extends StatefulWidget {
-  const ParticleBrandMark({super.key, this.size = 168});
+  const ParticleBrandMark({
+    super.key,
+    this.size = 168,
+    this.compact = false,
+    this.forceDark,
+  });
 
   /// 图形边长（正方形，含光晕余量请在外部留白）。
   final double size;
+
+  /// 小尺寸档：绝对粒子半径 + 提亮。
+  final bool compact;
+
+  /// 强制配色档：null=随主题；深色底页面（如首页深空角标）传 true 用
+  /// 钢蓝系，避免浅色主题的墨蓝粒子沉进深空里不可见。
+  final bool? forceDark;
 
   @override
   State<ParticleBrandMark> createState() => _ParticleBrandMarkState();
@@ -37,12 +54,16 @@ class _ParticleBrandMarkState extends State<ParticleBrandMark>
     ];
   }();
 
+  /// widget 测试环境只画静态帧（常驻 Ticker 会卡死 pumpAndSettle——
+  /// 同 ParticleOrbit/ParticleEdge 的工艺注，v0.27 首页角标常驻后补上）。
+  static final bool _testEnv = Platform.environment['FLUTTER_TEST'] == 'true';
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // MediaQuery 不能在 initState 读；「减少动画」定格在汇聚完成帧。
     if (!_t.isAnimating && _t.value == 0) {
-      if (MediaQuery.disableAnimationsOf(context)) {
+      if (_testEnv || MediaQuery.disableAnimationsOf(context)) {
         _t.value = 2 / 86400; // t ≈ 2s 静止帧
       } else {
         _t.forward();
@@ -63,8 +84,9 @@ class _ParticleBrandMarkState extends State<ParticleBrandMark>
       painter: _ParticleMarkPainter(
         clock: _t,
         specs: _specs,
-        dark: Theme.of(context).brightness == Brightness.dark,
+        dark: widget.forceDark ?? Theme.of(context).brightness == Brightness.dark,
         size: widget.size,
+        compact: widget.compact,
       ),
     );
   }
@@ -96,12 +118,16 @@ class _ParticleMarkPainter extends CustomPainter {
     required this.specs,
     required this.dark,
     required this.size,
+    this.compact = false,
   }) : super(repaint: clock);
 
   final Animation<double> clock;
   final List<_Spec> specs;
   final bool dark;
   final double size;
+
+  /// 小尺寸档（首页角标）：粒子半径绝对像素、亮度抬升。
+  final bool compact;
 
   @override
   void paint(Canvas canvas, Size canvasSize) {
@@ -110,6 +136,8 @@ class _ParticleMarkPainter extends CustomPainter {
 
     _paintHalo(canvas, center, t);
     for (var i = 0; i < specs.length; i++) {
+      // compact 档隔一颗抽一颗：小尺寸下点距过密会糊成实心。
+      if (compact && i.isOdd) continue;
       final target = Offset(
         center.dx + kLogoParticlePoints[i * 2] * size,
         center.dy + kLogoParticlePoints[i * 2 + 1] * size,
@@ -163,8 +191,13 @@ class _ParticleMarkPainter extends CustomPainter {
 
     canvas.drawCircle(
       pos,
-      s.radius * size / 168,
-      Paint()..color = _color(s.colorSlot).withValues(alpha: alpha),
+      compact
+          ? 0.9 + s.radius * 0.45 // 绝对像素：小尺寸下仍是可见光点
+          : s.radius * size / 168,
+      Paint()
+        ..color = _color(s.colorSlot).withValues(
+          alpha: compact ? (alpha * 0.85 + 0.15).clamp(0.0, 1.0) : alpha,
+        ),
     );
   }
 
@@ -192,5 +225,5 @@ class _ParticleMarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ParticleMarkPainter old) =>
-      old.dark != dark || old.size != size;
+      old.dark != dark || old.size != size || old.compact != compact;
 }

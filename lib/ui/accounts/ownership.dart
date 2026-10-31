@@ -10,7 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/money/fx_rate.dart';
-import '../widgets/particle_interactive.dart';
+import '../../l10n/app_localizations.dart';
+import '../widgets/common.dart';
 
 /// "50"、"33.3" → 有理数份额（1/2、333/1000）；非法或不在 (0,1] 返回 null。
 Rational? parseOwnership(String percentText) {
@@ -48,25 +49,24 @@ Future<bool> showOwnershipDialog(
   VaultUnlocked s,
   Account account,
 ) async {
+  final t = AppLocalizations.of(context);
   final ctrl = TextEditingController(
     text: fmtOwnership(account.effectiveOwnership),
   );
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (dialogCtx) => AlertDialog(
-      title: const Text('归属份额'),
+  final ok = await showAppDialog<bool>(
+    context,
+    builder: (dialogCtx) => AppDialog(
+      title: t.ownershipTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ParticleTextField(
             controller: ctrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: '本人份额（%）',
+            decoration: InputDecoration(
+              labelText: t.ownershipMyShareLabel,
               suffixText: '%',
-              helperText:
-                  '100 = 全额本人；夫妻共同账户各填 50。'
-                  '只影响净资产/我的份额统计，不改流水。',
+              helperText: t.ownershipHelper,
             ),
           ),
         ],
@@ -74,11 +74,11 @@ Future<bool> showOwnershipDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogCtx, false),
-          child: const Text('取消'),
+          child: Text(t.cancel),
         ),
         ParticleFilledButton(
           onPressed: () => Navigator.pop(dialogCtx, true),
-          child: const Text('保存'),
+          child: Text(t.save),
         ),
       ],
     ),
@@ -89,7 +89,7 @@ Future<bool> showOwnershipDialog(
   if (share == null) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('份额需在 0–100 之间（例如 50 或 33.3）')),
+        SnackBar(content: Text(t.ownershipRangeError)),
       );
     }
     return false;

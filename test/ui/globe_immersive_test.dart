@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'widget_host.dart';
+import 'package:assetscope/l10n/app_localizations.dart';
 
 /// 沉浸式地球宿主与滚轮缩放回归。
 void main() {
@@ -37,6 +38,9 @@ void main() {
     final globe = GlobalKey();
     await tester.pumpWidget(
       MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
         home: Scaffold(
           body: ImmersiveGlobeHost(
             globeBuilder: (cb) {
@@ -69,6 +73,42 @@ void main() {
     expect(
       tester.getRect(find.byKey(globe)),
       const Rect.fromLTWH(0, 0, 120, 100),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('窗口缩放：槽位移动后地球自动跟上（无需交互）', (tester) async {
+    // 回归：缩放窗口时 build 期测到的是上一帧槽位，与当前值相同就
+    // 无人再触发重测，地球曾冻结在旧位置直到下一次交互。
+    final globe = GlobalKey();
+    Widget host() => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+      home: Scaffold(
+        body: ImmersiveGlobeHost(
+          globeBuilder: (_) => SizedBox(key: globe),
+          builder: (context, anim, slotKey) => Align(
+            alignment: Alignment.center,
+            child: SizedBox(width: 120, height: 100, key: slotKey),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(host());
+    await tester.pump(); // 首帧测量
+    expect(
+      tester.getRect(find.byKey(globe)),
+      const Rect.fromLTWH(340, 250, 120, 100),
+    );
+
+    await tester.binding.setSurfaceSize(const Size(1000, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pump(); // 新约束布局：build 期仍测得旧槽位
+    await tester.pump(); // 布局后补测跟上（允许一帧滞后）
+    expect(
+      tester.getRect(find.byKey(globe)),
+      const Rect.fromLTWH(440, 350, 120, 100),
     );
     expect(tester.takeException(), isNull);
   });

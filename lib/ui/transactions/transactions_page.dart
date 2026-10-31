@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/ledger/account.dart';
 import '../../domain/ledger/transaction.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import 'add_transaction_dialog.dart';
@@ -40,9 +42,17 @@ final txAccountsProvider = FutureProvider.autoDispose<List<Account>>((
 /// 流水筛选维度。
 enum TxFilter { all, flow, transfer, invest, debt }
 
+/// 流水筛选维度的中文标签。
+String _filterLabel(TxFilter f) => switch (f) {
+  TxFilter.all => rt('全部'),
+  TxFilter.flow => rt('收支'),
+  TxFilter.transfer => rt('转账'),
+  TxFilter.invest => rt('投资'),
+  TxFilter.debt => rt('借贷还款'),
+};
+
 /// 流水页 · 台账：统计带（本月收支）→ 搜索与筛选 → 按日分组的账本行
-/// （日头带当日净额）。大屏收束为 880 居中栏——台账是纵读清单，
-/// 不做宽屏多栏。
+/// （日头带当日净额）。小屏单列纵读；大屏工作台见类注释。
 class TransactionsPage extends ConsumerStatefulWidget {
   const TransactionsPage({super.key});
 
@@ -79,21 +89,23 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final async = _query.isEmpty
         ? ref.watch(txListProvider)
         : ref.watch(txSearchProvider(_query));
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
     return PageFrame(
-      title: '流水',
-      maxWidth: 880,
+      title: t.txPageTitle,
+      maxWidth: wide ? AppMeasure.workbench : 880,
       actions: [
         ActionIcon(
-          tooltip: '导出 CSV（明文，自选位置）',
+          tooltip: t.txExportCsvTooltip,
           icon: Icons.save_alt_outlined,
           onTap: () => _exportCsv(context),
         ),
         const SizedBox(width: 6),
         ActionIcon(
-          tooltip: '导入账单 CSV',
+          tooltip: t.txImportCsvTooltip,
           icon: Icons.file_upload_outlined,
           onTap: () => showImportWizard(context, ref),
         ),
@@ -103,100 +115,155 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         extendBelow: 6,
         child: FloatingActionButton.extended(
           onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
+            final ok = await showAppDialog<bool>(
+              context,
               builder: (_) => const AddTransactionDialog(),
             );
             if (ok == true) ref.invalidate(txListProvider);
           },
           icon: const Icon(Icons.add),
-          label: const Text('记一笔'),
+          label: Text(t.txAddTitle),
         ),
       ),
       child: async.when(
         loading: () => const Center(child: OrbitSpinner(size: 36)),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+        error: (e, _) => ErrorPlaceholder(t.loadFailed('$e')),
         data: (txs) {
           final visible = txs
               .where((t) => t.status != TxStatus.voided)
               .where(_accepts)
               .toList()
             ..sort((a, b) => b.date.compareTo(a.date));
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _MonthBand(txs: txs),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ParticleTextField(
-                        onChanged: (v) => setState(() => _query = v.trim()),
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search, size: 20),
-                          hintText: '搜索全账本：备注、对方、标签',
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: SizedBox(
-                        height: 44,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            for (final f in TxFilter.values)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Text(_labelOf(f)),
-                                  selected: _filter == f,
-                                  onSelected: (_) =>
-                                      setState(() => _filter = f),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+          if (!wide) {
+            // 小屏：统计带 + 搜索/筛选行 + 台账（原形态）。
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: _MonthBand(txs: txs),
                 ),
-              ),
-              Expanded(
-                child: visible.isEmpty
-                    ? EmptyState(
-                        icon: Icons.receipt_long_outlined,
-                        title: _query.isEmpty ? '还没有流水' : '没有匹配的交易',
-                        message: _query.isEmpty
-                            ? '右下角「记一笔」，或从设置导入账单 CSV。'
-                            : '换个关键词，或清除类型筛选再试。',
-                      )
-                    : _LedgerList(
-                        visible: visible,
-                        onRowTap: (tx) => showTxDetail(context, ref, tx),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ParticleTextField(
+                          onChanged: (v) => setState(() => _query = v.trim()),
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            hintText: t.txSearchHint,
+                            isDense: true,
+                          ),
+                        ),
                       ),
-              ),
-            ],
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: SizedBox(
+                          height: 44,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              for (final f in TxFilter.values)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(_filterLabel(f)),
+                                    selected: _filter == f,
+                                    onSelected: (_) =>
+                                        setState(() => _filter = f),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: visible.isEmpty
+                      ? EmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          title: _query.isEmpty
+                              ? t.txEmptyTitle
+                              : t.txNoMatchTitle,
+                          message: _query.isEmpty
+                              ? t.txEmptyHint
+                              : t.txNoMatchHint,
+                        )
+                      : _LedgerList(
+                          visible: visible,
+                          onRowTap: (tx) => showTxDetail(context, ref, tx),
+                        ),
+                ),
+              ],
+            );
+          }
+          // 大屏工作台：主区 = 搜索 + 台账；右栏 = 本月概览 + 类型筛选。
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: ParticleTextField(
+                          onChanged: (v) => setState(() => _query = v.trim()),
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            hintText: t.txSearchHint,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: visible.isEmpty
+                            ? EmptyState(
+                                icon: Icons.receipt_long_outlined,
+                                title: _query.isEmpty
+                                    ? t.txEmptyTitle
+                                    : t.txNoMatchTitle,
+                                message: _query.isEmpty
+                                    ? t.txEmptyHint
+                                    : t.txNoMatchHintWide,
+                              )
+                            : _LedgerList(
+                                visible: visible,
+                                onRowTap: (tx) => showTxDetail(context, ref, tx),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: PageMeasure.gutter),
+                SizedBox(
+                  width: 300,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _SideMonthPanel(txs: txs),
+                        const SizedBox(height: PageMeasure.gutter),
+                        _FilterPanel(
+                          selected: _filter,
+                          onSelect: (f) => setState(() => _filter = f),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  String _labelOf(TxFilter f) => switch (f) {
-    TxFilter.all => '全部',
-    TxFilter.flow => '收支',
-    TxFilter.transfer => '转账',
-    TxFilter.invest => '投资',
-    TxFilter.debt => '借贷还款',
-  };
-
   /// 导出全部流水为明文 CSV（用户自选保存位置，与加密备份互补）。
   Future<void> _exportCsv(BuildContext context) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final csv = await s.exportService.transactionsCsv();
@@ -210,7 +277,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     await File(loc.path).writeAsString(csv, flush: true);
     if (!mounted) return;
     ScaffoldMessenger.of(this.context).showSnackBar(
-      const SnackBar(content: Text('已导出流水 CSV（含 BOM，Excel 可直接打开）')),
+      SnackBar(content: Text(t.txExportedToast)),
     );
   }
 }
@@ -223,34 +290,181 @@ class _MonthBand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    BigInt expense = BigInt.zero, income = BigInt.zero;
-    for (final t in txs) {
-      if (t.status == TxStatus.voided) continue;
-      if (t.date.year != now.year || t.date.month != now.month) continue;
-      final (cur, minor) = _userAmount(t);
-      if (cur != 'CNY' || minor == null) continue;
-      if (t.kind == TxKind.expense) {
-        expense += minor.abs();
-      } else if (t.kind == TxKind.income || t.kind == TxKind.refund) {
-        income += minor.abs();
-      }
-    }
-    final surplus = income - expense;
+    final t = AppLocalizations.of(context);
+    final (expense, income, surplus) = _monthFigures(txs);
     final brightness = Theme.of(context).brightness;
     return StatBand(
       items: [
-        StatBandItem('本月支出', fmtMinor(expense, 'CNY')),
-        StatBandItem('本月收入', fmtMinor(income, 'CNY')),
+        StatBandItem(t.monthExpense, fmtMinor(expense, 'CNY')),
+        StatBandItem(t.monthIncome, fmtMinor(income, 'CNY')),
         StatBandItem(
-          '本月结余',
+          t.monthSurplus,
           fmtMinor(surplus, 'CNY', sign: true),
           color: surplus.isNegative
               ? AppColors.negativeOf(brightness)
               : AppColors.positiveOf(brightness),
-          tooltip: '仅统计人民币流水，避免混币求和失真',
+          tooltip: t.monthCnyOnlyTooltip,
         ),
       ],
+    );
+  }
+}
+
+/// 本月收支（支出、收入、结余；仅人民币）。
+(BigInt, BigInt, BigInt) _monthFigures(List<LedgerTransaction> txs) {
+  final now = DateTime.now();
+  BigInt expense = BigInt.zero, income = BigInt.zero;
+  for (final t in txs) {
+    if (t.status == TxStatus.voided) continue;
+    if (t.date.year != now.year || t.date.month != now.month) continue;
+    final (cur, minor) = _userAmount(t);
+    if (cur != 'CNY' || minor == null) continue;
+    if (t.kind == TxKind.expense) {
+      expense += minor.abs();
+    } else if (t.kind == TxKind.income || t.kind == TxKind.refund) {
+      income += minor.abs();
+    }
+  }
+  return (expense, income, income - expense);
+}
+
+/// 大屏右栏「本月」面板：主数 = 本月支出，明细 = 收入/结余。
+class _SideMonthPanel extends StatelessWidget {
+  const _SideMonthPanel({required this.txs});
+
+  final List<LedgerTransaction> txs;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final (expense, income, surplus) = _monthFigures(txs);
+    final brightness = Theme.of(context).brightness;
+    return SummaryPanel(
+      title: t.monthThis,
+      heroValue: fmtMinor(expense, 'CNY'),
+      heroLabel: t.monthSpent,
+      rows: [
+        SummaryRow(t.monthIncome, fmtMinor(income, 'CNY')),
+        SummaryRow(
+          t.monthSurplus,
+          fmtMinor(surplus, 'CNY', sign: true),
+          color: surplus.isNegative
+              ? AppColors.negativeOf(brightness)
+              : AppColors.positiveOf(brightness),
+          tooltip: t.monthCnyOnlyTooltip,
+        ),
+      ],
+    );
+  }
+}
+
+/// 大屏右栏「类型」筛选：纵向单选清单（高频操作，切换即时无动画）。
+class _FilterPanel extends StatelessWidget {
+  const _FilterPanel({required this.selected, required this.onSelect});
+
+  final TxFilter selected;
+  final ValueChanged<TxFilter> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return SummaryPanel(
+      title: t.fieldType,
+      hint: t.filterPanelHint,
+      child: Column(
+        children: [
+          for (final f in TxFilter.values)
+            _FilterTile(
+              icon: _iconOf(f),
+              label: _filterLabel(f),
+              selected: f == selected,
+              onTap: () => onSelect(f),
+            ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconOf(TxFilter f) => switch (f) {
+    TxFilter.all => Icons.list_alt_outlined,
+    TxFilter.flow => Icons.swap_vert,
+    TxFilter.transfer => Icons.swap_horiz,
+    TxFilter.invest => Icons.show_chart,
+    TxFilter.debt => Icons.handshake_outlined,
+  };
+}
+
+class _FilterTile extends StatefulWidget {
+  const _FilterTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_FilterTile> createState() => _FilterTileState();
+}
+
+class _FilterTileState extends State<_FilterTile> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tint = theme.colorScheme.primary;
+    final selected = widget.selected;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          margin: const EdgeInsets.only(bottom: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.chip),
+            color: selected
+                ? tint.withValues(alpha: 0.1)
+                : (_hover
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.04)
+                    : Colors.transparent),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                widget.icon,
+                size: 17,
+                color: selected ? tint : theme.hintColor,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? tint : null,
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 120),
+                opacity: selected ? 1 : 0,
+                child: Icon(Icons.check, size: 16, color: tint),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -298,6 +512,7 @@ class _DayNetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     // 仅收支类参与净额；同币种才求和。
     BigInt net = BigInt.zero;
     String? currency;
@@ -324,7 +539,7 @@ class _DayNetHeader extends StatelessWidget {
       date: day,
       netLabel: !showNet
           ? ''
-          : '${net.isNegative ? '支出 ' : '收入 '}${fmtMinor(net.abs(), currency)}',
+          : '${net.isNegative ? '${t.dirExpense} ' : '${t.dirIncome} '}${fmtMinor(net.abs(), currency)}',
       netColor: net.isNegative
           ? AppColors.negativeOf(brightness)
           : AppColors.positiveOf(brightness),

@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 import 'account.dart';
 import 'posting.dart';
@@ -21,7 +22,7 @@ class LedgerMath {
     }
     for (final e in moneyByCurrency.entries) {
       if (e.value != BigInt.zero) {
-        return '币种 ${e.key} 分录合计 ${e.value} ≠ 0（借贷不相等）';
+        return rt('币种 ${e.key} 分录合计 ${e.value} ≠ 0（借贷不相等）');
       }
     }
     return null;

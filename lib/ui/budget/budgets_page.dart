@@ -9,6 +9,7 @@ import '../../domain/ledger/transaction.dart';
 import '../../domain/money/currency.dart';
 import '../../domain/money/money.dart';
 import '../../domain/utils/dates.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../transactions/transactions_page.dart' show txAccountsProvider;
 import '../widgets/common.dart';
@@ -21,37 +22,31 @@ class BudgetsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     final async = ref.watch(_budgetEnvelopesProvider);
+    final wide = MediaQuery.sizeOf(context).width >= PageMeasure.wide;
     return PageFrame(
-      title: '预算',
-      maxWidth: 980,
+      title: t.budgetPageTitle,
+      maxWidth: wide ? AppMeasure.workbench : 980,
       fab: ParticleEdge(
         band: 12,
         extendBelow: 6,
         child: FloatingActionButton.extended(
-          onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (_) => const _BudgetEditDialog(),
-            );
-            if (ok == true) ref.invalidate(_budgetEnvelopesProvider);
-          },
+          onPressed: () => _newBudget(context, ref),
           icon: const Icon(Icons.add),
-          label: const Text('新建预算'),
+          label: Text(t.budgetCreate),
         ),
       ),
       child: async.when(
         loading: () => const Center(child: OrbitSpinner(size: 36)),
-        error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+        error: (e, _) => ErrorPlaceholder(t.wdgLoadFailed(e.toString())),
         data: (data) {
           final (envs, base) = data;
           if (envs.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.savings_outlined,
-              title: '还没有预算',
-              message:
-                  '从月度总预算开始，或给餐饮、购物等分类单独设额度，'
-                  '首页会按当前消费速度预测月末是否超支。',
+              title: t.budgetEmptyTitle,
+              message: t.budgetEmptyMessage,
             );
           }
           var limit = BigInt.zero, spent = BigInt.zero;
@@ -63,15 +58,79 @@ class BudgetsPage extends ConsumerWidget {
           }
           final remaining = limit - spent;
           final brightness = Theme.of(context).brightness;
+          final overallRatio = limit == BigInt.zero
+              ? 0.0
+              : spent.toDouble() / limit.toDouble();
+          if (wide) {
+            // 大屏工作台：左 = 本月汇总栏（主数「剩余可花」+ 总进度），
+            // 右 = 信封网格。
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 300,
+                    child: SummaryPanel(
+                      title: t.budgetMonthTitle,
+                      heroValue: fmtMinor(remaining.abs(), base),
+                      heroLabel: remaining.isNegative
+                          ? t.budgetOverspentHero
+                          : t.budgetRemainingHero,
+                      heroColor: remaining.isNegative
+                          ? AppColors.negativeOf(brightness)
+                          : AppColors.positiveOf(brightness),
+                      rows: [
+                        SummaryRow(t.budgetTotalLimit, fmtMinor(limit, base)),
+                        SummaryRow(t.budgetSpent, fmtMinor(spent, base)),
+                        if (overCount > 0)
+                          SummaryRow(
+                            t.budgetOverEnvelopes,
+                            t.budgetEnvelopeCount(overCount),
+                            color: AppColors.negativeOf(brightness),
+                          ),
+                      ],
+                      footer: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProgressMeter(
+                            ratio: overallRatio,
+                            over: remaining.isNegative,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            t.budgetTotalUsagePct(
+                              (overallRatio * 100).toStringAsFixed(0),
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Theme.of(context).hintColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: PageMeasure.gutter),
+                  Expanded(
+                    child: CardWrap(
+                      tileWidth: 460,
+                      children: [
+                        for (final e in envs) _EnvelopeCard(envelope: e, base: base),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             children: [
               StatBand(
                 items: [
-                  StatBandItem('本月总额度', fmtMinor(limit, base)),
-                  StatBandItem('已花', fmtMinor(spent, base)),
+                  StatBandItem(t.budgetMonthTotalLimit, fmtMinor(limit, base)),
+                  StatBandItem(t.budgetSpent, fmtMinor(spent, base)),
                   StatBandItem(
-                    '剩余',
+                    t.budgetRemaining,
                     fmtMinor(remaining, base),
                     color: remaining.isNegative
                         ? AppColors.negativeOf(brightness)
@@ -79,8 +138,8 @@ class BudgetsPage extends ConsumerWidget {
                   ),
                   if (overCount > 0)
                     StatBandItem(
-                      '超支信封',
-                      '$overCount 只',
+                      t.budgetOverEnvelopes,
+                      t.budgetEnvelopeCount(overCount),
                       color: AppColors.negativeOf(brightness),
                     ),
                 ],
@@ -98,6 +157,14 @@ class BudgetsPage extends ConsumerWidget {
       ),
     );
   }
+  /// 新建预算弹窗（AppDialog 体系：进场 220ms 淡入放大，退场完整对称）。
+  Future<void> _newBudget(BuildContext context, WidgetRef ref) async {
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (_) => const _BudgetEditDialog(),
+    );
+    if (ok == true) ref.invalidate(_budgetEnvelopesProvider);
+  }
 }
 
 /// 单只预算信封：名称 + 剩余（超支为红）+ 警戒刻度进度条 + 三拆瓦片
@@ -110,6 +177,7 @@ class _EnvelopeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final e = envelope;
     final over = e.remainingMinor.isNegative;
@@ -138,8 +206,8 @@ class _EnvelopeCard extends ConsumerWidget {
                 ),
                 Text(
                   over
-                      ? '超支 ${fmtMinor(-e.remainingMinor, base)}'
-                      : '剩余 ${fmtMinor(e.remainingMinor, base)}',
+                      ? t.budgetOverAmount(fmtMinor(-e.remainingMinor, base))
+                      : t.budgetRemainingAmount(fmtMinor(e.remainingMinor, base)),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: over
                         ? AppColors.negativeOf(brightness)
@@ -148,16 +216,16 @@ class _EnvelopeCard extends ConsumerWidget {
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: theme.hintColor,
-                  ),
-                  tooltip: '信封操作',
+                ParticleMenuButton<String>(
+                  tooltip: t.budgetEnvelopeActions,
                   onSelected: (a) => _delete(context, ref),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'delete', child: Text('删除预算')),
+                  items: [
+                    ParticleMenuEntry(
+                      value: 'delete',
+                      label: t.budgetDelete,
+                      icon: Icons.delete_outline,
+                      destructive: true,
+                    ),
                   ],
                 ),
               ],
@@ -169,21 +237,21 @@ class _EnvelopeCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: AmountTile(
-                    label: '额度',
+                    label: t.budgetLimit,
                     amount: fmtMinor(e.limitMinor, base),
                   ),
                 ),
                 Expanded(
                   child: AmountTile(
-                    label: '已花',
+                    label: t.budgetSpent,
                     amount: fmtMinor(e.spentMinor, base),
                   ),
                 ),
                 Expanded(
                   child: AmountTile(
-                    label: '计划占用',
+                    label: t.budgetPlanned,
                     amount: fmtMinor(e.plannedMinor, base),
-                    tooltip: '未来计划将落在这只信封里的金额',
+                    tooltip: t.budgetPlannedTooltip,
                   ),
                 ),
               ],
@@ -197,13 +265,14 @@ class _EnvelopeCard extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null) return;
     final ok = await confirmDialog(
       context,
-      title: '删除预算？',
-      message: '「${envelope.name}」的额度记录将被删除，已发生的消费不受影响。',
-      confirmLabel: '删除',
+      title: t.budgetDeleteConfirmTitle,
+      message: t.budgetDeleteConfirmMessage(envelope.name),
+      confirmLabel: t.wdgDelete,
       destructive: true,
     );
     if (ok != true) return;
@@ -213,6 +282,7 @@ class _EnvelopeCard extends ConsumerWidget {
 
   /// 月中配速预警：外推到月末 + 建议日均可花（月末/无数据时隐藏）。
   Widget _forecastLine(BuildContext context, BudgetEnvelope e) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final now = DateTime.now();
     final forecast = BudgetForecast.of(
@@ -239,8 +309,14 @@ class _EnvelopeCard extends ConsumerWidget {
           Expanded(
             child: Text(
               forecast.willExceed
-                  ? '按当前配速月底将花 ${fmtMinor(forecast.projectedMinor, base)}（超 ${fmtMinor(forecast.projectedMinor - e.limitMinor, base)}）'
-                  : '按当前配速月底约花 ${fmtMinor(forecast.projectedMinor, base)}，剩余日均可花 ${fmtMinor(forecast.suggestedDailyMinor, base)}',
+                  ? t.budgetForecastExceed(
+                      fmtMinor(forecast.projectedMinor, base),
+                      fmtMinor(forecast.projectedMinor - e.limitMinor, base),
+                    )
+                  : t.budgetForecastOk(
+                      fmtMinor(forecast.projectedMinor, base),
+                      fmtMinor(forecast.suggestedDailyMinor, base),
+                    ),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: forecast.willExceed ? bad : theme.hintColor,
               ),
@@ -347,6 +423,7 @@ class _BudgetEditDialogState extends ConsumerState<_BudgetEditDialog> {
   }
 
   Future<void> _save() async {
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider));
     if (s == null || _limit.text.isEmpty) return;
     final now = DateTime.now();
@@ -354,7 +431,9 @@ class _BudgetEditDialogState extends ConsumerState<_BudgetEditDialog> {
       Budget(
         id: 'bud:${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
         name: _name.text.isEmpty
-            ? (_scope == BudgetScope.total ? '月度总预算' : '分类预算')
+            ? (_scope == BudgetScope.total
+                  ? t.budgetMonthlyTotalName
+                  : t.budgetCategoryBudget)
             : _name.text.trim(),
         scope: _scope,
         limitMinor: Money.parse(_limit.text, CurrencyInfo.cny).amountMinor,
@@ -369,59 +448,67 @@ class _BudgetEditDialogState extends ConsumerState<_BudgetEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final accounts = ref.watch(txAccountsProvider);
-    return AlertDialog(
-      title: const Text('新建预算'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SegmentedButton<BudgetScope>(
-              segments: const [
-                ButtonSegment(value: BudgetScope.total, label: Text('总预算')),
-                ButtonSegment(value: BudgetScope.category, label: Text('分类预算')),
-              ],
-              selected: {_scope},
-              onSelectionChanged: (v) => setState(() => _scope = v.first),
-            ),
-            const SizedBox(height: 8),
-            if (_scope == BudgetScope.category)
-              accounts.maybeWhen(
-                data: (list) => DropdownButtonFormField<String>(
-                  initialValue: _categoryId,
-                  decoration: const InputDecoration(labelText: '分类'),
-                  items: [
-                    for (final a in list.where(
-                      (a) => a.type == AccountType.expense && !a.isSystem,
-                    ))
-                      DropdownMenuItem(value: a.id, child: Text(a.name)),
-                  ],
-                  onChanged: (v) => setState(() => _categoryId = v),
-                ),
-                orElse: () => const SizedBox.shrink(),
+    return AppDialog(
+      title: t.budgetCreate,
+      scroll: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<BudgetScope>(
+            segments: [
+              ButtonSegment(
+                value: BudgetScope.total,
+                label: Text(t.budgetScopeTotal),
               ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _limit,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              ButtonSegment(
+                value: BudgetScope.category,
+                label: Text(t.budgetCategoryBudget),
               ),
-              decoration: const InputDecoration(labelText: '每月额度（元）'),
-            ),
-            const SizedBox(height: 8),
-            ParticleTextField(
-              controller: _name,
-              decoration: const InputDecoration(labelText: '名称（可选）'),
+            ],
+            selected: {_scope},
+            onSelectionChanged: (v) => setState(() => _scope = v.first),
+          ),
+          if (_scope == BudgetScope.category) ...[
+            const SizedBox(height: 14),
+            accounts.maybeWhen(
+              data: (list) => ParticleDropdownField<String>(
+                initialValue: _categoryId,
+                decoration: InputDecoration(labelText: t.budgetCategoryField),
+                items: [
+                  for (final a in list.where(
+                    (a) => a.type == AccountType.expense && !a.isSystem,
+                  ))
+                    DropdownMenuItem(value: a.id, child: Text(a.name)),
+                ],
+                onChanged: (v) => setState(() => _categoryId = v),
+              ),
+              orElse: () => const SizedBox.shrink(),
             ),
           ],
-        ),
+          const SizedBox(height: 14),
+          ParticleTextField(
+            controller: _limit,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            decoration: InputDecoration(labelText: t.budgetMonthlyLimitField),
+          ),
+          const SizedBox(height: 14),
+          ParticleTextField(
+            controller: _name,
+            decoration: InputDecoration(labelText: t.budgetNameOptionalField),
+          ),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
+          child: Text(t.wdgCancel),
         ),
-        ParticleFilledButton(onPressed: _save, child: const Text('保存')),
+        ParticleFilledButton(onPressed: _save, child: Text(t.wdgSave)),
       ],
     );
   }

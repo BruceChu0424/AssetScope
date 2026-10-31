@@ -6,6 +6,7 @@ import '../../domain/ledger/ledger_math.dart';
 import '../../domain/ledger/posting.dart';
 import '../../domain/ledger/transaction.dart';
 import '../../domain/money/fx_rate.dart';
+import '../../l10n/runtime_l10n.dart';
 import '../app_database.dart';
 
 /// 账本仓储：交易写入（含守恒校验）、查询、余额与数量聚合。
@@ -18,7 +19,9 @@ class LedgerRepo {
   Future<LedgerTransaction> post(TransactionDraft draft, {String? id}) async {
     final violation = LedgerMath.checkConservation(draft.postings);
     if (violation != null) {
-      throw StateError('拒绝过账（$violation）kind=${draft.kind.name}');
+      throw StateError(
+        '${rt('拒绝过账（')}$violation${rt('）')}kind=${draft.kind.name}',
+      );
     }
     final txId = id ?? 'tx:${_newId()}';
     final now = DateTime.now();
@@ -110,21 +113,23 @@ class LedgerRepo {
     TransactionDraft draft,
   ) async {
     if (draft.postings.any((p) => p.securityId != null)) {
-      throw StateError('新分录含数量记账，不支持编辑（请作废后重记）');
+      throw StateError(rt('新分录含数量记账，不支持编辑（请作废后重记）'));
     }
     final oldTx = await (_db.select(
       _db.transactions,
     )..where((t) => t.id.equals(txId))).getSingleOrNull();
-    if (oldTx == null) throw StateError('交易不存在：$txId');
+    if (oldTx == null) throw StateError('${rt('交易不存在：')}$txId');
     final oldPostings = await (_db.select(
       _db.postings,
     )..where((p) => p.txId.equals(txId))).get();
     if (oldPostings.any((p) => p.securityId != null)) {
-      throw StateError('持仓交易不支持编辑（成本结转不可回放），请作废后重记');
+      throw StateError(rt('持仓交易不支持编辑（成本结转不可回放），请作废后重记'));
     }
     final violation = LedgerMath.checkConservation(draft.postings);
     if (violation != null) {
-      throw StateError('拒绝编辑（$violation）kind=${draft.kind.name}');
+      throw StateError(
+        '${rt('拒绝编辑（')}$violation${rt('）')}kind=${draft.kind.name}',
+      );
     }
     final now = DateTime.now();
     await _db.transaction(() async {
@@ -385,7 +390,7 @@ class LedgerRepo {
     final sums = <String, BigInt>{};
     for (final r in rows) {
       if ((r.data['unsafe'] as num? ?? 0) > 0) {
-        throw StateError('金额超出 int64，回退精确折叠');
+        throw StateError(rt('金额超出 int64，回退精确折叠'));
       }
       sums[r.read<String>('accountId')] = BigInt.from(
         (r.data['total'] as num?) ?? 0,
@@ -486,7 +491,7 @@ class LedgerRepo {
     final sums = <String, BigInt>{};
     for (final r in rows) {
       if ((r.data['unsafe'] as num? ?? 0) > 0) {
-        throw StateError('金额超出 int64，回退精确折叠');
+        throw StateError(rt('金额超出 int64，回退精确折叠'));
       }
       sums[r.read<String>('accountId')] = BigInt.from(
         (r.data['total'] as num?) ?? 0,

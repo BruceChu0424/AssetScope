@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/money/fx_rate.dart';
 import '../../domain/planning/fire.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/scenario_service.dart';
 import '../widgets/common.dart';
 import 'fire_sheet.dart';
@@ -24,6 +25,7 @@ class FireCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
     return ref
         .watch(fireDefaultsProvider)
         .when(
@@ -31,13 +33,14 @@ class FireCard extends ConsumerWidget {
             height: 60,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => ErrorPlaceholder('加载失败：$e'),
+          error: (e, _) => ErrorPlaceholder(t.loadFailedReports(e.toString())),
           data: (d) => _card(context, ref, d),
         );
   }
 
   Widget _card(BuildContext context, WidgetRef ref, FireDefaults d) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final s = sessionOf(ref.read(vaultProvider))!;
     final plan = FirePlanner.plan(
       FireInput(
@@ -51,9 +54,9 @@ class FireCard extends ConsumerWidget {
     );
     final base = s.statsService.baseCurrency();
     return SectionCard(
-      title: '财务独立（FIRE）',
+      title: t.fireTitle,
       trailing: IconButton(
-        tooltip: '调整参数与模拟',
+        tooltip: t.fireTuneTooltip,
         icon: const Icon(Icons.tune, size: 18),
         onPressed: () {
           ref.invalidate(fireDefaultsProvider);
@@ -61,9 +64,8 @@ class FireCard extends ConsumerWidget {
         },
       ),
       child: d.ttmSpendMinor == BigInt.zero
-          ? Text(
-              '记录一段时间的收支后，这里会给出"多少钱可以财务自由"的测算。\n'
-              '口径：FI 门槛 = 年支出 ÷ 提取率（4% 法则），可投资净资产 = 净资产 − 固定资产 − 长期权益。',
+              ? Text(
+                  t.fireEmptyHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
                 height: 1.6,
@@ -74,28 +76,28 @@ class FireCard extends ConsumerWidget {
                 FutureBuilder<String>(
                   future: base,
                   builder: (_, snap) => StatRow(
-                    label: 'FI 门槛（今天的钱）',
+                    label: t.fiNumberToday,
                     value: fmtMinor(plan.fiNumberMinor, snap.data ?? 'CNY'),
                     emphasized: true,
                   ),
                 ),
                 StatRow(
-                  label: '可投资净资产覆盖',
+                  label: t.investableCoverage,
                   value:
                       '${(plan.coverage * 100).toStringAsFixed(0)}%'
-                      '${d.monthsOfHistory < 12 ? '（历史 ${d.monthsOfHistory} 个月）' : ''}',
+                      '${d.monthsOfHistory < 12 ? t.coverageHistoryMonths(d.monthsOfHistory) : ''}',
                 ),
                 StatRow(
-                  label: '默认假设下达标',
+                  label: t.fiTimeToReach,
                   value: plan.yearsToFi == null
-                      ? '不可达（提高储蓄或收益假设）'
+                      ? t.fiUnreachable
                       : plan.alreadyFi
-                      ? '已达标 🎉'
-                      : '≈ ${plan.yearsToFi} 年',
+                      ? t.fiReached
+                      : t.fiYearsAway(plan.yearsToFi!),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '默认：名义收益 5% · 通胀 2.5% · 提取率 4% · 储蓄取近 12 个月实绩。点右上角调整并跑蒙特卡洛。',
+                  t.fireDefaultsNote,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.hintColor,
                     fontSize: 11,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../security/key_manager.dart';
 import '../dashboard/dashboard_providers.dart';
 import '../theme/app_theme.dart';
@@ -38,10 +39,12 @@ class _LockPageState extends ConsumerState<LockPage> {
   String? _error; // 仅驱动红框/辉光错误态；文字走顶部通知
   int _shake = 0; // 递增触发表单横摇
 
-  /// 解锁/创建进场散场参数：迸散后短驻（300ms），整层 900ms 渐隐——
-  /// 幕布渐薄的同时首页入场（揭幕钟同步），烟雾散尽恰好浮现到位。
-  static const _revealFade = Duration(milliseconds: 900);
-  static const _revealHold = Duration(milliseconds: 300);
+  /// 解锁/创建进场散场参数（最短可行序列，2026-10 用户指令：总时长压到
+  /// 下限，但粒子 logo 必须完整成形——成形保底由 busy 舞台承担：迸散
+  /// 不早于汇聚完成 1.79s）：迸散后短驻 120ms，整层 640ms 渐隐——幕布
+  /// 渐薄的同时首页入场（揭幕钟同步），烟雾散尽恰好浮现到位。
+  static const _revealFade = Duration(milliseconds: 640);
+  static const _revealHold = Duration(milliseconds: 120);
 
   /// 预热首页：会话发布后 router 已换树、首页在粒子幕布下开始加载——
   /// 等仪表盘数据就绪再短暂安定（大陆点/标记首批上屏），舞台才开始
@@ -59,7 +62,8 @@ class _LockPageState extends ConsumerState<LockPage> {
     } catch (_) {
       /* 首页自会展示错误 */
     }
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    // 短驻一拍即放行散场（首帧已上屏即可；拉长只会白等）。
+    await Future<void>.delayed(const Duration(milliseconds: 140));
   }
 
   @override
@@ -105,6 +109,7 @@ class _LockPageState extends ConsumerState<LockPage> {
 
   Future<void> _create() async {
     if (_busy) return;
+    final t = AppLocalizations.of(context);
     final err = _validateNewPass();
     if (err != null) return _fail(err);
     setState(() => _busy = true);
@@ -124,7 +129,7 @@ class _LockPageState extends ConsumerState<LockPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _fail('创建失败：$e');
+      _fail(t.lockCreateFailed(e.toString()));
     }
   }
 
@@ -132,12 +137,13 @@ class _LockPageState extends ConsumerState<LockPage> {
   /// 首页预热，900ms 渐隐揭幕。
   Future<void> _finishCreate() async {
     if (_busy) return;
+    final t = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       await runBusy(
         context,
-        message: '正在打开加密账本…',
-        successMessage: '欢迎来到资观',
+        message: t.lockOpeningLedger,
+        successMessage: t.lockWelcome,
         showError: false,
         hold: _revealHold,
         exitFade: _revealFade,
@@ -152,26 +158,28 @@ class _LockPageState extends ConsumerState<LockPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _fail('打开失败：$e');
+      _fail(t.lockOpenFailed(e.toString()));
     }
   }
 
   String? _validateNewPass() {
+    final t = AppLocalizations.of(context);
     final p = _pass.text;
-    if (p.length < 8) return '主口令至少 8 位；建议 12 位以上 passphrase';
-    if (p != _pass2.text) return '两次输入不一致';
+    if (p.length < 8) return t.lockPassphraseRule;
+    if (p != _pass2.text) return t.lockPassMismatch;
     final classes = [
       RegExp(r'[a-z]').hasMatch(p),
       RegExp(r'[A-Z]').hasMatch(p) || RegExp(r'[^\w]').hasMatch(p),
       RegExp(r'\d').hasMatch(p),
     ].where((v) => v).length;
-    if (p.length < 12 && classes < 2) return '口令强度不足：请更长或混合字符类型';
+    if (p.length < 12 && classes < 2) return t.lockWeakPassphrase;
     return null;
   }
 
   Future<void> _unlock() async {
     if (_busy) return;
-    if (_pass.text.isEmpty) return _fail('请输入主口令或恢复码');
+    final t = AppLocalizations.of(context);
+    if (_pass.text.isEmpty) return _fail(t.lockEnterPrompt);
     setState(() {
       _busy = true;
       _error = null;
@@ -184,7 +192,9 @@ class _LockPageState extends ConsumerState<LockPage> {
       if (!mounted) return;
       setState(() => _busy = false);
       return _fail(
-        e is WrongPassphraseException ? '主口令或恢复码不正确' : '解锁失败：$e',
+        e is WrongPassphraseException
+            ? t.lockWrongCredential
+            : t.lockUnlockFailed(e.toString()),
       );
     }
     try {
@@ -193,8 +203,8 @@ class _LockPageState extends ConsumerState<LockPage> {
       if (!mounted) return;
       await runBusy(
         context,
-        message: '正在解锁加密账本…',
-        successMessage: '已解锁',
+        message: t.lockUnlocking,
+        successMessage: t.lockUnlocked,
         showError: false,
         hold: _revealHold,
         exitFade: _revealFade,
@@ -209,7 +219,7 @@ class _LockPageState extends ConsumerState<LockPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _fail('解锁失败：$e');
+      _fail(t.lockUnlockFailed(e.toString()));
     }
   }
 
@@ -219,6 +229,7 @@ class _LockPageState extends ConsumerState<LockPage> {
   Widget build(BuildContext context) {
     final vault = ref.watch(vaultProvider);
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     if (_recoveryCode != null) {
       return Scaffold(
@@ -234,10 +245,10 @@ class _LockPageState extends ConsumerState<LockPage> {
                   children: [
                     Icon(Icons.key, size: 40, color: theme.colorScheme.primary),
                     const SizedBox(height: 12),
-                    Text('请离线保存恢复码', style: theme.textTheme.titleLarge),
+                    Text(t.lockSaveRecoveryTitle, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(
-                      '恢复码是丢失主口令后唯一的自救方式。请抄写在安全的地方（不要拍照存云端）。',
+                      t.lockRecoveryIntro,
                       style: theme.textTheme.bodyLarge,
                     ),
                     const SizedBox(height: 16),
@@ -266,7 +277,7 @@ class _LockPageState extends ConsumerState<LockPage> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2.2),
                             )
-                          : const Text('我已保存，进入账本'),
+                          : Text(t.lockRecoverySaved),
                     ),
                   ],
                 ),
@@ -295,7 +306,7 @@ class _LockPageState extends ConsumerState<LockPage> {
                   if (!setup) ...[
                     const SizedBox(height: 24),
                     Text(
-                      '资观 AssetScope',
+                      t.appTitle,
                       style: theme.textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
@@ -310,8 +321,8 @@ class _LockPageState extends ConsumerState<LockPage> {
                       onSubmitted: (_) => _pass2Focus.requestFocus(),
                       decoration: _capsuleDecoration(
                         theme,
-                        '创建加密账本：设定主口令（8 位以上）',
-                        tooltip: '主口令派生密钥加密全部数据，无法找回，只能用恢复码自救',
+                        t.lockCreateHint,
+                        tooltip: t.lockPassphraseTooltip,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -325,7 +336,7 @@ class _LockPageState extends ConsumerState<LockPage> {
                         onSubmitted: (_) => _create(),
                         decoration: _capsuleDecoration(
                           theme,
-                          '再输入一遍主口令',
+                          t.lockRepeatPassphrase,
                           action: _RoundAction(
                             buttonKey: _actionKey,
                             icon: Icons.check_rounded,
@@ -349,8 +360,8 @@ class _LockPageState extends ConsumerState<LockPage> {
                         onSubmitted: (_) => _unlock(),
                         decoration: _capsuleDecoration(
                           theme,
-                      '输入主口令或恢复码',
-                      action: _RoundAction(
+                          t.lockUnlockHint,
+                          action: _RoundAction(
                         buttonKey: _actionKey,
                         icon: Icons.arrow_forward_rounded,
                         busy: _busy,
@@ -371,10 +382,10 @@ class _LockPageState extends ConsumerState<LockPage> {
                         child: TextButton(
                           onPressed: () => showTopNotice(
                             context,
-                            '也可直接输入恢复码解锁',
+                            t.lockRecoveryNotice,
                             tone: TopNoticeTone.info,
                           ),
-                          child: const Text('忘记主口令？使用恢复码'),
+                          child: Text(t.lockForgotPassphrase),
                         ),
                       ),
                     ),

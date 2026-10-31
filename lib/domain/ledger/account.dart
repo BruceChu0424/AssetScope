@@ -1,3 +1,4 @@
+import '../../l10n/runtime_l10n.dart';
 import '../money/fx_rate.dart';
 
 /// 账户五大类型（复式记账）。
@@ -31,12 +32,13 @@ enum AssetSubtype {
   otherAsset('其他资产', liquidityDays: 90);
 
   const AssetSubtype(
-    this.labelZh, {
+    this._labelZh, {
     required this.liquidityDays,
     this.isHolding = false,
   });
 
-  final String labelZh;
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
   final int liquidityDays;
   final bool isHolding;
 }
@@ -53,8 +55,9 @@ enum LiabilitySubtype {
   privateLoan('私人借款'),
   otherDebt('其他负债');
 
-  const LiabilitySubtype(this.labelZh);
-  final String labelZh;
+  const LiabilitySubtype(this._labelZh);
+  final String _labelZh;
+  String get labelZh => rt(_labelZh);
 }
 
 /// 估值方式。
@@ -231,45 +234,45 @@ class Account {
   static const sysIncomeRealizedPnl = 'sys:income:realized-pnl';
   static const sysIncomeDividend = 'sys:income:dividend';
 
-  static List<Account> systemAccounts() => const [
+  static List<Account> systemAccounts() => [
     Account(
       id: sysEquityOpening,
-      name: '期初余额权益',
+      name: rt('期初余额权益'),
       type: AccountType.equity,
       currencyCode: 'CNY',
       isSystem: true,
     ),
     Account(
       id: sysEquityAdjustment,
-      name: '对账调整',
+      name: rt('对账调整'),
       type: AccountType.equity,
       currencyCode: 'CNY',
       isSystem: true,
     ),
     Account(
       id: sysExpenseFx,
-      name: '汇兑损益',
+      name: rt('汇兑损益'),
       type: AccountType.expense,
       currencyCode: 'CNY',
       isSystem: true,
     ),
     Account(
       id: sysExpenseRounding,
-      name: '尾差',
+      name: rt('尾差'),
       type: AccountType.expense,
       currencyCode: 'CNY',
       isSystem: true,
     ),
     Account(
       id: sysIncomeRealizedPnl,
-      name: '已实现投资损益',
+      name: rt('已实现投资损益'),
       type: AccountType.income,
       currencyCode: 'CNY',
       isSystem: true,
     ),
     Account(
       id: sysIncomeDividend,
-      name: '股息与分红',
+      name: rt('股息与分红'),
       type: AccountType.income,
       currencyCode: 'CNY',
       isSystem: true,
