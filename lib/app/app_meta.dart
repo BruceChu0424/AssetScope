@@ -5,5 +5,5 @@ library;
 
 import '../l10n/runtime_l10n.dart';
 
-const String appVersion = '0.25.0';
+const String appVersion = '0.27.0';
 final String appName = rt('资观 AssetScope');

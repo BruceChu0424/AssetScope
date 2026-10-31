@@ -88,7 +88,7 @@ void main() {
     }
     expect(find.byType(SecuritySection), findsNothing, reason: '旧分类应退场');
     expect(find.text('应用版本'), findsOneWidget);
-    expect(find.text('v0.25.0'), findsOneWidget, reason: '品牌卡版本胶囊');
+    expect(find.text('v0.27.0'), findsOneWidget, reason: '品牌卡版本胶囊');
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
