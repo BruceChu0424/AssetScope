@@ -19,12 +19,16 @@ void main() {
   });
 
   test('60 天前的旧明细被裁掉', () {
-    final now = DateTime(2026, 10, 30);
+    // todayCalls 按「真实今天」取数，now 必须取当下而非固定日期
+    // （固定日期在跨天/跨时区运行时——如 UTC 上的 CI——必挂）；
+    // 旧明细用相对日期构造，落在 60 天裁剪线之外且永不漂移。
+    final now = DateTime.now();
+    final staleKey = AiUsage.dayKey(now.subtract(const Duration(days: 90)));
     final u = AiUsage(
       totalCalls: 9,
-      byDay: {'2026-01-01': 9},
+      byDay: {staleKey: 9},
     ).recorded(now);
-    expect(u.byDay.containsKey('2026-01-01'), isFalse);
+    expect(u.byDay.containsKey(staleKey), isFalse);
     expect(u.totalCalls, 10);
     expect(u.todayCalls, 1);
   });
